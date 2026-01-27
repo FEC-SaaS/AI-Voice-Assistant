@@ -1,0 +1,234 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                   String   @id @default(cuid())
+  name                 String
+  slug                 String   @unique
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  planId               String   @default("free-trial")
+  onboardingComplete   Boolean  @default(false)
+  settings             Json     @default("{}")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  users          User[]
+  agents         Agent[]
+  campaigns      Campaign[]
+  calls          Call[]
+  phoneNumbers   PhoneNumber[]
+  knowledgeDocs  KnowledgeDocument[]
+  contacts       Contact[]
+  dncEntries     DNCEntry[]
+  consents       Consent[]
+
+  @@index([slug])
+  @@index([stripeCustomerId])
+}
+
+model User {
+  id             String       @id @default(cuid())
+  clerkId        String       @unique
+  email          String
+  name           String?
+  imageUrl       String?
+  role           String       @default("member") // owner, admin, manager, member, viewer
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([clerkId])
+}
+
+model Agent {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vapiAssistantId String?
+  name            String
+  description     String?
+  systemPrompt    String       @db.Text
+  firstMessage    String?
+  voiceProvider   String       @default("elevenlabs")
+  voiceId         String       @default("rachel")
+  language        String       @default("en-US")
+  modelProvider   String       @default("openai")
+  model           String       @default("gpt-4-turbo")
+  isActive        Boolean      @default(true)
+  settings        Json         @default("{}")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  calls        Call[]
+  campaigns    Campaign[]
+  phoneNumbers PhoneNumber[]
+
+  @@index([organizationId])
+  @@index([vapiAssistantId])
+}
+
+model PhoneNumber {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vapiPhoneId    String?
+  number         String
+  friendlyName   String?
+  type           String       @default("local") // local, toll_free
+  agentId        String?
+  agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([vapiPhoneId])
+}
+
+model Campaign {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agentId        String
+  agent          Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  status         String       @default("draft") // draft, scheduled, running, paused, completed
+  scheduleStart  DateTime?
+  scheduleEnd    DateTime?
+  timeZone       String       @default("America/New_York")
+  callingHours   Json         @default("{\"start\": \"09:00\", \"end\": \"17:00\"}")
+  maxCallsPerDay Int          @default(100)
+  settings       Json         @default("{}")
+  stats          Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  contacts Contact[]
+  calls    Call[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Contact {
+  id             String    @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaignId     String?
+  campaign       Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  phoneNumber    String
+  firstName      String?
+  lastName       String?
+  email          String?
+  company        String?
+  customData     Json      @default("{}")
+  status         String    @default("pending") // pending, called, completed, failed, dnc
+  lastCalledAt   DateTime?
+  callAttempts   Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  calls Call[]
+
+  @@index([organizationId])
+  @@index([campaignId])
+  @@index([phoneNumber])
+  @@index([status])
+}
+
+model Call {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agentId         String?
+  agent           Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  campaignId      String?
+  campaign        Campaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  contactId       String?
+  contact         Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  vapiCallId      String?      @unique
+  direction       String       // inbound, outbound
+  status          String?      // queued, ringing, in-progress, completed, failed, no-answer
+  fromNumber      String?
+  toNumber        String?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  durationSeconds Int?
+  recordingUrl    String?
+  transcript      String?      @db.Text
+  summary         String?      @db.Text
+  sentiment       String?      // positive, neutral, negative
+  leadScore       Int?
+  analysis        Json         @default("{}")
+  costCents       Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([agentId])
+  @@index([campaignId])
+  @@index([vapiCallId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model KnowledgeDocument {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agentId        String?
+  name           String
+  type           String       // pdf, docx, url, manual
+  sourceUrl      String?
+  content        String?      @db.Text
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([agentId])
+}
+
+model DNCEntry {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  phoneNumber    String
+  source         String       // national, internal, verbal_request
+  reason         String?
+  addedAt        DateTime     @default(now())
+
+  @@unique([organizationId, phoneNumber])
+  @@index([organizationId])
+  @@index([phoneNumber])
+}
+
+model Consent {
+  id            String    @id @default(cuid())
+  organizationId String
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contactPhone  String
+  consentType   String    // PEWC, EXPRESS, EBR
+  consentMethod String    // web_form, verbal, paper
+  consentText   String    @db.Text
+  ipAddress     String?
+  timestamp     DateTime  @default(now())
+  expiresAt     DateTime?
+  revokedAt     DateTime?
+
+  @@index([organizationId])
+  @@index([contactPhone])
+}

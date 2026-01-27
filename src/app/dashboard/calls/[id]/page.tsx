@@ -1,0 +1,284 @@
+"use client";
+
+import Link from "next/link";
+import {
+  ArrowLeft, Loader2, Phone, PhoneIncoming, PhoneOutgoing,
+  Clock, CheckCircle, XCircle, AlertCircle, Bot, User, Play, Pause,
+} from "lucide-react";
+import { useRef, useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+
+function formatDuration(seconds: number | null) {
+  if (!seconds) return "—";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function formatDate(date: string | Date) {
+  return new Date(date).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+const STATUS_MAP: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
+  completed: { icon: CheckCircle, color: "text-green-600 bg-green-50", label: "Completed" },
+  failed: { icon: XCircle, color: "text-red-600 bg-red-50", label: "Failed" },
+  "no-answer": { icon: AlertCircle, color: "text-yellow-600 bg-yellow-50", label: "No Answer" },
+  queued: { icon: Clock, color: "text-blue-600 bg-blue-50", label: "Queued" },
+  "in-progress": { icon: Phone, color: "text-blue-600 bg-blue-50", label: "In Progress" },
+};
+
+const SENTIMENT_MAP: Record<string, string> = {
+  positive: "bg-green-100 text-green-700",
+  neutral: "bg-gray-100 text-gray-700",
+  negative: "bg-red-100 text-red-700",
+};
+
+export default function CallDetailPage({ params }: { params: { id: string } }) {
+  const { data: call, isLoading } = trpc.calls.get.useQuery({ id: params.id });
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (!call) {
+    return (
+      <div className="py-20 text-center">
+        <h2 className="text-xl font-semibold text-gray-900">Call not found</h2>
+        <Link href="/dashboard/calls" className="mt-4 inline-block text-primary hover:underline">
+          Back to Call Logs
+        </Link>
+      </div>
+    );
+  }
+
+  const status = STATUS_MAP[call.status] || { icon: AlertCircle, color: "text-gray-600 bg-gray-50", label: call.status };
+  const StatusIcon = status.icon;
+
+  // Parse transcript if it's a JSON string
+  let transcriptMessages: { role: string; content: string; timestamp?: number }[] = [];
+  if (call.transcript) {
+    try {
+      const parsed = JSON.parse(call.transcript);
+      if (Array.isArray(parsed)) {
+        transcriptMessages = parsed;
+      }
+    } catch {
+      // If it's plain text, show as single block
+      transcriptMessages = [{ role: "system", content: call.transcript }];
+    }
+  }
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Link href="/dashboard/calls">
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+        </Link>
+        <div className="flex items-center gap-3">
+          {call.direction === "inbound" ? (
+            <PhoneIncoming className="h-6 w-6 text-blue-500" />
+          ) : (
+            <PhoneOutgoing className="h-6 w-6 text-green-500" />
+          )}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Call Details</h1>
+            <p className="text-sm text-gray-500">
+              {call.direction === "inbound" ? "Inbound" : "Outbound"} call &middot; {formatDate(call.createdAt)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Call Info Grid */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="rounded-lg border bg-white p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Call Information</h2>
+          <div className="space-y-3">
+            <div>
+              <span className="text-xs font-medium uppercase text-gray-400">Status</span>
+              <div className="mt-1">
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${status.color}`}>
+                  <StatusIcon className="h-3.5 w-3.5" />
+                  {status.label}
+                </span>
+              </div>
+            </div>
+            <div>
+              <span className="text-xs font-medium uppercase text-gray-400">To Number</span>
+              <p className="text-sm font-mono text-gray-900">{call.toNumber || "—"}</p>
+            </div>
+            <div>
+              <span className="text-xs font-medium uppercase text-gray-400">From Number</span>
+              <p className="text-sm font-mono text-gray-900">{call.fromNumber || "—"}</p>
+            </div>
+            <div>
+              <span className="text-xs font-medium uppercase text-gray-400">Duration</span>
+              <p className="text-sm text-gray-900">{formatDuration(call.durationSeconds)}</p>
+            </div>
+            <div>
+              <span className="text-xs font-medium uppercase text-gray-400">Vapi Call ID</span>
+              <p className="text-sm font-mono text-gray-500">{call.vapiCallId || "—"}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border bg-white p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Context</h2>
+          <div className="space-y-3">
+            <div>
+              <span className="text-xs font-medium uppercase text-gray-400">Agent</span>
+              {call.agent ? (
+                <Link
+                  href={`/dashboard/agents/${call.agent.id}`}
+                  className="mt-1 flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Bot className="h-4 w-4" />
+                  {call.agent.name}
+                </Link>
+              ) : (
+                <p className="text-sm text-gray-500">—</p>
+              )}
+            </div>
+            {call.campaign && (
+              <div>
+                <span className="text-xs font-medium uppercase text-gray-400">Campaign</span>
+                <Link
+                  href={`/dashboard/campaigns/${call.campaign.id}`}
+                  className="mt-1 block text-sm text-primary hover:underline"
+                >
+                  {call.campaign.name}
+                </Link>
+              </div>
+            )}
+            {call.contact && (
+              <div>
+                <span className="text-xs font-medium uppercase text-gray-400">Contact</span>
+                <p className="text-sm text-gray-900">
+                  {call.contact.firstName} {call.contact.lastName}
+                  {call.contact.company && (
+                    <span className="text-gray-500"> &middot; {call.contact.company}</span>
+                  )}
+                </p>
+              </div>
+            )}
+            {call.sentiment && (
+              <div>
+                <span className="text-xs font-medium uppercase text-gray-400">Sentiment</span>
+                <div className="mt-1">
+                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${SENTIMENT_MAP[call.sentiment] || "bg-gray-100 text-gray-700"}`}>
+                    {call.sentiment}
+                  </span>
+                </div>
+              </div>
+            )}
+            <div>
+              <span className="text-xs font-medium uppercase text-gray-400">Created</span>
+              <p className="text-sm text-gray-900">{formatDate(call.createdAt)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Call Summary */}
+      {call.summary && (
+        <div className="rounded-lg border bg-white p-6">
+          <h2 className="text-lg font-semibold text-gray-900">Summary</h2>
+          <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">{call.summary}</p>
+        </div>
+      )}
+
+      {/* Audio Player */}
+      {call.recordingUrl && (
+        <div className="rounded-lg border bg-white p-6">
+          <h2 className="text-lg font-semibold text-gray-900">Recording</h2>
+          <div className="mt-4 flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={toggleAudio}>
+              {isPlaying ? (
+                <><Pause className="mr-2 h-4 w-4" /> Pause</>
+              ) : (
+                <><Play className="mr-2 h-4 w-4" /> Play</>
+              )}
+            </Button>
+            <audio
+              ref={audioRef}
+              src={call.recordingUrl}
+              onEnded={() => setIsPlaying(false)}
+              className="flex-1"
+              controls
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Transcript */}
+      <div className="rounded-lg border bg-white p-6">
+        <h2 className="text-lg font-semibold text-gray-900">Transcript</h2>
+        {transcriptMessages.length > 0 ? (
+          <div className="mt-4 space-y-3">
+            {transcriptMessages.map((msg, i) => {
+              const isAssistant = msg.role === "assistant" || msg.role === "bot" || msg.role === "ai";
+              return (
+                <div key={i} className={`flex gap-3 ${isAssistant ? "" : "flex-row-reverse"}`}>
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    isAssistant ? "bg-primary/10" : "bg-gray-100"
+                  }`}>
+                    {isAssistant ? (
+                      <Bot className="h-4 w-4 text-primary" />
+                    ) : (
+                      <User className="h-4 w-4 text-gray-500" />
+                    )}
+                  </div>
+                  <div className={`max-w-[75%] rounded-lg px-4 py-2 text-sm ${
+                    isAssistant
+                      ? "bg-primary/5 text-gray-900"
+                      : "bg-gray-100 text-gray-900"
+                  }`}>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    {msg.timestamp != null && (
+                      <p className="mt-1 text-xs text-gray-400">
+                        {Math.floor(msg.timestamp / 60)}:{String(Math.floor(msg.timestamp % 60)).padStart(2, "0")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-gray-500">
+            No transcript available for this call.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}

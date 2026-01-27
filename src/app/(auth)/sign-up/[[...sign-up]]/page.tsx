@@ -1,0 +1,24 @@
+import Link from "next/link";
+import { ClerkSignUp } from "@/components/auth/clerk-sign-up";
+
+const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+export default function SignUpPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      {isClerkConfigured ? (
+        <ClerkSignUp />
+      ) : (
+        <div className="rounded-lg border bg-white p-8 text-center shadow-lg">
+          <h1 className="text-2xl font-bold text-gray-900">Sign Up</h1>
+          <p className="mt-2 text-gray-500">
+            Authentication is not configured yet. Set your Clerk API keys in the .env file.
+          </p>
+          <Link href="/" className="mt-4 inline-block text-sm text-primary hover:underline">
+            Go Home
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}

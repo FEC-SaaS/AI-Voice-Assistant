@@ -1,0 +1,84 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.pnp.cjs
+.yarn/install-state.gz
+
+# Next.js
+.next/
+out/
+
+# Build outputs
+build/
+dist/
+
+# Prisma
+prisma/generated/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vercel
+.vercel
+
+# Testing
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editor / IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Secrets & credentials
+*.pem
+*.key
+*.cert
+*.p12
+credentials.json
+service-account.json
+token.json
+
+# Sentry
+.sentryclirc
+
+# Turbopack / Turborepo
+.turbo/
+
+# Storybook
+storybook-static/
+
+# Misc
+*.log
+*.pid
+*.seed
+*.pid.lock
+.cache/
+tmp/
+temp/
