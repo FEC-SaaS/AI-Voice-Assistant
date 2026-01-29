@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
@@ -136,7 +137,7 @@ export const usersRouter = router({
         where: { id: ctx.orgId },
         data: {
           ...(input.name && { name: input.name }),
-          ...(input.settings && { settings: input.settings }),
+          ...(input.settings && { settings: input.settings as Prisma.InputJsonValue }),
         },
       });
 
