@@ -1,25 +1,15 @@
-import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { TRPCProvider } from "@/components/providers";
+import { OrgGuard } from "@/components/auth/org-guard";
 
-const isClerkConfigured = !!(
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
-  process.env.CLERK_SECRET_KEY
-);
-
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  if (isClerkConfigured) {
-    const { auth } = await import("@clerk/nextjs");
-    const { userId } = auth();
-    if (!userId) {
-      redirect("/sign-in");
-    }
-  }
+  // Auth is enforced by authMiddleware in src/middleware.ts.
+  // OrgGuard ensures user has selected an organization before accessing dashboard pages.
 
   return (
     <TRPCProvider>
@@ -28,7 +18,7 @@ export default async function DashboardLayout({
         <div className="flex flex-1 flex-col overflow-hidden">
           <Header />
           <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
-            {children}
+            <OrgGuard>{children}</OrgGuard>
           </main>
         </div>
       </div>

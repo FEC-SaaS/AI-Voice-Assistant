@@ -7,10 +7,12 @@ import { phoneNumbersRouter } from "./phone-numbers";
 import { knowledgeRouter } from "./knowledge";
 import { billingRouter } from "./billing";
 import { usersRouter } from "./users";
+import { contactsRouter } from "./contacts";
 
 export const appRouter = router({
   agents: agentsRouter,
   campaigns: campaignsRouter,
+  contacts: contactsRouter,
   calls: callsRouter,
   analytics: analyticsRouter,
   phoneNumbers: phoneNumbersRouter,

@@ -7,7 +7,11 @@
       "Bash(curl:*)",
       "Bash(wc:*)",
       "Bash(find:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(node -e:*)",
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(npm run type-check:*)"
     ]
   }
 }

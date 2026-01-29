@@ -2,35 +2,150 @@ import { TRPCError } from "@trpc/server";
 import { middleware } from "./index";
 import { getPlan, canAddAgent, canAddCampaign, canAddPhoneNumber } from "@/constants/plans";
 import { db } from "@/lib/db";
+import { checkRateLimit } from "@/lib/redis";
 
-// Rate limiting middleware (simple in-memory, use Redis for production)
-const rateLimits = new Map<string, { count: number; resetAt: number }>();
-
-export const rateLimit = (limit: number, windowMs: number) =>
+/**
+ * Redis-based rate limiting middleware
+ *
+ * Uses Upstash Redis for distributed rate limiting across serverless functions.
+ * Falls back to allowing requests if Redis is unavailable.
+ *
+ * @param limit - Maximum number of requests allowed in the window
+ * @param windowSeconds - Time window in seconds
+ */
+export const rateLimit = (limit: number, windowSeconds: number) =>
   middleware(async ({ ctx, next }) => {
     if (!ctx.userId) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
 
-    const key = ctx.userId;
-    const now = Date.now();
-    const record = rateLimits.get(key);
+    try {
+      // Check if Redis is configured
+      const redisUrl = process.env.UPSTASH_REDIS_URL;
+      const redisToken = process.env.UPSTASH_REDIS_TOKEN;
 
-    if (!record || now > record.resetAt) {
-      rateLimits.set(key, { count: 1, resetAt: now + windowMs });
-    } else if (record.count >= limit) {
-      throw new TRPCError({
-        code: "TOO_MANY_REQUESTS",
-        message: "Rate limit exceeded. Please try again later.",
-      });
-    } else {
-      record.count++;
+      if (!redisUrl || !redisToken) {
+        // Redis not configured, skip rate limiting in development
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[Rate Limit] Redis not configured, skipping rate limit check");
+          return next();
+        }
+        // In production, allow but warn
+        console.warn("[Rate Limit] Redis not configured in production");
+        return next();
+      }
+
+      const result = await checkRateLimit(
+        `user:${ctx.userId}`,
+        limit,
+        windowSeconds
+      );
+
+      if (!result.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Rate limit exceeded. Please try again in ${windowSeconds} seconds. Remaining: ${result.remaining}`,
+        });
+      }
+
+      return next();
+    } catch (error) {
+      // If it's a TRPCError, rethrow it
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+
+      // Log Redis errors but don't block the request
+      console.error("[Rate Limit] Redis error:", error);
+      return next();
     }
-
-    return next();
   });
 
-// Plan limit enforcement middleware
+/**
+ * Organization-scoped rate limiting
+ * Useful for limiting API calls per organization
+ */
+export const orgRateLimit = (limit: number, windowSeconds: number) =>
+  middleware(async ({ ctx, next }) => {
+    if (!ctx.orgId) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    try {
+      const redisUrl = process.env.UPSTASH_REDIS_URL;
+      const redisToken = process.env.UPSTASH_REDIS_TOKEN;
+
+      if (!redisUrl || !redisToken) {
+        return next();
+      }
+
+      const result = await checkRateLimit(
+        `org:${ctx.orgId}`,
+        limit,
+        windowSeconds
+      );
+
+      if (!result.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Organization rate limit exceeded. Please try again later.`,
+        });
+      }
+
+      return next();
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      console.error("[Rate Limit] Redis error:", error);
+      return next();
+    }
+  });
+
+/**
+ * Action-specific rate limiting
+ * For limiting specific expensive operations
+ */
+export const actionRateLimit = (action: string, limit: number, windowSeconds: number) =>
+  middleware(async ({ ctx, next }) => {
+    if (!ctx.userId) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    try {
+      const redisUrl = process.env.UPSTASH_REDIS_URL;
+      const redisToken = process.env.UPSTASH_REDIS_TOKEN;
+
+      if (!redisUrl || !redisToken) {
+        return next();
+      }
+
+      const result = await checkRateLimit(
+        `action:${action}:${ctx.userId}`,
+        limit,
+        windowSeconds
+      );
+
+      if (!result.success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Too many ${action} requests. Please try again later.`,
+        });
+      }
+
+      return next();
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      console.error("[Rate Limit] Redis error:", error);
+      return next();
+    }
+  });
+
+/**
+ * Plan limit enforcement middleware - Agents
+ */
 export const enforceAgentLimit = middleware(async ({ ctx, next }) => {
   if (!ctx.orgId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -60,6 +175,9 @@ export const enforceAgentLimit = middleware(async ({ ctx, next }) => {
   return next();
 });
 
+/**
+ * Plan limit enforcement middleware - Campaigns
+ */
 export const enforceCampaignLimit = middleware(async ({ ctx, next }) => {
   if (!ctx.orgId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -89,6 +207,9 @@ export const enforceCampaignLimit = middleware(async ({ ctx, next }) => {
   return next();
 });
 
+/**
+ * Plan limit enforcement middleware - Phone Numbers
+ */
 export const enforcePhoneNumberLimit = middleware(async ({ ctx, next }) => {
   if (!ctx.orgId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -118,7 +239,61 @@ export const enforcePhoneNumberLimit = middleware(async ({ ctx, next }) => {
   return next();
 });
 
-// Logging middleware
+/**
+ * Minutes usage enforcement middleware
+ * Checks if organization has remaining minutes
+ */
+export const enforceMinutesLimit = middleware(async ({ ctx, next }) => {
+  if (!ctx.orgId) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+
+  const org = await db.organization.findUnique({
+    where: { id: ctx.orgId },
+  });
+
+  if (!org) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Organization not found" });
+  }
+
+  const plan = getPlan(org.planId);
+
+  // Unlimited plans can always proceed
+  if (plan.minutesPerMonth === -1) {
+    return next();
+  }
+
+  // Get current month usage
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const usage = await db.call.aggregate({
+    where: {
+      organizationId: ctx.orgId,
+      createdAt: { gte: startOfMonth },
+    },
+    _sum: {
+      durationSeconds: true,
+    },
+  });
+
+  const usedMinutes = Math.ceil((usage._sum.durationSeconds || 0) / 60);
+
+  if (usedMinutes >= plan.minutesPerMonth) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `You've used all ${plan.minutesPerMonth} minutes included in your ${plan.name} plan this month. Upgrade to continue making calls.`,
+    });
+  }
+
+  return next();
+});
+
+/**
+ * Logging middleware
+ * Logs all tRPC procedure calls with timing
+ */
 export const logger = middleware(async ({ path, type, next }) => {
   const start = Date.now();
   const result = await next();
@@ -127,4 +302,123 @@ export const logger = middleware(async ({ path, type, next }) => {
   console.log(`[tRPC] ${type} ${path} - ${duration}ms`);
 
   return result;
+});
+
+/**
+ * Permission-based middleware
+ * Checks if user has required permission
+ */
+export const requirePermission = (permission: string) =>
+  middleware(async ({ ctx, next }) => {
+    if (!ctx.userId || !ctx.orgId) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    const user = await db.user.findFirst({
+      where: {
+        id: ctx.userId,
+        organizationId: ctx.orgId,
+      },
+    });
+
+    if (!user) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    // Define role permissions
+    const rolePermissions: Record<string, string[]> = {
+      owner: ["*"],
+      admin: [
+        "agents:*", "campaigns:*", "calls:*", "analytics:*",
+        "knowledge:*", "phone_numbers:*", "integrations:*",
+        "team:read", "team:invite", "settings:read", "settings:write",
+      ],
+      manager: [
+        "agents:*", "campaigns:*", "calls:*", "analytics:*",
+        "knowledge:*", "phone_numbers:read", "integrations:read",
+        "team:read", "settings:read",
+      ],
+      member: [
+        "agents:read", "campaigns:read", "calls:read", "calls:create",
+        "analytics:read", "knowledge:read",
+      ],
+      viewer: [
+        "agents:read", "campaigns:read", "calls:read", "analytics:read",
+      ],
+    };
+
+    const userPermissions = rolePermissions[user.role] || [];
+
+    // Check for wildcard permission
+    if (userPermissions.includes("*")) {
+      return next();
+    }
+
+    // Check for exact match
+    if (userPermissions.includes(permission)) {
+      return next();
+    }
+
+    // Check for resource wildcard (e.g., "agents:*" matches "agents:create")
+    const [resource] = permission.split(":");
+    if (userPermissions.includes(`${resource}:*`)) {
+      return next();
+    }
+
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: `You don't have permission to perform this action. Required: ${permission}`,
+    });
+  });
+
+/**
+ * Owner-only middleware
+ * Only allows organization owners
+ */
+export const requireOwner = middleware(async ({ ctx, next }) => {
+  if (!ctx.userId || !ctx.orgId) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+
+  const user = await db.user.findFirst({
+    where: {
+      id: ctx.userId,
+      organizationId: ctx.orgId,
+    },
+  });
+
+  if (!user || user.role !== "owner") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Only organization owners can perform this action.",
+    });
+  }
+
+  return next();
+});
+
+/**
+ * Admin-only middleware
+ * Only allows admins and owners
+ */
+export const requireAdmin = middleware(async ({ ctx, next }) => {
+  if (!ctx.userId || !ctx.orgId) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+
+  const user = await db.user.findFirst({
+    where: {
+      id: ctx.userId,
+      organizationId: ctx.orgId,
+    },
+  });
+
+  if (!user || !["owner", "admin"].includes(user.role)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Only admins can perform this action.",
+    });
+  }
+
+  return next();
 });

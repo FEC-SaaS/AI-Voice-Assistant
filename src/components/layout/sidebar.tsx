@@ -13,6 +13,7 @@ import {
   Plug,
   Settings,
   ChevronLeft,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -21,6 +22,7 @@ const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Agents", href: "/dashboard/agents", icon: Bot },
   { title: "Campaigns", href: "/dashboard/campaigns", icon: Megaphone },
+  { title: "Contacts", href: "/dashboard/contacts", icon: Users },
   { title: "Calls", href: "/dashboard/calls", icon: Phone },
   { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { title: "Knowledge Base", href: "/dashboard/knowledge", icon: BookOpen },

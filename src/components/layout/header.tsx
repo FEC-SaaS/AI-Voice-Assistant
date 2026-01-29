@@ -1,42 +1,7 @@
 "use client";
 
 import { Bell, Search, User } from "lucide-react";
-
-const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
-function ClerkControls() {
-  // Dynamic import only used when Clerk is configured
-  const { UserButton, OrganizationSwitcher } = require("@clerk/nextjs");
-  return (
-    <>
-      <OrganizationSwitcher
-        appearance={{
-          elements: {
-            rootBox: "flex items-center",
-            organizationSwitcherTrigger:
-              "flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-50",
-          },
-        }}
-      />
-      <UserButton
-        appearance={{
-          elements: {
-            avatarBox: "h-9 w-9",
-          },
-        }}
-        afterSignOutUrl="/"
-      />
-    </>
-  );
-}
-
-function FallbackControls() {
-  return (
-    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200">
-      <User className="h-5 w-5 text-gray-500" />
-    </div>
-  );
-}
+import { UserButton, OrganizationSwitcher } from "@clerk/nextjs";
 
 export function Header() {
   return (
@@ -55,7 +20,23 @@ export function Header() {
 
       {/* Right side */}
       <div className="flex items-center gap-4">
-        {isClerkConfigured ? <ClerkControls /> : <FallbackControls />}
+        <OrganizationSwitcher
+          appearance={{
+            elements: {
+              rootBox: "flex items-center",
+              organizationSwitcherTrigger:
+                "flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-50",
+            },
+          }}
+        />
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "h-9 w-9",
+            },
+          }}
+          afterSignOutUrl="/"
+        />
 
         {/* Notifications */}
         <button className="relative rounded-full p-2 hover:bg-gray-100">

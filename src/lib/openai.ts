@@ -46,7 +46,7 @@ Return your analysis as a JSON object with these exact fields:
     temperature: 0.3,
   });
 
-  const content = response.choices[0].message.content;
+  const content = response.choices[0]?.message?.content;
   if (!content) {
     throw new Error("No response from OpenAI");
   }
@@ -70,7 +70,7 @@ export async function generateSummary(transcript: string): Promise<string> {
     max_tokens: 200,
   });
 
-  return response.choices[0].message.content || "";
+  return response.choices[0]?.message?.content || "";
 }
 
 // Extract keywords/topics
@@ -89,7 +89,7 @@ export async function extractTopics(transcript: string): Promise<string[]> {
     temperature: 0.3,
   });
 
-  const content = response.choices[0].message.content;
+  const content = response.choices[0]?.message?.content;
   if (!content) return [];
 
   const parsed = JSON.parse(content);

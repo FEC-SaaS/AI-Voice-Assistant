@@ -1,34 +1,35 @@
+import { authMiddleware } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-const isClerkConfigured = !!(
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
-  process.env.CLERK_SECRET_KEY
-);
+export default authMiddleware({
+  publicRoutes: [
+    "/",
+    "/pricing",
+    "/features",
+    "/blog",
+    "/blog/(.*)",
+    "/contact",
+    "/sign-in(.*)",
+    "/sign-up(.*)",
+    "/api/webhooks(.*)",
+  ],
+  afterAuth(auth, req) {
+    // Public routes: always allow through, no redirects at all
+    if (auth.isPublicRoute) {
+      return NextResponse.next();
+    }
 
-export default async function middleware(req: NextRequest) {
-  if (isClerkConfigured) {
-    const { authMiddleware } = await import("@clerk/nextjs");
-    const handler = authMiddleware({
-      publicRoutes: [
-        "/",
-        "/pricing",
-        "/features",
-        "/blog",
-        "/blog/(.*)",
-        "/contact",
-        "/api/webhooks/(.*)",
-      ],
-      ignoredRoutes: [
-        "/api/webhooks/vapi",
-        "/api/webhooks/stripe",
-        "/api/webhooks/clerk",
-      ],
-    });
-    return handler(req, {} as any);
-  }
-  return NextResponse.next();
-}
+    // Protected route + not signed in: redirect to sign-in
+    if (!auth.userId) {
+      const signInUrl = new URL("/sign-in", req.url);
+      signInUrl.searchParams.set("redirect_url", req.nextUrl.pathname);
+      return NextResponse.redirect(signInUrl);
+    }
+
+    // Protected route + signed in: allow through
+    return NextResponse.next();
+  },
+});
 
 export const config = {
   matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],

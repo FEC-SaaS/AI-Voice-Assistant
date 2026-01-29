@@ -9,7 +9,15 @@ export interface Context {
 }
 
 export async function createContext(): Promise<Context> {
-  const { userId, orgId } = auth();
+  const authData = auth();
+  const { userId, orgId } = authData;
+
+  // Debug logging - remove after fixing
+  console.log("🔐 tRPC Context Auth:", {
+    userId: userId ? `${userId.slice(0, 10)}...` : null,
+    orgId: orgId || null,
+    sessionId: authData.sessionId ? "present" : "missing",
+  });
 
   let userRole: string | null = null;
 
