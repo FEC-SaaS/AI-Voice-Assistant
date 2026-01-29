@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processScheduledCampaigns } from "@/server/services/campaign-executor.service";
+
+// Dynamic import to avoid build-time issues
+const getProcessScheduledCampaigns = async () => {
+  const { processScheduledCampaigns } = await import("@/server/services/campaign-executor.service");
+  return processScheduledCampaigns;
+};
 
 /**
  * Campaign Executor Cron Job
@@ -32,6 +37,7 @@ export async function POST(req: NextRequest) {
 
     console.log("[Cron] Starting campaign execution job");
 
+    const processScheduledCampaigns = await getProcessScheduledCampaigns();
     await processScheduledCampaigns();
 
     console.log("[Cron] Campaign execution job completed");

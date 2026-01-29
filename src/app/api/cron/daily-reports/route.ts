@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+
+// Dynamic import to avoid build-time issues
+const getDb = async () => {
+  const { db } = await import("@/lib/db");
+  return db;
+};
 
 /**
  * Daily Reports Cron Job
@@ -23,6 +28,8 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("[Cron] Starting daily reports generation");
+
+    const db = await getDb();
 
     // Get yesterday's date range
     const yesterday = new Date();

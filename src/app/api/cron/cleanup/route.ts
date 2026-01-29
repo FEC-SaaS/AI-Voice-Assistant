@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+
+// Dynamic import to avoid build-time issues
+const getDb = async () => {
+  const { db } = await import("@/lib/db");
+  return db;
+};
 
 /**
  * Cleanup Cron Job
@@ -23,6 +28,8 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("[Cron] Starting cleanup job");
+
+    const db = await getDb();
 
     // Clean up old call records (older than 90 days)
     const ninetyDaysAgo = new Date();

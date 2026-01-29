@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processUnanalyzedCalls } from "@/server/services/call-analysis.service";
+
+// Dynamic import to avoid build-time issues
+const getProcessUnanalyzedCalls = async () => {
+  const { processUnanalyzedCalls } = await import("@/server/services/call-analysis.service");
+  return processUnanalyzedCalls;
+};
 
 /**
  * Call Analysis Cron Job
@@ -28,6 +33,7 @@ export async function POST(req: NextRequest) {
 
     console.log("[Cron] Starting call analysis job");
 
+    const processUnanalyzedCalls = await getProcessUnanalyzedCalls();
     const result = await processUnanalyzedCalls();
 
     console.log("[Cron] Call analysis job completed:", result);
