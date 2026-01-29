@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { analyzeTranscript, generateSummary, TranscriptAnalysis } from "@/lib/openai";
+import { analyzeTranscript, TranscriptAnalysis } from "@/lib/openai";
 import { detectOptOut, handleOptOutRequest } from "./dnc.service";
 
 export interface CallAnalysisResult {

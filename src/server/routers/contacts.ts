@@ -308,7 +308,7 @@ export const contactsRouter = router({
       }
 
       // If updating phone number, normalize and validate
-      let updateData = { ...input.data };
+      const updateData = { ...input.data };
       if (input.data.phoneNumber) {
         const normalizedPhone = normalizePhoneNumber(input.data.phoneNumber);
         if (!isValidUSPhone(normalizedPhone)) {

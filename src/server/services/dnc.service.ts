@@ -330,8 +330,8 @@ export function detectOptOut(transcript: string): boolean {
 export async function handleOptOutRequest(
   phoneNumber: string,
   organizationId: string,
-  callId?: string,
-  transcript?: string
+  _callId?: string,
+  _transcript?: string
 ): Promise<void> {
   // Add to DNC list
   await addToDNC(phoneNumber, organizationId, "verbal_request", "Opt-out requested during call");

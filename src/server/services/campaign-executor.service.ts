@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { createCall } from "@/lib/vapi";
-import { checkDNC, checkCallingHours, normalizePhoneNumber, getAIDisclosure } from "./dnc.service";
+import { checkDNC, checkCallingHours, normalizePhoneNumber } from "./dnc.service";
 import { getRemainingMinutes } from "@/constants/plans";
 
 // Campaign execution configuration
@@ -298,7 +298,7 @@ async function processContact(
 export async function executeCampaign(
   config: CampaignExecutionConfig
 ): Promise<CampaignExecutionResult> {
-  const { campaignId, organizationId, maxConcurrentCalls = 1, delayBetweenCallsMs = 5000 } = config;
+  const { campaignId, organizationId, maxConcurrentCalls: _maxConcurrentCalls = 1, delayBetweenCallsMs = 5000 } = config;
 
   // Set campaign state to running
   campaignStates.set(campaignId, "running");
@@ -456,7 +456,7 @@ export async function executeCampaign(
 export async function executeCampaignBatch(
   campaignId: string,
   organizationId: string,
-  batchSize: number = 10
+  _batchSize: number = 10
 ): Promise<CampaignExecutionResult> {
   return executeCampaign({
     campaignId,

@@ -281,7 +281,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
           <DialogHeader>
             <DialogTitle>Import Contacts from CSV</DialogTitle>
             <DialogDescription>
-              Upload a CSV file with your contacts. We'll help you map the columns.
+              Upload a CSV file with your contacts. We&apos;ll help you map the columns.
             </DialogDescription>
           </DialogHeader>
 

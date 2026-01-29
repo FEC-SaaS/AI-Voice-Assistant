@@ -53,7 +53,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Organization Details</CardTitle>
               <CardDescription>
-                Update your organization's basic information
+                Update your organization&apos;s basic information
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
