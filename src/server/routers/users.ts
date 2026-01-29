@@ -18,6 +18,7 @@ export const usersRouter = router({
             slug: true,
             planId: true,
             onboardingComplete: true,
+            settings: true,
           },
         },
       },

@@ -2,9 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileText, AlertCircle, CheckCircle, X } from "lucide-react";
+import { Upload, FileText, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +35,7 @@ interface ParsedContact {
   lastName?: string;
   email?: string;
   company?: string;
-  customData?: Record<string, any>;
+  customData?: Record<string, string>;
 }
 
 interface ColumnMapping {
@@ -206,7 +206,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
       };
 
       // Collect custom data from unmapped columns
-      const customData: Record<string, any> = {};
+      const customData: Record<string, string> = {};
       const mappedColumns = Object.values(mapping).filter(Boolean);
       headers.forEach((header, index) => {
         if (!mappedColumns.includes(header) && row[index]) {
@@ -233,7 +233,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
         return index >= 0 ? row[index] : undefined;
       };
 
-      const customData: Record<string, any> = {};
+      const customData: Record<string, string> = {};
       const mappedColumns = Object.values(mapping).filter(Boolean);
       headers.forEach((header, index) => {
         if (!mappedColumns.includes(header) && row[index]) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search } from "lucide-react";
 import { UserButton, OrganizationSwitcher } from "@clerk/nextjs";
 
 export function Header() {

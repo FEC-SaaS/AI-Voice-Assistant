@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
@@ -57,7 +58,7 @@ export const contactsRouter = router({
       const { campaignId, status, search, page, limit } = input;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: Prisma.ContactWhereInput = {
         organizationId: ctx.orgId,
       };
 
@@ -232,7 +233,7 @@ export const contactsRouter = router({
         errors: [] as string[],
       };
 
-      const validContacts: any[] = [];
+      const validContacts: Prisma.ContactCreateManyInput[] = [];
 
       for (let i = 0; i < contacts.length; i++) {
         const contact = contacts[i];
