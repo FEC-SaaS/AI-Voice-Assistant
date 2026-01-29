@@ -123,13 +123,13 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
           return;
         }
 
-        const headerRow = parsed[0];
+        const headerRow = parsed[0] || [];
         setHeaders(headerRow);
         setCsvData(parsed.slice(1));
 
         // Auto-detect column mappings
         const autoMapping = { ...defaultMapping };
-        const lowerHeaders = headerRow.map((h) => h.toLowerCase());
+        const lowerHeaders = headerRow.map((h: string) => h.toLowerCase());
 
         // Phone number detection
         const phoneIndex = lowerHeaders.findIndex(
@@ -139,7 +139,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
             h.includes("cell") ||
             h === "number"
         );
-        if (phoneIndex >= 0) autoMapping.phoneNumber = headerRow[phoneIndex];
+        if (phoneIndex >= 0) autoMapping.phoneNumber = headerRow[phoneIndex] || "";
 
         // First name detection
         const firstNameIndex = lowerHeaders.findIndex(
@@ -149,7 +149,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
             h === "first_name" ||
             h === "fname"
         );
-        if (firstNameIndex >= 0) autoMapping.firstName = headerRow[firstNameIndex];
+        if (firstNameIndex >= 0) autoMapping.firstName = headerRow[firstNameIndex] || "";
 
         // Last name detection
         const lastNameIndex = lowerHeaders.findIndex(
@@ -159,17 +159,17 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
             h === "last_name" ||
             h === "lname"
         );
-        if (lastNameIndex >= 0) autoMapping.lastName = headerRow[lastNameIndex];
+        if (lastNameIndex >= 0) autoMapping.lastName = headerRow[lastNameIndex] || "";
 
         // Email detection
         const emailIndex = lowerHeaders.findIndex((h) => h.includes("email"));
-        if (emailIndex >= 0) autoMapping.email = headerRow[emailIndex];
+        if (emailIndex >= 0) autoMapping.email = headerRow[emailIndex] || "";
 
         // Company detection
         const companyIndex = lowerHeaders.findIndex(
           (h) => h.includes("company") || h.includes("organization") || h.includes("org")
         );
-        if (companyIndex >= 0) autoMapping.company = headerRow[companyIndex];
+        if (companyIndex >= 0) autoMapping.company = headerRow[companyIndex] || "";
 
         setMapping(autoMapping);
         setStep("mapping");
