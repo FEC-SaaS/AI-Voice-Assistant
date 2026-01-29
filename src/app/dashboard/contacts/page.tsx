@@ -1,6 +1,5 @@
 "use client";
 
-import { Users } from "lucide-react";
 import { ContactList, ContactUpload } from "@/components/contacts";
 
 export default function ContactsPage() {

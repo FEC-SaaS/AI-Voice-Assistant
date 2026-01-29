@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CreateOrganization, useOrganization, useOrganizationList } from "@clerk/nextjs";
+import { CreateOrganization, useOrganization } from "@clerk/nextjs";
 import { useEffect } from "react";
 import { Bot, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";

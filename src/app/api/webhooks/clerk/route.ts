@@ -23,14 +23,13 @@ export async function POST(req: Request) {
   }
 
   // Get the body
-  let payload;
   let body: string;
   try {
     const text = await req.text();
     if (!text) {
       return new Response("Empty body", { status: 400 });
     }
-    payload = JSON.parse(text);
+    JSON.parse(text); // Validate JSON
     body = text;
   } catch (e) {
     console.error("Failed to parse webhook body:", e);

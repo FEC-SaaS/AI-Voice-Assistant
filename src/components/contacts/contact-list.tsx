@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Phone,
   Mail,
@@ -14,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -61,7 +60,6 @@ const statusColors: Record<string, string> = {
 };
 
 export function ContactList({ campaignId }: ContactListProps) {
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
@@ -73,7 +71,7 @@ export function ContactList({ campaignId }: ContactListProps) {
 
   const { data, isLoading } = trpc.contacts.list.useQuery({
     campaignId,
-    status: status as any,
+    status: status as "pending" | "called" | "completed" | "failed" | "dnc" | undefined,
     search: search || undefined,
     page,
     limit: 25,

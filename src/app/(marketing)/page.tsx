@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, Phone, BarChart3, Zap, Shield, Users, ArrowRight, Check } from "lucide-react";
+import { Bot, Phone, BarChart3, Zap, Shield, Users, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {

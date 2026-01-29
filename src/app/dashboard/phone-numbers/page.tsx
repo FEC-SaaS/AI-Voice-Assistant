@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Phone, Plus, Hash, Loader2, Trash2, Bot, Link2, Unlink,
+  Phone, Plus, Hash, Loader2, Trash2,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
