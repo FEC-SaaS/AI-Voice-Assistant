@@ -237,6 +237,7 @@ export const contactsRouter = router({
 
       for (let i = 0; i < contacts.length; i++) {
         const contact = contacts[i];
+        if (!contact) continue;
         const normalizedPhone = normalizePhoneNumber(contact.phoneNumber);
 
         // Validate phone number
