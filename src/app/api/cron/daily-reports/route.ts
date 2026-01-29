@@ -32,9 +32,8 @@ export async function POST(req: NextRequest) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get all active organizations
+    // Get all organizations
     const organizations = await db.organization.findMany({
-      where: { isActive: true },
       select: { id: true, name: true },
     });
 

@@ -66,7 +66,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
     );
   }
 
-  const status = STATUS_MAP[call.status] || { icon: AlertCircle, color: "text-gray-600 bg-gray-50", label: call.status };
+  const status = (call.status && STATUS_MAP[call.status]) || { icon: AlertCircle, color: "text-gray-600 bg-gray-50", label: call.status || "unknown" };
   const StatusIcon = status.icon;
 
   // Parse transcript if it's a JSON string

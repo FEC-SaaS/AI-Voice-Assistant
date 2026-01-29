@@ -12,7 +12,8 @@
       "Bash(python:*)",
       "Bash(ls:*)",
       "Bash(npm run type-check:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

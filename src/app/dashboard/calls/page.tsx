@@ -195,7 +195,7 @@ export default function CallsPage() {
               </thead>
               <tbody className="divide-y">
                 {calls.map((call) => {
-                  const style = getStatusStyle(call.status);
+                  const style = getStatusStyle(call.status || "unknown");
                   const StatusIcon = style.icon;
                   return (
                     <tr key={call.id} className="hover:bg-gray-50">
