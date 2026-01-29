@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { db } from "@/lib/db";
-import { analyzeCall } from "@/server/services/call-analysis.service";
+
+// Dynamic imports to avoid build-time database connection
+const getDb = async () => {
+  const { db } = await import("@/lib/db");
+  return db;
+};
+
+const getAnalyzeCall = async () => {
+  const { analyzeCall } = await import("@/server/services/call-analysis.service");
+  return analyzeCall;
+};
 
 // Vapi webhook event types
 interface VapiWebhookEvent {
@@ -92,6 +101,8 @@ export async function POST(req: NextRequest) {
     if (!call) {
       return NextResponse.json({ received: true });
     }
+
+    const db = await getDb();
 
     // Find the agent by Vapi assistant ID
     const agent = call.assistantId
@@ -212,8 +223,10 @@ export async function POST(req: NextRequest) {
         // Trigger async call analysis if we have a transcript
         if (call.transcript && updatedCall.id) {
           // Fire and forget - analyze in background
-          analyzeCall(updatedCall.id).catch((error) => {
-            console.error("[Vapi Webhook] Call analysis failed:", error);
+          getAnalyzeCall().then((analyzeCall) => {
+            analyzeCall(updatedCall.id).catch((error) => {
+              console.error("[Vapi Webhook] Call analysis failed:", error);
+            });
           });
         }
 
@@ -231,8 +244,10 @@ export async function POST(req: NextRequest) {
 
           // Trigger analysis now that we have the full transcript
           if (updatedCall.status === "completed") {
-            analyzeCall(updatedCall.id).catch((error) => {
-              console.error("[Vapi Webhook] Call analysis failed:", error);
+            getAnalyzeCall().then((analyzeCall) => {
+              analyzeCall(updatedCall.id).catch((error) => {
+                console.error("[Vapi Webhook] Call analysis failed:", error);
+              });
             });
           }
         }

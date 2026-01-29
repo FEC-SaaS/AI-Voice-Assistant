@@ -1,9 +1,18 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
-import { db } from "@/lib/db";
-import { createStripeCustomer } from "@/lib/stripe";
 import { slugify } from "@/lib/utils";
+
+// Dynamic imports to avoid build-time issues
+const getDb = async () => {
+  const { db } = await import("@/lib/db");
+  return db;
+};
+
+const getCreateStripeCustomer = async () => {
+  const { createStripeCustomer } = await import("@/lib/stripe");
+  return createStripeCustomer;
+};
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
@@ -54,6 +63,7 @@ export async function POST(req: Request) {
   }
 
   const eventType = evt.type;
+  const db = await getDb();
 
   // Handle organization created
   if (eventType === "organization.created") {
@@ -62,6 +72,7 @@ export async function POST(req: Request) {
     // Create Stripe customer
     let stripeCustomerId: string | undefined;
     try {
+      const createStripeCustomer = await getCreateStripeCustomer();
       const stripeCustomer = await createStripeCustomer(
         `${slug}@org.voxforge.ai`,
         name,

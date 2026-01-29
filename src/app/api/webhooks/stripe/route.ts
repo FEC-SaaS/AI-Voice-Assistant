@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import Stripe from "stripe";
-import { stripe } from "@/lib/stripe";
-import { db } from "@/lib/db";
+
+// Dynamic imports to avoid build-time issues
+const getStripe = async () => {
+  const { stripe } = await import("@/lib/stripe");
+  return stripe;
+};
+
+const getDb = async () => {
+  const { db } = await import("@/lib/db");
+  return db;
+};
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = headers().get("Stripe-Signature") as string;
 
+  const stripe = await getStripe();
   let event: Stripe.Event;
 
   try {
@@ -27,6 +37,8 @@ export async function POST(req: NextRequest) {
   console.log(`[Stripe Webhook] Received event: ${event.type}`);
 
   try {
+    const db = await getDb();
+
     switch (event.type) {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
