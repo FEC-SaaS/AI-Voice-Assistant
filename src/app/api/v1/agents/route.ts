@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { db } from "@/lib/db";
+
+// Dynamic import to avoid build-time database connection
+const getDb = async () => {
+  const { db } = await import("@/lib/db");
+  return db;
+};
 
 /**
  * Public API: List agents for the organization
@@ -14,6 +19,7 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const db = await getDb();
     const agents = await db.agent.findMany({
       where: { organizationId: orgId },
       select: {

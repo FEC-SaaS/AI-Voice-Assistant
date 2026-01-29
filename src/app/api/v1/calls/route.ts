@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { db } from "@/lib/db";
+
+// Dynamic import to avoid build-time database connection
+const getDb = async () => {
+  const { db } = await import("@/lib/db");
+  return db;
+};
 
 /**
  * Public API: List calls for the organization
@@ -26,6 +31,7 @@ export async function GET(req: NextRequest) {
       ...(agentId && { agentId }),
     };
 
+    const db = await getDb();
     const [calls, total] = await Promise.all([
       db.call.findMany({
         where,
