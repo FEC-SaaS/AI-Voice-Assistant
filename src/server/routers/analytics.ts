@@ -99,12 +99,12 @@ export const analyticsRouter = router({
       for (let i = 0; i < input.days; i++) {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        const key = date.toISOString().split("T")[0];
+        const key = date.toISOString().split("T")[0] || "";
         dailyData.set(key, 0);
       }
 
       calls.forEach((call) => {
-        const key = call.createdAt.toISOString().split("T")[0];
+        const key = call.createdAt.toISOString().split("T")[0] || "";
         dailyData.set(key, (dailyData.get(key) || 0) + call._count);
       });
 

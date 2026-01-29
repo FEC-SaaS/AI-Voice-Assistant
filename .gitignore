@@ -16,6 +16,9 @@ dist/
 # Prisma
 prisma/generated/
 
+# Logic
+SaaS-logic/
+
 # Environment variables
 .env
 .env.*
