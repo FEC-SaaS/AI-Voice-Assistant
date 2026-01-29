@@ -159,7 +159,11 @@ export default function TeamPage() {
           ) : (
             <div className="divide-y">
               {users.map((user) => {
-                const roleConfig = ROLE_CONFIG[user.role] || ROLE_CONFIG.member;
+                const roleConfig = ROLE_CONFIG[user.role] ?? {
+                  icon: User,
+                  label: "Member",
+                  color: "text-gray-600 bg-gray-50",
+                };
                 const RoleIcon = roleConfig.icon;
                 const isCurrentUser = user.clerkId === currentUser?.clerkId;
 
