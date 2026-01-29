@@ -39,8 +39,8 @@ export async function createContext(): Promise<Context> {
 
   return {
     db,
-    userId,
-    orgId,
+    userId: userId ?? null,
+    orgId: orgId ?? null,
     userRole,
   };
 }
