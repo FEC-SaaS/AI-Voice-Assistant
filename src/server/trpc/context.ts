@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 
 export interface Context {
@@ -9,7 +9,7 @@ export interface Context {
 }
 
 export async function createContext(): Promise<Context> {
-  const authData = auth();
+  const authData = await auth();
   const { userId, orgId } = authData;
 
   // Debug logging - remove after fixing

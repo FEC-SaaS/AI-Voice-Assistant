@@ -18,6 +18,7 @@ prisma/generated/
 
 # Logic
 SaaS-logic/
+LLM/
 
 # Environment variables
 .env

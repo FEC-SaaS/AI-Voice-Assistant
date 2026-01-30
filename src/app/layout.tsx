@@ -17,20 +17,15 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {clerkKey ? (
-          <ClerkProvider publishableKey={clerkKey}>
-            {children}
-          </ClerkProvider>
-        ) : (
-          children
-        )}
-        <Toaster position="top-right" richColors />
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <body className={`${inter.variable} font-sans antialiased`}>
+          {children}
+          <Toaster position="top-right" richColors />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
+//  npm install @clerk/nextjs

@@ -22,3 +22,6 @@ export default function SignInPage() {
     </div>
   );
 }
+
+//  npm install @clerk/nextjs
+// import { SignIn } from "@clerk/nextjs";

@@ -22,3 +22,6 @@ export default function SignUpPage() {
     </div>
   );
 }
+
+//  npm install @clerk/nextjs
+// import { si}

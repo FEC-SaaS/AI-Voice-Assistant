@@ -13,7 +13,7 @@ const getDb = async () => {
  */
 export async function GET(_req: NextRequest) {
   try {
-    const { orgId } = auth();
+    const { orgId } = await auth();
 
     if (!orgId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

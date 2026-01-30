@@ -15,10 +15,11 @@ const getCreateStripeCustomer = async () => {
 };
 
 export async function POST(req: Request) {
-  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+  // Support both old and new env variable names for backwards compatibility
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SIGNING_SECRET || process.env.CLERK_WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
-    throw new Error("Please add CLERK_WEBHOOK_SECRET to .env");
+    throw new Error("Please add CLERK_WEBHOOK_SIGNING_SECRET to .env");
   }
 
   // Get the headers
