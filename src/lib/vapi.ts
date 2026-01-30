@@ -55,6 +55,9 @@ export interface VapiAssistant {
   firstMessage?: string;
 }
 
+// Vapi's built-in voices (no external credentials needed)
+const VAPI_VOICES = ["Elliot", "Rohan", "Lily", "Savannah", "Hana", "Eduardo"];
+
 // Map voice provider names to Vapi's expected format
 function mapVoiceProvider(provider: string): string {
   const providerMap: Record<string, string> = {
@@ -65,26 +68,31 @@ function mapVoiceProvider(provider: string): string {
     deepgram: "deepgram",
     openai: "openai",
   };
-  return providerMap[provider.toLowerCase()] || provider;
+  return providerMap[provider.toLowerCase()] || "vapi";
 }
 
 // Create assistant
 export async function createAssistant(config: AssistantConfig): Promise<VapiAssistant> {
-  const voiceProvider = mapVoiceProvider(config.voiceProvider || "vapi");
+  let voiceProvider = mapVoiceProvider(config.voiceProvider || "vapi");
+  let voiceId = config.voiceId || "Elliot";
 
-  // Build voice config based on provider
+  // If using 11labs but no custom voice ID, fall back to Vapi voices
+  // (11labs requires your own credentials and voice IDs)
+  if (voiceProvider === "11labs" && !config.voiceId) {
+    console.log("[Vapi] No ElevenLabs voice ID provided, falling back to Vapi voice");
+    voiceProvider = "vapi";
+    voiceId = "Elliot";
+  }
+
+  // If the voice ID is a Vapi built-in voice, use vapi provider
+  if (VAPI_VOICES.includes(voiceId)) {
+    voiceProvider = "vapi";
+  }
+
   const voiceConfig: Record<string, string> = {
     provider: voiceProvider,
+    voiceId: voiceId,
   };
-
-  // Different providers use different voice ID field names
-  if (voiceProvider === "11labs") {
-    voiceConfig.voiceId = config.voiceId || "21m00Tcm4TlvDq8ikWAM"; // Rachel
-  } else if (voiceProvider === "vapi") {
-    voiceConfig.voiceId = config.voiceId || "Elliot";
-  } else {
-    voiceConfig.voiceId = config.voiceId || "alloy";
-  }
 
   return vapiRequest<VapiAssistant>({
     method: "POST",
@@ -133,10 +141,15 @@ export async function updateAssistant(
   }
 
   if (config.voiceProvider || config.voiceId) {
-    const voiceProvider = mapVoiceProvider(config.voiceProvider || "vapi");
+    const voiceId = config.voiceId || "Elliot";
+    // If the voice ID is a Vapi built-in voice, use vapi provider
+    const voiceProvider = VAPI_VOICES.includes(voiceId)
+      ? "vapi"
+      : mapVoiceProvider(config.voiceProvider || "vapi");
+
     body.voice = {
       provider: voiceProvider,
-      voiceId: config.voiceId || (voiceProvider === "vapi" ? "Elliot" : "21m00Tcm4TlvDq8ikWAM"),
+      voiceId: voiceId,
     };
   }
 
@@ -248,50 +261,47 @@ export async function importTwilioPhoneNumber(config: {
   });
 }
 
-// Buy a phone number through Vapi (requires Vapi Pro/Enterprise)
+// Buy a phone number through Vapi
+// Requires provider: "vapi" to use Vapi's phone number service
 export async function buyVapiPhoneNumber(config: {
   areaCode?: string;
-  country?: string;
 }): Promise<VapiPhoneNumber> {
   return vapiRequest<VapiPhoneNumber>({
     method: "POST",
-    path: "/phone-number/buy",
+    path: "/phone-number",
     body: {
-      areaCode: config.areaCode,
-      country: config.country || "US",
+      provider: "vapi",
+      ...(config.areaCode && { areaCode: config.areaCode }),
     },
   });
 }
 
-// Legacy function - now tries the buy endpoint
+// Provision a phone number using Vapi's service
 export async function provisionPhoneNumber(
   config: PhoneNumberConfig
 ): Promise<VapiPhoneNumber> {
-  // Try the new buy endpoint first
   try {
     return await buyVapiPhoneNumber({
       areaCode: config.areaCode,
-      country: "US",
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    // If buy endpoint fails, provide helpful error
-    if (errorMessage.includes("402") || errorMessage.includes("payment")) {
+    // Provide helpful error messages based on the response
+    if (errorMessage.includes("402") || errorMessage.includes("payment") || errorMessage.includes("credits")) {
       throw new Error(
-        "Phone number purchase requires Vapi Pro plan or credits. " +
-        "Alternatively, you can import your own Twilio number."
+        "Insufficient Vapi credits. Please add credits to your Vapi account or import a Twilio number instead."
       );
     }
 
-    if (errorMessage.includes("404") || errorMessage.includes("not found")) {
+    if (errorMessage.includes("not available") || errorMessage.includes("not supported")) {
       throw new Error(
-        "Vapi phone number purchasing is not available on your plan. " +
-        "Please import a Twilio phone number instead."
+        "Vapi phone numbers are not available in your region. Please import a Twilio number instead."
       );
     }
 
-    throw error;
+    // Re-throw with original message for debugging
+    throw new Error(`Failed to provision phone number: ${errorMessage}`);
   }
 }
 
