@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Phone, Plus, Hash, Loader2, Trash2,
+  Phone, Plus, Hash, Loader2, Trash2, Upload,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -14,16 +14,36 @@ export default function PhoneNumbersPage() {
   const { data: phoneNumbers, isLoading, refetch } = trpc.phoneNumbers.list.useQuery();
   const { data: agents } = trpc.agents.list.useQuery();
 
-  // Provision state
-  const [showProvision, setShowProvision] = useState(false);
+  // Panel state
+  const [activePanel, setActivePanel] = useState<"none" | "import" | "buy">("none");
+
+  // Import Twilio state
+  const [twilioAccountSid, setTwilioAccountSid] = useState("");
+  const [twilioAuthToken, setTwilioAuthToken] = useState("");
+  const [twilioPhoneNumber, setTwilioPhoneNumber] = useState("");
+  const [friendlyName, setFriendlyName] = useState("");
+
+  // Buy state (legacy)
   const [areaCode, setAreaCode] = useState("");
   const [numType, setNumType] = useState<"local" | "toll_free">("local");
-  const [friendlyName, setFriendlyName] = useState("");
+
+  const importTwilio = trpc.phoneNumbers.importTwilio.useMutation({
+    onSuccess: () => {
+      toast.success("Twilio phone number imported successfully!");
+      setActivePanel("none");
+      setTwilioAccountSid("");
+      setTwilioAuthToken("");
+      setTwilioPhoneNumber("");
+      setFriendlyName("");
+      refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   const provision = trpc.phoneNumbers.provision.useMutation({
     onSuccess: () => {
       toast.success("Phone number provisioned!");
-      setShowProvision(false);
+      setActivePanel("none");
       setAreaCode("");
       setFriendlyName("");
       refetch();
@@ -75,18 +95,101 @@ export default function PhoneNumbersPage() {
               : "Manage phone numbers for your AI agents"}
           </p>
         </div>
-        <Button onClick={() => setShowProvision(!showProvision)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Number
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setActivePanel(activePanel === "import" ? "none" : "import")}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import Twilio
+          </Button>
+          <Button onClick={() => setActivePanel(activePanel === "buy" ? "none" : "buy")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Buy Number
+          </Button>
+        </div>
       </div>
 
-      {/* Provision Panel */}
-      {showProvision && (
+      {/* Import Twilio Panel */}
+      {activePanel === "import" && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Provision New Number</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Import Twilio Phone Number</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Get a new phone number from Vapi to use with your agents.
+            Import an existing phone number from your Twilio account.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="twilioSid">Twilio Account SID</Label>
+              <Input
+                id="twilioSid"
+                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                value={twilioAccountSid}
+                onChange={(e) => setTwilioAccountSid(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="twilioToken">Twilio Auth Token</Label>
+              <Input
+                id="twilioToken"
+                type="password"
+                placeholder="Your Twilio Auth Token"
+                value={twilioAuthToken}
+                onChange={(e) => setTwilioAuthToken(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phoneNum">Phone Number (E.164 format)</Label>
+              <Input
+                id="phoneNum"
+                placeholder="+14155551234"
+                value={twilioPhoneNumber}
+                onChange={(e) => setTwilioPhoneNumber(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="importFriendlyName">Label (optional)</Label>
+              <Input
+                id="importFriendlyName"
+                placeholder="e.g., Sales Line"
+                value={friendlyName}
+                onChange={(e) => setFriendlyName(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <Button
+              onClick={() =>
+                importTwilio.mutate({
+                  twilioAccountSid,
+                  twilioAuthToken,
+                  phoneNumber: twilioPhoneNumber,
+                  friendlyName: friendlyName || undefined,
+                })
+              }
+              disabled={importTwilio.isLoading || !twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber}
+            >
+              {importTwilio.isLoading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing...</>
+              ) : (
+                "Import Number"
+              )}
+            </Button>
+            <Button variant="outline" onClick={() => setActivePanel("none")}>
+              Cancel
+            </Button>
+          </div>
+          <p className="mt-4 text-xs text-gray-500">
+            Get your Twilio credentials from{" "}
+            <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              console.twilio.com
+            </a>
+          </p>
+        </div>
+      )}
+
+      {/* Buy Number Panel */}
+      {activePanel === "buy" && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
+          <h3 className="text-lg font-semibold text-gray-900">Buy New Number</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Purchase a new phone number through Vapi. Requires Vapi Pro plan or credits.
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
@@ -112,9 +215,9 @@ export default function PhoneNumbersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="friendlyName">Label (optional)</Label>
+              <Label htmlFor="buyFriendlyName">Label (optional)</Label>
               <Input
-                id="friendlyName"
+                id="buyFriendlyName"
                 placeholder="e.g., Sales Line"
                 value={friendlyName}
                 onChange={(e) => setFriendlyName(e.target.value)}
@@ -133,15 +236,18 @@ export default function PhoneNumbersPage() {
               disabled={provision.isLoading}
             >
               {provision.isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Provisioning...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Purchasing...</>
               ) : (
-                "Provision Number"
+                "Buy Number"
               )}
             </Button>
-            <Button variant="outline" onClick={() => setShowProvision(false)}>
+            <Button variant="outline" onClick={() => setActivePanel("none")}>
               Cancel
             </Button>
           </div>
+          <p className="mt-4 text-xs text-amber-600">
+            Note: If this fails, you may need to import a Twilio number instead (free Vapi accounts cannot buy numbers directly).
+          </p>
         </div>
       )}
 
@@ -151,12 +257,21 @@ export default function PhoneNumbersPage() {
           <Hash className="mx-auto h-12 w-12 text-gray-300" />
           <h3 className="mt-4 text-lg font-semibold text-gray-900">No phone numbers yet</h3>
           <p className="mt-2 text-sm text-gray-500">
-            Provision a phone number to enable voice calls.
+            Add a phone number to enable voice calls with your AI agents.
           </p>
-          <Button className="mt-6" onClick={() => setShowProvision(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Provision Phone Number
-          </Button>
+          <div className="mt-6 flex justify-center gap-3">
+            <Button variant="outline" onClick={() => setActivePanel("import")}>
+              <Upload className="mr-2 h-4 w-4" />
+              Import from Twilio
+            </Button>
+            <Button onClick={() => setActivePanel("buy")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Buy Number
+            </Button>
+          </div>
+          <p className="mt-4 text-xs text-gray-500">
+            Recommended: Import from Twilio for free Vapi accounts
+          </p>
         </div>
       ) : (
         <div className="rounded-lg border bg-white">
@@ -239,11 +354,12 @@ export default function PhoneNumbersPage() {
         <div className="flex gap-3">
           <Phone className="h-5 w-5 text-blue-500 shrink-0" />
           <div>
-            <h4 className="font-medium text-blue-900">Phone Number Types</h4>
+            <h4 className="font-medium text-blue-900">Getting a Phone Number</h4>
             <p className="mt-1 text-sm text-blue-700">
-              <strong>Local Numbers:</strong> Area-specific numbers great for local businesses.
-              <br />
-              <strong>Toll-Free:</strong> 1-800 numbers for nationwide reach.
+              <strong>Import from Twilio (Recommended):</strong> Use your own Twilio account to import existing phone numbers.
+              Get started at <a href="https://twilio.com" target="_blank" rel="noopener noreferrer" className="underline">twilio.com</a> - they offer trial credits for testing.
+              <br /><br />
+              <strong>Buy through Vapi:</strong> Purchase numbers directly (requires Vapi Pro plan or sufficient credits).
             </p>
           </div>
         </div>

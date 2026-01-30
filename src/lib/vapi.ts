@@ -55,8 +55,37 @@ export interface VapiAssistant {
   firstMessage?: string;
 }
 
+// Map voice provider names to Vapi's expected format
+function mapVoiceProvider(provider: string): string {
+  const providerMap: Record<string, string> = {
+    elevenlabs: "11labs",
+    "11labs": "11labs",
+    vapi: "vapi",
+    playht: "playht",
+    deepgram: "deepgram",
+    openai: "openai",
+  };
+  return providerMap[provider.toLowerCase()] || provider;
+}
+
 // Create assistant
 export async function createAssistant(config: AssistantConfig): Promise<VapiAssistant> {
+  const voiceProvider = mapVoiceProvider(config.voiceProvider || "vapi");
+
+  // Build voice config based on provider
+  const voiceConfig: Record<string, string> = {
+    provider: voiceProvider,
+  };
+
+  // Different providers use different voice ID field names
+  if (voiceProvider === "11labs") {
+    voiceConfig.voiceId = config.voiceId || "21m00Tcm4TlvDq8ikWAM"; // Rachel
+  } else if (voiceProvider === "vapi") {
+    voiceConfig.voiceId = config.voiceId || "Elliot";
+  } else {
+    voiceConfig.voiceId = config.voiceId || "alloy";
+  }
+
   return vapiRequest<VapiAssistant>({
     method: "POST",
     path: "/assistant",
@@ -64,14 +93,16 @@ export async function createAssistant(config: AssistantConfig): Promise<VapiAssi
       name: config.name,
       model: {
         provider: config.modelProvider || "openai",
-        model: config.model || "gpt-4-turbo",
-        systemPrompt: config.systemPrompt,
+        model: config.model || "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: config.systemPrompt,
+          },
+        ],
       },
-      voice: {
-        provider: config.voiceProvider || "elevenlabs",
-        voiceId: config.voiceId || "rachel",
-      },
-      firstMessage: config.firstMessage,
+      voice: voiceConfig,
+      firstMessage: config.firstMessage || "Hello, how can I help you today?",
     },
   });
 }
@@ -88,16 +119,24 @@ export async function updateAssistant(
 
   if (config.systemPrompt || config.modelProvider || config.model) {
     body.model = {
-      ...(config.modelProvider && { provider: config.modelProvider }),
-      ...(config.model && { model: config.model }),
-      ...(config.systemPrompt && { systemPrompt: config.systemPrompt }),
+      provider: config.modelProvider || "openai",
+      model: config.model || "gpt-4o",
+      ...(config.systemPrompt && {
+        messages: [
+          {
+            role: "system",
+            content: config.systemPrompt,
+          },
+        ],
+      }),
     };
   }
 
   if (config.voiceProvider || config.voiceId) {
+    const voiceProvider = mapVoiceProvider(config.voiceProvider || "vapi");
     body.voice = {
-      ...(config.voiceProvider && { provider: config.voiceProvider }),
-      ...(config.voiceId && { voiceId: config.voiceId }),
+      provider: voiceProvider,
+      voiceId: config.voiceId || (voiceProvider === "vapi" ? "Elliot" : "21m00Tcm4TlvDq8ikWAM"),
     };
   }
 
@@ -167,29 +206,93 @@ export async function getCall(callId: string): Promise<VapiCall> {
 
 // Phone number types
 export interface PhoneNumberConfig {
+  // For importing existing Twilio number
+  twilioAccountSid?: string;
+  twilioAuthToken?: string;
+  phoneNumber?: string; // E.164 format: +1234567890
+  // For Vapi-managed numbers (if available on your plan)
   areaCode?: string;
-  type?: "local" | "toll_free";
 }
 
 export interface VapiPhoneNumber {
   id: string;
   number: string;
-  type: string;
+  provider: string;
 }
 
-// Provision phone number
-export async function provisionPhoneNumber(
-  config: PhoneNumberConfig
-): Promise<VapiPhoneNumber> {
+// List available phone numbers from Vapi
+export async function listPhoneNumbers(): Promise<VapiPhoneNumber[]> {
+  return vapiRequest<VapiPhoneNumber[]>({
+    method: "GET",
+    path: "/phone-number",
+  });
+}
+
+// Import a Twilio phone number to Vapi
+export async function importTwilioPhoneNumber(config: {
+  twilioAccountSid: string;
+  twilioAuthToken: string;
+  phoneNumber: string; // E.164 format
+  name?: string;
+}): Promise<VapiPhoneNumber> {
   return vapiRequest<VapiPhoneNumber>({
     method: "POST",
     path: "/phone-number",
     body: {
       provider: "twilio",
-      areaCode: config.areaCode,
-      type: config.type || "local",
+      number: config.phoneNumber,
+      twilioAccountSid: config.twilioAccountSid,
+      twilioAuthToken: config.twilioAuthToken,
+      name: config.name,
     },
   });
+}
+
+// Buy a phone number through Vapi (requires Vapi Pro/Enterprise)
+export async function buyVapiPhoneNumber(config: {
+  areaCode?: string;
+  country?: string;
+}): Promise<VapiPhoneNumber> {
+  return vapiRequest<VapiPhoneNumber>({
+    method: "POST",
+    path: "/phone-number/buy",
+    body: {
+      areaCode: config.areaCode,
+      country: config.country || "US",
+    },
+  });
+}
+
+// Legacy function - now tries the buy endpoint
+export async function provisionPhoneNumber(
+  config: PhoneNumberConfig
+): Promise<VapiPhoneNumber> {
+  // Try the new buy endpoint first
+  try {
+    return await buyVapiPhoneNumber({
+      areaCode: config.areaCode,
+      country: "US",
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // If buy endpoint fails, provide helpful error
+    if (errorMessage.includes("402") || errorMessage.includes("payment")) {
+      throw new Error(
+        "Phone number purchase requires Vapi Pro plan or credits. " +
+        "Alternatively, you can import your own Twilio number."
+      );
+    }
+
+    if (errorMessage.includes("404") || errorMessage.includes("not found")) {
+      throw new Error(
+        "Vapi phone number purchasing is not available on your plan. " +
+        "Please import a Twilio phone number instead."
+      );
+    }
+
+    throw error;
+  }
 }
 
 // Delete phone number

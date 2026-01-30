@@ -1,9 +1,36 @@
 /**
  * Test script to verify Vapi API connection
  * Run with: npx tsx scripts/test-vapi.ts
+ *
+ * Or pass API key directly:
+ * VAPI_API_KEY=your-key npx tsx scripts/test-vapi.ts
  */
 
-import "dotenv/config";
+import * as fs from "fs";
+import * as path from "path";
+
+// Try to load .env file manually
+function loadEnv() {
+  try {
+    const envPath = path.join(process.cwd(), ".env");
+    const envContent = fs.readFileSync(envPath, "utf-8");
+    const lines = envContent.split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith("#")) {
+        const [key, ...valueParts] = trimmed.split("=");
+        const value = valueParts.join("=").replace(/^["']|["']$/g, "");
+        if (key && value && !process.env[key]) {
+          process.env[key] = value;
+        }
+      }
+    }
+  } catch {
+    // .env file not found, that's ok
+  }
+}
+
+loadEnv();
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const VAPI_API_URL = "https://api.vapi.ai";

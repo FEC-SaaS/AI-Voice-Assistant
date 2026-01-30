@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { provisionPhoneNumber, releasePhoneNumber } from "@/lib/vapi";
+import {
+  provisionPhoneNumber,
+  releasePhoneNumber,
+  importTwilioPhoneNumber,
+  listPhoneNumbers as listVapiPhoneNumbers,
+} from "@/lib/vapi";
 import { enforcePhoneNumberLimit } from "../trpc/middleware";
 
 export const phoneNumbersRouter = router({
@@ -43,7 +48,69 @@ export const phoneNumbersRouter = router({
       return phoneNumber;
     }),
 
-  // Provision a new phone number
+  // List available phone numbers from Vapi account
+  listVapiNumbers: protectedProcedure.query(async () => {
+    try {
+      const vapiNumbers = await listVapiPhoneNumbers();
+      return vapiNumbers;
+    } catch (error) {
+      console.error("Failed to list Vapi phone numbers:", error);
+      return [];
+    }
+  }),
+
+  // Import a Twilio phone number
+  importTwilio: protectedProcedure
+    .input(
+      z.object({
+        twilioAccountSid: z.string().min(1, "Twilio Account SID is required"),
+        twilioAuthToken: z.string().min(1, "Twilio Auth Token is required"),
+        phoneNumber: z.string().regex(/^\+[1-9]\d{1,14}$/, "Phone number must be in E.164 format (e.g., +14155551234)"),
+        friendlyName: z.string().optional(),
+      })
+    )
+    .use(enforcePhoneNumberLimit)
+    .mutation(async ({ ctx, input }) => {
+      let vapiPhone;
+      try {
+        vapiPhone = await importTwilioPhoneNumber({
+          twilioAccountSid: input.twilioAccountSid,
+          twilioAuthToken: input.twilioAuthToken,
+          phoneNumber: input.phoneNumber,
+          name: input.friendlyName,
+        });
+      } catch (error) {
+        console.error("Failed to import Twilio phone number:", error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        if (errorMessage.includes("already exists")) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "This phone number is already imported in Vapi.",
+          });
+        }
+
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Failed to import phone number. Please verify your Twilio credentials and phone number.",
+        });
+      }
+
+      // Save to database
+      const phoneNumber = await ctx.db.phoneNumber.create({
+        data: {
+          organizationId: ctx.orgId,
+          vapiPhoneId: vapiPhone.id,
+          number: vapiPhone.number,
+          friendlyName: input.friendlyName,
+          type: "local",
+        },
+      });
+
+      return phoneNumber;
+    }),
+
+  // Provision a new phone number (buy through Vapi)
   provision: protectedProcedure
     .input(
       z.object({
@@ -59,13 +126,24 @@ export const phoneNumbersRouter = router({
       try {
         vapiPhone = await provisionPhoneNumber({
           areaCode: input.areaCode,
-          type: input.type,
         });
       } catch (error) {
         console.error("Failed to provision phone number:", error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        // Provide helpful error messages
+        if (errorMessage.includes("Pro plan") || errorMessage.includes("credits") || errorMessage.includes("Twilio")) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "Direct phone number purchase is not available on the free Vapi plan. " +
+              "Please import your own Twilio phone number instead, or upgrade your Vapi plan.",
+          });
+        }
+
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to provision phone number. Please try again.",
+          message: "Failed to provision phone number. Please try importing a Twilio number instead.",
         });
       }
 

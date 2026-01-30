@@ -9,11 +9,11 @@ const agentSchema = z.object({
   description: z.string().optional(),
   systemPrompt: z.string().min(10, "System prompt must be at least 10 characters"),
   firstMessage: z.string().optional(),
-  voiceProvider: z.string().default("elevenlabs"),
-  voiceId: z.string().default("rachel"),
+  voiceProvider: z.string().default("vapi"),
+  voiceId: z.string().default("Elliot"),
   language: z.string().default("en-US"),
   modelProvider: z.string().default("openai"),
-  model: z.string().default("gpt-4-turbo"),
+  model: z.string().default("gpt-4o"),
 });
 
 export const agentsRouter = router({

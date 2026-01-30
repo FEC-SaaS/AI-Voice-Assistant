@@ -53,10 +53,10 @@ export async function createAgent(input: CreateAgentInput) {
       name: input.name,
       systemPrompt: input.systemPrompt,
       firstMessage: input.firstMessage,
-      voiceProvider: input.voiceProvider || "elevenlabs",
-      voiceId: input.voiceId || "rachel",
+      voiceProvider: input.voiceProvider || "vapi",
+      voiceId: input.voiceId || "Elliot",
       modelProvider: input.modelProvider || "openai",
-      model: input.model || "gpt-4-turbo",
+      model: input.model || "gpt-4o",
     };
 
     const vapiAssistant = await createAssistant(vapiConfig);
@@ -75,10 +75,10 @@ export async function createAgent(input: CreateAgentInput) {
       description: input.description,
       systemPrompt: input.systemPrompt,
       firstMessage: input.firstMessage,
-      voiceProvider: input.voiceProvider || "elevenlabs",
-      voiceId: input.voiceId || "rachel",
+      voiceProvider: input.voiceProvider || "vapi",
+      voiceId: input.voiceId || "Elliot",
       modelProvider: input.modelProvider || "openai",
-      model: input.model || "gpt-4-turbo",
+      model: input.model || "gpt-4o",
     },
   });
 
