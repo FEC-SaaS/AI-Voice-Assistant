@@ -261,47 +261,53 @@ export async function importTwilioPhoneNumber(config: {
   });
 }
 
-// Buy a phone number through Vapi
-// Requires provider: "vapi" to use Vapi's phone number service
-export async function buyVapiPhoneNumber(config: {
-  areaCode?: string;
-}): Promise<VapiPhoneNumber> {
+// Get a specific phone number by ID
+export async function getPhoneNumber(phoneNumberId: string): Promise<VapiPhoneNumber> {
   return vapiRequest<VapiPhoneNumber>({
+    method: "GET",
+    path: `/phone-number/${phoneNumberId}`,
+  });
+}
+
+// Buy a phone number through Vapi
+// Note: Vapi's free "vapi" provider creates web-only numbers (no actual phone number)
+// For real PSTN calls, use Twilio import instead
+export async function buyVapiPhoneNumber(): Promise<VapiPhoneNumber> {
+  // Create the phone number
+  const created = await vapiRequest<VapiPhoneNumber>({
     method: "POST",
     path: "/phone-number",
     body: {
       provider: "vapi",
-      ...(config.areaCode && { areaCode: config.areaCode }),
     },
   });
+
+  // Vapi provider numbers are web-only and don't have actual phone numbers
+  // We'll use the ID as a placeholder for the "number" field
+  return {
+    ...created,
+    number: created.number || `vapi-web-${created.id.slice(0, 8)}`,
+  };
 }
 
 // Provision a phone number using Vapi's service
+// Note: Vapi web numbers are for web-based calling only
+// For real phone calls (PSTN), import a Twilio number instead
 export async function provisionPhoneNumber(
-  config: PhoneNumberConfig
+  _config: PhoneNumberConfig
 ): Promise<VapiPhoneNumber> {
   try {
-    return await buyVapiPhoneNumber({
-      areaCode: config.areaCode,
-    });
+    return await buyVapiPhoneNumber();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    // Provide helpful error messages based on the response
     if (errorMessage.includes("402") || errorMessage.includes("payment") || errorMessage.includes("credits")) {
       throw new Error(
-        "Insufficient Vapi credits. Please add credits to your Vapi account or import a Twilio number instead."
+        "Insufficient Vapi credits. Please add credits or import a Twilio number for real phone calls."
       );
     }
 
-    if (errorMessage.includes("not available") || errorMessage.includes("not supported")) {
-      throw new Error(
-        "Vapi phone numbers are not available in your region. Please import a Twilio number instead."
-      );
-    }
-
-    // Re-throw with original message for debugging
-    throw new Error(`Failed to provision phone number: ${errorMessage}`);
+    throw new Error(`Failed to create web number: ${errorMessage}`);
   }
 }
 
