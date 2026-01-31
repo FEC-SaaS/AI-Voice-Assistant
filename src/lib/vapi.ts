@@ -56,15 +56,9 @@ export interface VapiAssistant {
 }
 
 // Vapi's built-in voices (no external credentials needed)
-// Full list: asteria, luna, stella, athena, hera, orion, arcas, perseus, angus, orpheus, helios, zeus, etc.
 const VAPI_VOICES = [
-  "asteria", "luna", "stella", "athena", "hera", "orion", "arcas", "perseus",
-  "angus", "orpheus", "helios", "zeus", "thalia", "andromeda", "helena", "apollo",
-  "aries", "amalthea", "atlas", "aurora", "callista", "cora", "cordelia", "delia",
-  "draco", "electra", "harmonia", "hermes", "hyperion", "iris", "janus", "juno",
-  "jupiter", "mars", "minerva", "neptune", "odysseus", "ophelia", "pandora", "phoebe",
-  "pluto", "saturn", "selene", "theia", "vesta", "celeste", "estrella", "nestor",
-  "sirio", "carina", "alvaro", "diana", "aquila", "selena", "javier"
+  "Elliot", "Kylie", "Rohan", "Lily", "Savannah", "Hana", "Neha", "Cole",
+  "Harry", "Paige", "Spencer", "Leah", "Tara", "Jess", "Leo", "Dan", "Mia", "Zac", "Zoe"
 ];
 
 // Map voice provider names to Vapi's expected format
@@ -83,14 +77,14 @@ function mapVoiceProvider(provider: string): string {
 // Create assistant
 export async function createAssistant(config: AssistantConfig): Promise<VapiAssistant> {
   let voiceProvider = mapVoiceProvider(config.voiceProvider || "vapi");
-  let voiceId = config.voiceId || "luna";
+  let voiceId = config.voiceId || "Elliot";
 
   // If using 11labs but no custom voice ID, fall back to Vapi voices
   // (11labs requires your own credentials and voice IDs)
   if (voiceProvider === "11labs" && !config.voiceId) {
     console.log("[Vapi] No ElevenLabs voice ID provided, falling back to Vapi voice");
     voiceProvider = "vapi";
-    voiceId = "luna";
+    voiceId = "Elliot";
   }
 
   // If the voice ID is a Vapi built-in voice, use vapi provider
@@ -150,7 +144,7 @@ export async function updateAssistant(
   }
 
   if (config.voiceProvider || config.voiceId) {
-    const voiceId = config.voiceId || "luna";
+    const voiceId = config.voiceId || "Elliot";
     // If the voice ID is a Vapi built-in voice, use vapi provider
     const voiceProvider = VAPI_VOICES.includes(voiceId)
       ? "vapi"

@@ -54,7 +54,7 @@ export async function createAgent(input: CreateAgentInput) {
       systemPrompt: input.systemPrompt,
       firstMessage: input.firstMessage,
       voiceProvider: input.voiceProvider || "vapi",
-      voiceId: input.voiceId || "luna",
+      voiceId: input.voiceId || "Elliot",
       modelProvider: input.modelProvider || "openai",
       model: input.model || "gpt-4o",
     };
@@ -76,7 +76,7 @@ export async function createAgent(input: CreateAgentInput) {
       systemPrompt: input.systemPrompt,
       firstMessage: input.firstMessage,
       voiceProvider: input.voiceProvider || "vapi",
-      voiceId: input.voiceId || "luna",
+      voiceId: input.voiceId || "Elliot",
       modelProvider: input.modelProvider || "openai",
       model: input.model || "gpt-4o",
     },

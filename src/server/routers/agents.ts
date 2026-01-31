@@ -10,7 +10,7 @@ const agentSchema = z.object({
   systemPrompt: z.string().min(10, "System prompt must be at least 10 characters"),
   firstMessage: z.string().optional(),
   voiceProvider: z.string().default("vapi"),
-  voiceId: z.string().default("luna"),
+  voiceId: z.string().default("Elliot"),
   language: z.string().default("en-US"),
   modelProvider: z.string().default("openai"),
   model: z.string().default("gpt-4o"),
