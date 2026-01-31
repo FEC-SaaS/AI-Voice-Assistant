@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Phone, Plus, Hash, Loader2, Trash2, Upload,
+  Phone, Hash, Loader2, Trash2, Upload,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ export default function PhoneNumbersPage() {
   const { data: agents } = trpc.agents.list.useQuery();
 
   // Panel state
-  const [activePanel, setActivePanel] = useState<"none" | "import" | "buy">("none");
+  const [showImportPanel, setShowImportPanel] = useState(false);
 
   // Import Twilio state
   const [twilioAccountSid, setTwilioAccountSid] = useState("");
@@ -23,28 +23,13 @@ export default function PhoneNumbersPage() {
   const [twilioPhoneNumber, setTwilioPhoneNumber] = useState("");
   const [friendlyName, setFriendlyName] = useState("");
 
-  // Buy state (legacy)
-  const [areaCode, setAreaCode] = useState("");
-  const [numType, setNumType] = useState<"local" | "toll_free">("local");
-
   const importTwilio = trpc.phoneNumbers.importTwilio.useMutation({
     onSuccess: () => {
       toast.success("Twilio phone number imported successfully!");
-      setActivePanel("none");
+      setShowImportPanel(false);
       setTwilioAccountSid("");
       setTwilioAuthToken("");
       setTwilioPhoneNumber("");
-      setFriendlyName("");
-      refetch();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  const provision = trpc.phoneNumbers.provision.useMutation({
-    onSuccess: () => {
-      toast.success("Phone number provisioned!");
-      setActivePanel("none");
-      setAreaCode("");
       setFriendlyName("");
       refetch();
     },
@@ -95,20 +80,14 @@ export default function PhoneNumbersPage() {
               : "Manage phone numbers for your AI agents"}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setActivePanel(activePanel === "import" ? "none" : "import")}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import Twilio
-          </Button>
-          <Button onClick={() => setActivePanel(activePanel === "buy" ? "none" : "buy")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Buy Number
-          </Button>
-        </div>
+        <Button onClick={() => setShowImportPanel(!showImportPanel)}>
+          <Upload className="mr-2 h-4 w-4" />
+          Import from Twilio
+        </Button>
       </div>
 
       {/* Import Twilio Panel */}
-      {activePanel === "import" && (
+      {showImportPanel && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
           <h3 className="text-lg font-semibold text-gray-900">Import Twilio Phone Number</h3>
           <p className="mt-1 text-sm text-gray-500">
@@ -171,7 +150,7 @@ export default function PhoneNumbersPage() {
                 "Import Number"
               )}
             </Button>
-            <Button variant="outline" onClick={() => setActivePanel("none")}>
+            <Button variant="outline" onClick={() => setShowImportPanel(false)}>
               Cancel
             </Button>
           </div>
@@ -184,93 +163,20 @@ export default function PhoneNumbersPage() {
         </div>
       )}
 
-      {/* Buy Number Panel */}
-      {activePanel === "buy" && (
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Buy New Number</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Purchase a new phone number through Vapi. Requires Vapi Pro plan or credits.
-          </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="numType">Type</Label>
-              <select
-                id="numType"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={numType}
-                onChange={(e) => setNumType(e.target.value as "local" | "toll_free")}
-              >
-                <option value="local">Local</option>
-                <option value="toll_free">Toll-Free</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="areaCode">Area Code (optional)</Label>
-              <Input
-                id="areaCode"
-                placeholder="e.g., 415"
-                maxLength={3}
-                value={areaCode}
-                onChange={(e) => setAreaCode(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="buyFriendlyName">Label (optional)</Label>
-              <Input
-                id="buyFriendlyName"
-                placeholder="e.g., Sales Line"
-                value={friendlyName}
-                onChange={(e) => setFriendlyName(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-3">
-            <Button
-              onClick={() =>
-                provision.mutate({
-                  type: numType,
-                  areaCode: areaCode || undefined,
-                  friendlyName: friendlyName || undefined,
-                })
-              }
-              disabled={provision.isLoading}
-            >
-              {provision.isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Purchasing...</>
-              ) : (
-                "Buy Number"
-              )}
-            </Button>
-            <Button variant="outline" onClick={() => setActivePanel("none")}>
-              Cancel
-            </Button>
-          </div>
-          <p className="mt-4 text-xs text-amber-600">
-            Note: If this fails, you may need to import a Twilio number instead (free Vapi accounts cannot buy numbers directly).
-          </p>
-        </div>
-      )}
-
       {/* Phone Numbers List */}
       {!phoneNumbers?.length ? (
         <div className="rounded-lg border bg-white p-12 text-center">
           <Hash className="mx-auto h-12 w-12 text-gray-300" />
           <h3 className="mt-4 text-lg font-semibold text-gray-900">No phone numbers yet</h3>
           <p className="mt-2 text-sm text-gray-500">
-            Add a phone number to enable voice calls with your AI agents.
+            Import a phone number from Twilio to enable voice calls with your AI agents.
           </p>
-          <div className="mt-6 flex justify-center gap-3">
-            <Button variant="outline" onClick={() => setActivePanel("import")}>
-              <Upload className="mr-2 h-4 w-4" />
-              Import from Twilio
-            </Button>
-            <Button onClick={() => setActivePanel("buy")}>
-              <Plus className="mr-2 h-4 w-4" />
-              Buy Number
-            </Button>
-          </div>
+          <Button className="mt-6" onClick={() => setShowImportPanel(true)}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import from Twilio
+          </Button>
           <p className="mt-4 text-xs text-gray-500">
-            Recommended: Import from Twilio for free Vapi accounts
+            Sign up at <a href="https://twilio.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">twilio.com</a> and get trial credits to test
           </p>
         </div>
       ) : (
@@ -354,13 +260,16 @@ export default function PhoneNumbersPage() {
         <div className="flex gap-3">
           <Phone className="h-5 w-5 text-blue-500 shrink-0" />
           <div>
-            <h4 className="font-medium text-blue-900">Getting a Phone Number</h4>
+            <h4 className="font-medium text-blue-900">How to Get a Phone Number</h4>
             <p className="mt-1 text-sm text-blue-700">
-              <strong>Import from Twilio (Recommended):</strong> Use your own Twilio account to import existing phone numbers.
-              Get started at <a href="https://twilio.com" target="_blank" rel="noopener noreferrer" className="underline">twilio.com</a> - they offer trial credits for testing.
-              <br /><br />
-              <strong>Buy through Vapi:</strong> Purchase numbers directly (requires Vapi Pro plan or sufficient credits).
+              To make and receive real phone calls, you need a Twilio phone number:
             </p>
+            <ol className="mt-2 list-decimal list-inside text-sm text-blue-700 space-y-1">
+              <li>Sign up at <a href="https://twilio.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">twilio.com</a> (free trial credits available)</li>
+              <li>Buy or provision a phone number in Twilio Console</li>
+              <li>Copy your Account SID and Auth Token from the Twilio Dashboard</li>
+              <li>Click &quot;Import from Twilio&quot; above and enter your credentials</li>
+            </ol>
           </div>
         </div>
       </div>
