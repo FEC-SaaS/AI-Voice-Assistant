@@ -5,8 +5,22 @@ import { TRPCError } from "@trpc/server";
 
 // Phone number validation and normalization
 function normalizePhoneNumber(phone: string): string {
+  let phoneStr = phone.trim();
+
+  // Handle scientific notation (e.g., 2.33558E+11 from Excel)
+  if (/^[\d.]+[eE][+-]?\d+$/.test(phoneStr)) {
+    try {
+      const num = parseFloat(phoneStr);
+      if (!isNaN(num) && isFinite(num)) {
+        phoneStr = Math.round(num).toString();
+      }
+    } catch {
+      // If parsing fails, continue with original string
+    }
+  }
+
   // Remove all non-numeric characters
-  const digits = phone.replace(/\D/g, "");
+  const digits = phoneStr.replace(/\D/g, "");
 
   // Handle US numbers
   if (digits.length === 10) {

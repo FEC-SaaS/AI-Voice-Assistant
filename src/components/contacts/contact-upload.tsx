@@ -83,6 +83,23 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
     },
   });
 
+  // Handle scientific notation (e.g., 2.33558E+11 from Excel)
+  const normalizeValue = useCallback((value: string): string => {
+    const trimmed = value.trim();
+    // Check if it's scientific notation
+    if (/^[\d.]+[eE][+-]?\d+$/.test(trimmed)) {
+      try {
+        const num = parseFloat(trimmed);
+        if (!isNaN(num) && isFinite(num)) {
+          return Math.round(num).toString();
+        }
+      } catch {
+        // If parsing fails, return original
+      }
+    }
+    return trimmed;
+  }, []);
+
   const parseCSV = useCallback((text: string): string[][] => {
     const lines = text.split(/\r?\n/).filter((line) => line.trim());
     return lines.map((line) => {
@@ -95,16 +112,16 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
         if (char === '"') {
           inQuotes = !inQuotes;
         } else if (char === "," && !inQuotes) {
-          result.push(current.trim());
+          result.push(normalizeValue(current));
           current = "";
         } else {
           current += char;
         }
       }
-      result.push(current.trim());
+      result.push(normalizeValue(current));
       return result;
     });
-  }, []);
+  }, [normalizeValue]);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -337,14 +354,14 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                   <div>
                     <Label htmlFor="firstNameColumn">First Name</Label>
                     <Select
-                      value={mapping.firstName}
-                      onValueChange={(v) => setMapping({ ...mapping, firstName: v })}
+                      value={mapping.firstName || "__none__"}
+                      onValueChange={(v) => setMapping({ ...mapping, firstName: v === "__none__" ? "" : v })}
                     >
                       <SelectTrigger id="firstNameColumn">
                         <SelectValue placeholder="Select column" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">-- None --</SelectItem>
+                        <SelectItem value="__none__">-- None --</SelectItem>
                         {headers.map((header) => (
                           <SelectItem key={header} value={header}>
                             {header}
@@ -359,14 +376,14 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                   <div>
                     <Label htmlFor="lastNameColumn">Last Name</Label>
                     <Select
-                      value={mapping.lastName}
-                      onValueChange={(v) => setMapping({ ...mapping, lastName: v })}
+                      value={mapping.lastName || "__none__"}
+                      onValueChange={(v) => setMapping({ ...mapping, lastName: v === "__none__" ? "" : v })}
                     >
                       <SelectTrigger id="lastNameColumn">
                         <SelectValue placeholder="Select column" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">-- None --</SelectItem>
+                        <SelectItem value="__none__">-- None --</SelectItem>
                         {headers.map((header) => (
                           <SelectItem key={header} value={header}>
                             {header}
@@ -378,14 +395,14 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                   <div>
                     <Label htmlFor="emailColumn">Email</Label>
                     <Select
-                      value={mapping.email}
-                      onValueChange={(v) => setMapping({ ...mapping, email: v })}
+                      value={mapping.email || "__none__"}
+                      onValueChange={(v) => setMapping({ ...mapping, email: v === "__none__" ? "" : v })}
                     >
                       <SelectTrigger id="emailColumn">
                         <SelectValue placeholder="Select column" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">-- None --</SelectItem>
+                        <SelectItem value="__none__">-- None --</SelectItem>
                         {headers.map((header) => (
                           <SelectItem key={header} value={header}>
                             {header}
@@ -399,14 +416,14 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                 <div>
                   <Label htmlFor="companyColumn">Company</Label>
                   <Select
-                    value={mapping.company}
-                    onValueChange={(v) => setMapping({ ...mapping, company: v })}
+                    value={mapping.company || "__none__"}
+                    onValueChange={(v) => setMapping({ ...mapping, company: v === "__none__" ? "" : v })}
                   >
                     <SelectTrigger id="companyColumn">
                       <SelectValue placeholder="Select column" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">-- None --</SelectItem>
+                      <SelectItem value="__none__">-- None --</SelectItem>
                       {headers.map((header) => (
                         <SelectItem key={header} value={header}>
                           {header}

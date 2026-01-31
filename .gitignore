@@ -19,6 +19,7 @@ prisma/generated/
 # Logic
 SaaS-logic/
 LLM/
+contacts.csv
 
 # Environment variables
 .env
