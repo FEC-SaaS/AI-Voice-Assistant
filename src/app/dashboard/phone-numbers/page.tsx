@@ -2,55 +2,28 @@
 
 import { useState } from "react";
 import {
-  Phone, Hash, Loader2, Trash2, Plus, Search, Globe,
+  Phone, Hash, Loader2, Trash2, Plus, Globe, Zap,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
-
-// Common country codes for phone numbers
-const COUNTRIES = [
-  { code: "US", name: "United States", flag: "🇺🇸" },
-  { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
-  { code: "CA", name: "Canada", flag: "🇨🇦" },
-  { code: "AU", name: "Australia", flag: "🇦🇺" },
-  { code: "DE", name: "Germany", flag: "🇩🇪" },
-  { code: "FR", name: "France", flag: "🇫🇷" },
-  { code: "GH", name: "Ghana", flag: "🇬🇭" },
-  { code: "NG", name: "Nigeria", flag: "🇳🇬" },
-  { code: "ZA", name: "South Africa", flag: "🇿🇦" },
-  { code: "KE", name: "Kenya", flag: "🇰🇪" },
-  { code: "IN", name: "India", flag: "🇮🇳" },
-  { code: "SG", name: "Singapore", flag: "🇸🇬" },
-];
 
 export default function PhoneNumbersPage() {
   const { data: phoneNumbers, isLoading, refetch } = trpc.phoneNumbers.list.useQuery();
   const { data: agents } = trpc.agents.list.useQuery();
 
   // Panel state
-  const [showBuyPanel, setShowBuyPanel] = useState(false);
+  const [showGetPanel, setShowGetPanel] = useState(false);
 
-  // Buy number state
-  const [selectedCountry, setSelectedCountry] = useState("US");
-  const [areaCode, setAreaCode] = useState("");
-  const [numberType, setNumberType] = useState<"local" | "toll-free" | "mobile">("local");
+  // Get number state
   const [friendlyName, setFriendlyName] = useState("");
 
-  const buyNumber = trpc.phoneNumbers.buyNumber.useMutation({
+  const getFreeNumber = trpc.phoneNumbers.getFreeNumber.useMutation({
     onSuccess: () => {
-      toast.success("Phone number purchased successfully!");
-      setShowBuyPanel(false);
-      setAreaCode("");
+      toast.success("Phone number obtained successfully!");
+      setShowGetPanel(false);
       setFriendlyName("");
       refetch();
     },
@@ -89,8 +62,6 @@ export default function PhoneNumbersPage() {
     );
   }
 
-  const selectedCountryData = COUNTRIES.find((c) => c.code === selectedCountry);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -103,72 +74,32 @@ export default function PhoneNumbersPage() {
               : "Buy phone numbers for your AI agents"}
           </p>
         </div>
-        <Button onClick={() => setShowBuyPanel(!showBuyPanel)}>
+        <Button onClick={() => setShowGetPanel(!showGetPanel)}>
           <Plus className="mr-2 h-4 w-4" />
-          Buy Phone Number
+          Get Phone Number
         </Button>
       </div>
 
-      {/* Buy Number Panel */}
-      {showBuyPanel && (
+      {/* Get Free Number Panel */}
+      {showGetPanel && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Buy a Phone Number</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Purchase a phone number through Vapi for international calling.
-          </p>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Country</Label>
-              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                <SelectTrigger>
-                  <SelectValue>
-                    {selectedCountryData && (
-                      <span className="flex items-center gap-2">
-                        <span>{selectedCountryData.flag}</span>
-                        <span>{selectedCountryData.name}</span>
-                      </span>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country.code} value={country.code}>
-                      <span className="flex items-center gap-2">
-                        <span>{country.flag}</span>
-                        <span>{country.name}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-primary/10 p-2">
+              <Zap className="h-5 w-5 text-primary" />
             </div>
-            <div className="space-y-2">
-              <Label>Number Type</Label>
-              <Select value={numberType} onValueChange={(v) => setNumberType(v as typeof numberType)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="local">Local</SelectItem>
-                  <SelectItem value="mobile">Mobile</SelectItem>
-                  <SelectItem value="toll-free">Toll-Free</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900">Get a Free US Phone Number</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Vapi provides free US phone numbers for testing and development. You can have up to 10 free numbers per account.
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="areaCode">Area Code (optional)</Label>
-              <Input
-                id="areaCode"
-                placeholder="e.g., 415"
-                value={areaCode}
-                onChange={(e) => setAreaCode(e.target.value)}
-              />
-            </div>
+          </div>
+          <div className="mt-4 max-w-md">
             <div className="space-y-2">
               <Label htmlFor="friendlyName">Label (optional)</Label>
               <Input
                 id="friendlyName"
-                placeholder="e.g., Sales Line"
+                placeholder="e.g., Sales Line, Support"
                 value={friendlyName}
                 onChange={(e) => setFriendlyName(e.target.value)}
               />
@@ -176,28 +107,21 @@ export default function PhoneNumbersPage() {
           </div>
           <div className="mt-4 flex items-center gap-3">
             <Button
-              onClick={() =>
-                buyNumber.mutate({
-                  countryCode: selectedCountry,
-                  areaCode: areaCode || undefined,
-                  numberType,
-                  friendlyName: friendlyName || undefined,
-                })
-              }
-              disabled={buyNumber.isPending}
+              onClick={() => getFreeNumber.mutate({ friendlyName: friendlyName || undefined })}
+              disabled={getFreeNumber.isPending}
             >
-              {buyNumber.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Purchasing...</>
+              {getFreeNumber.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Getting Number...</>
               ) : (
-                <><Globe className="mr-2 h-4 w-4" /> Buy Number</>
+                <><Phone className="mr-2 h-4 w-4" /> Get Free Number</>
               )}
             </Button>
-            <Button variant="outline" onClick={() => setShowBuyPanel(false)}>
+            <Button variant="outline" onClick={() => setShowGetPanel(false)}>
               Cancel
             </Button>
           </div>
           <p className="mt-4 text-xs text-gray-500">
-            Phone numbers are billed through your Vapi account. Pricing varies by country and type.
+            Free Vapi numbers are US-based and support both inbound and outbound calling. Perfect for testing your AI agents.
           </p>
         </div>
       )}
@@ -210,9 +134,9 @@ export default function PhoneNumbersPage() {
           <p className="mt-2 text-sm text-gray-500">
             Buy a phone number to enable voice calls with your AI agents.
           </p>
-          <Button className="mt-6" onClick={() => setShowBuyPanel(true)}>
+          <Button className="mt-6" onClick={() => setShowGetPanel(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Buy Phone Number
+            Get Phone Number
           </Button>
         </div>
       ) : (
@@ -296,14 +220,14 @@ export default function PhoneNumbersPage() {
         <div className="flex gap-3">
           <Globe className="h-5 w-5 text-blue-500 shrink-0" />
           <div>
-            <h4 className="font-medium text-blue-900">International Calling</h4>
+            <h4 className="font-medium text-blue-900">About Vapi Phone Numbers</h4>
             <p className="mt-1 text-sm text-blue-700">
-              Vapi supports phone numbers in many countries. Phone numbers are purchased through Vapi and billed to your Vapi account.
+              Vapi provides free US phone numbers for testing your AI voice agents. For production use, you can import your own Twilio numbers.
             </p>
             <ul className="mt-2 list-disc list-inside text-sm text-blue-700 space-y-1">
-              <li>Local numbers for most countries</li>
-              <li>Toll-free numbers (US, UK, CA, and more)</li>
+              <li>Up to 10 free US phone numbers per account</li>
               <li>Inbound and outbound calling support</li>
+              <li>Import your own Twilio numbers for international calling</li>
               <li>Automatic carrier routing for best quality</li>
             </ul>
           </div>

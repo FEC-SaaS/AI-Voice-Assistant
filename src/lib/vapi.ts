@@ -277,92 +277,65 @@ export async function getPhoneNumber(phoneNumberId: string): Promise<VapiPhoneNu
   });
 }
 
-// Search for available phone numbers to buy
-export interface PhoneNumberSearchResult {
-  phoneNumber: string;
-  country: string;
-  type: string;
-  region?: string;
-  capabilities?: string[];
-}
-
-export async function searchPhoneNumbers(config: {
-  countryCode: string;
-  areaCode?: string;
-  numberType?: "local" | "toll-free" | "mobile";
-  limit?: number;
-}): Promise<PhoneNumberSearchResult[]> {
-  // Vapi uses POST to search for available numbers
-  const response = await vapiRequest<PhoneNumberSearchResult[]>({
-    method: "POST",
-    path: "/phone-number/search",
-    body: {
-      country: config.countryCode,
-      areaCode: config.areaCode,
-      type: config.numberType || "local",
-      limit: config.limit || 10,
-    },
-  });
-  return response;
-}
-
-// Buy a phone number through Vapi (paid plan required for real PSTN numbers)
-export async function buyPhoneNumber(config: {
-  phoneNumber?: string; // Specific number to buy (from search results)
-  countryCode?: string;
-  areaCode?: string;
-  numberType?: "local" | "toll-free" | "mobile";
+// Get a free Vapi phone number (US only, up to 10 per account)
+export async function getFreeVapiNumber(config?: {
   name?: string;
 }): Promise<VapiPhoneNumber> {
   const body: Record<string, unknown> = {
-    provider: "vonage", // Vonage is Vapi's default provider for real numbers
+    provider: "vapi",
   };
 
-  if (config.phoneNumber) {
-    body.number = config.phoneNumber;
-  }
-  if (config.countryCode) {
-    body.numberDesiredCountry = config.countryCode;
-  }
-  if (config.areaCode) {
-    body.areaCode = config.areaCode;
-  }
-  if (config.name) {
+  if (config?.name) {
     body.name = config.name;
   }
 
-  const created = await vapiRequest<VapiPhoneNumber>({
+  return vapiRequest<VapiPhoneNumber>({
     method: "POST",
     path: "/phone-number",
     body,
   });
-
-  return created;
 }
 
-// Provision a phone number using Vapi's service
+// Create a Vapi SIP number (free)
+export async function createVapiSipNumber(config?: {
+  name?: string;
+}): Promise<VapiPhoneNumber> {
+  const body: Record<string, unknown> = {
+    provider: "vapi",
+    sip: true,
+  };
+
+  if (config?.name) {
+    body.name = config.name;
+  }
+
+  return vapiRequest<VapiPhoneNumber>({
+    method: "POST",
+    path: "/phone-number",
+    body,
+  });
+}
+
+// Provision a phone number using Vapi's free tier
 export async function provisionPhoneNumber(
-  config: PhoneNumberConfig
+  config?: PhoneNumberConfig
 ): Promise<VapiPhoneNumber> {
   try {
-    return await buyPhoneNumber({
-      countryCode: config.countryCode || "US",
-      areaCode: config.areaCode,
-      numberType: config.numberType || "local",
-      name: config.name,
+    return await getFreeVapiNumber({
+      name: config?.name,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    if (errorMessage.includes("402") || errorMessage.includes("payment") || errorMessage.includes("credits")) {
+    if (errorMessage.includes("limit") || errorMessage.includes("maximum")) {
       throw new Error(
-        "Insufficient Vapi credits. Please upgrade your Vapi plan or add credits to buy phone numbers."
+        "You have reached the maximum number of free Vapi phone numbers (10). Please release unused numbers or upgrade your plan."
       );
     }
 
-    if (errorMessage.includes("Pro plan") || errorMessage.includes("upgrade")) {
+    if (errorMessage.includes("402") || errorMessage.includes("payment") || errorMessage.includes("credits")) {
       throw new Error(
-        "Phone number purchase requires a paid Vapi plan. Please upgrade at vapi.ai"
+        "Insufficient Vapi credits. Please check your Vapi account."
       );
     }
 

@@ -6,8 +6,7 @@ import {
   releasePhoneNumber,
   importTwilioPhoneNumber,
   listPhoneNumbers as listVapiPhoneNumbers,
-  searchPhoneNumbers,
-  buyPhoneNumber,
+  getFreeVapiNumber,
 } from "@/lib/vapi";
 import { enforcePhoneNumberLimit } from "../trpc/middleware";
 
@@ -61,38 +60,10 @@ export const phoneNumbersRouter = router({
     }
   }),
 
-  // Search for available phone numbers to buy
-  searchAvailable: protectedProcedure
+  // Get a free Vapi phone number (US only, up to 10 per account)
+  getFreeNumber: protectedProcedure
     .input(
       z.object({
-        countryCode: z.string().min(2).max(2).default("US"),
-        areaCode: z.string().optional(),
-        numberType: z.enum(["local", "toll-free", "mobile"]).default("local"),
-      })
-    )
-    .query(async ({ input }) => {
-      try {
-        const numbers = await searchPhoneNumbers({
-          countryCode: input.countryCode,
-          areaCode: input.areaCode,
-          numberType: input.numberType,
-          limit: 20,
-        });
-        return numbers;
-      } catch (error) {
-        console.error("Failed to search phone numbers:", error);
-        return [];
-      }
-    }),
-
-  // Buy a specific phone number from Vapi
-  buyNumber: protectedProcedure
-    .input(
-      z.object({
-        phoneNumber: z.string().optional(),
-        countryCode: z.string().min(2).max(2).default("US"),
-        areaCode: z.string().optional(),
-        numberType: z.enum(["local", "toll-free", "mobile"]).default("local"),
         friendlyName: z.string().optional(),
       })
     )
@@ -100,20 +71,23 @@ export const phoneNumbersRouter = router({
     .mutation(async ({ ctx, input }) => {
       let vapiPhone;
       try {
-        vapiPhone = await buyPhoneNumber({
-          phoneNumber: input.phoneNumber,
-          countryCode: input.countryCode,
-          areaCode: input.areaCode,
-          numberType: input.numberType,
+        vapiPhone = await getFreeVapiNumber({
           name: input.friendlyName,
         });
       } catch (error) {
-        console.error("Failed to buy phone number:", error);
+        console.error("Failed to get free Vapi number:", error);
         const errorMessage = error instanceof Error ? error.message : String(error);
+
+        if (errorMessage.includes("limit") || errorMessage.includes("maximum") || errorMessage.includes("10")) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You have reached the maximum number of free Vapi phone numbers (10 per account). Please release unused numbers.",
+          });
+        }
 
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: errorMessage || "Failed to buy phone number. Please check your Vapi account credits.",
+          message: errorMessage || "Failed to get phone number. Please try again.",
         });
       }
 
@@ -124,7 +98,7 @@ export const phoneNumbersRouter = router({
           vapiPhoneId: vapiPhone.id,
           number: vapiPhone.number,
           friendlyName: input.friendlyName,
-          type: input.numberType === "toll-free" ? "toll_free" : "local",
+          type: "local",
         },
       });
 
