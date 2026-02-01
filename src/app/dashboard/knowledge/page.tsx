@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   Plus, BookOpen, FileText, Globe, PenLine, Loader2,
-  MoreVertical, Trash2, Edit, ToggleLeft, ToggleRight,
+  MoreVertical, Trash2, Edit, ToggleLeft, ToggleRight, Bot,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ export default function KnowledgePage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: documents, isLoading } = trpc.knowledge.list.useQuery({});
+  const { data: agents } = trpc.agents.list.useQuery();
   const utils = trpc.useUtils();
 
   const deleteMutation = trpc.knowledge.delete.useMutation({
@@ -67,6 +68,16 @@ export default function KnowledgePage() {
     },
   });
 
+  const assignToAgent = trpc.knowledge.assignToAgent.useMutation({
+    onSuccess: () => {
+      toast.success("Agent assignment updated");
+      utils.knowledge.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const handleToggleActive = (id: string, currentActive: boolean) => {
     updateMutation.mutate({
       id,
@@ -78,6 +89,10 @@ export default function KnowledgePage() {
     if (deleteId) {
       deleteMutation.mutate({ id: deleteId });
     }
+  };
+
+  const handleAssignToAgent = (documentId: string, agentId: string | null) => {
+    assignToAgent.mutate({ documentId, agentId });
   };
 
   return (
@@ -261,6 +276,22 @@ export default function KnowledgePage() {
                         {doc.content.length > 150 ? "..." : ""}
                       </p>
                     )}
+                    {/* Agent Assignment */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <Bot className="h-4 w-4 text-gray-400" />
+                      <select
+                        className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        value={doc.agentId || ""}
+                        onChange={(e) => handleAssignToAgent(doc.id, e.target.value || null)}
+                      >
+                        <option value="">No agent assigned</option>
+                        {agents?.map((agent) => (
+                          <option key={agent.id} value={agent.id}>
+                            {agent.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <p className="mt-2 text-xs text-gray-400">
                       Added {new Date(doc.createdAt).toLocaleDateString()}
                     </p>

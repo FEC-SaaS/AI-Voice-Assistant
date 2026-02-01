@@ -144,4 +144,83 @@ export const knowledgeRouter = router({
 
       return { success: true };
     }),
+
+  // Assign document to agent
+  assignToAgent: protectedProcedure
+    .input(
+      z.object({
+        documentId: z.string(),
+        agentId: z.string().nullable(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const document = await ctx.db.knowledgeDocument.findFirst({
+        where: {
+          id: input.documentId,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!document) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Document not found",
+        });
+      }
+
+      if (input.agentId) {
+        const agent = await ctx.db.agent.findFirst({
+          where: {
+            id: input.agentId,
+            organizationId: ctx.orgId,
+          },
+        });
+
+        if (!agent) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Agent not found",
+          });
+        }
+      }
+
+      const updated = await ctx.db.knowledgeDocument.update({
+        where: { id: input.documentId },
+        data: { agentId: input.agentId },
+      });
+
+      return updated;
+    }),
+
+  // Get combined knowledge content for an agent
+  getAgentKnowledge: protectedProcedure
+    .input(z.object({ agentId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const documents = await ctx.db.knowledgeDocument.findMany({
+        where: {
+          organizationId: ctx.orgId,
+          agentId: input.agentId,
+          isActive: true,
+        },
+        orderBy: { createdAt: "asc" },
+      });
+
+      // Combine all knowledge content into a formatted string
+      if (documents.length === 0) {
+        return { documents: [], combinedContent: "" };
+      }
+
+      const combinedContent = documents
+        .map((doc) => {
+          const header = `=== ${doc.name} ===`;
+          const content = doc.content || "(No content)";
+          return `${header}\n${content}`;
+        })
+        .join("\n\n");
+
+      return {
+        documents,
+        combinedContent: `\n\n--- KNOWLEDGE BASE ---\n${combinedContent}\n--- END KNOWLEDGE BASE ---`,
+      };
+    }),
 });

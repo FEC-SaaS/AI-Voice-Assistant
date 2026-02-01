@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Bot, Edit, Phone, Megaphone, Power, Trash2,
-  PhoneCall, Loader2, CheckCircle, XCircle
+  PhoneCall, Loader2, CheckCircle, XCircle, BookOpen, RefreshCw
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,22 @@ import { toast } from "sonner";
 export default function AgentDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { data: agent, isLoading, refetch } = trpc.agents.get.useQuery({ id: params.id });
+  const { data: knowledgeData } = trpc.knowledge.getAgentKnowledge.useQuery(
+    { agentId: params.id },
+    { enabled: !!params.id }
+  );
   const toggleActive = trpc.agents.toggleActive.useMutation({
     onSuccess: () => { refetch(); toast.success("Agent status updated"); },
     onError: (err) => toast.error(err.message),
   });
   const deleteAgent = trpc.agents.delete.useMutation({
     onSuccess: () => { toast.success("Agent deleted"); router.push("/dashboard/agents"); },
+    onError: (err) => toast.error(err.message),
+  });
+  const syncKnowledge = trpc.agents.syncKnowledge.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Knowledge synced! ${data.documentsIncluded} document(s) included.`);
+    },
     onError: (err) => toast.error(err.message),
   });
 
@@ -219,6 +229,54 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
           <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">{agent.firstMessage}</p>
         </div>
       )}
+
+      {/* Knowledge Base */}
+      <div className="rounded-lg border bg-white p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Knowledge Base</h2>
+          {knowledgeData?.documents && knowledgeData.documents.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => syncKnowledge.mutate({ id: agent.id })}
+              disabled={syncKnowledge.isPending || !agent.vapiAssistantId}
+            >
+              {syncKnowledge.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Syncing...</>
+              ) : (
+                <><RefreshCw className="mr-2 h-4 w-4" /> Sync to Vapi</>
+              )}
+            </Button>
+          )}
+        </div>
+        {knowledgeData?.documents && knowledgeData.documents.length > 0 ? (
+          <div className="mt-4 space-y-2">
+            {knowledgeData.documents.map((doc) => (
+              <div key={doc.id} className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+                <BookOpen className="h-5 w-5 text-primary" />
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">{doc.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {doc.type} &middot; {doc.content?.length || 0} characters
+                  </p>
+                </div>
+              </div>
+            ))}
+            <p className="mt-2 text-xs text-gray-500">
+              Knowledge documents are included in the agent&apos;s system prompt when calling.
+              Click &quot;Sync to Vapi&quot; after adding or updating knowledge documents.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 text-center py-8 rounded-lg bg-gray-50">
+            <BookOpen className="mx-auto h-10 w-10 text-gray-300" />
+            <p className="mt-2 text-sm text-gray-500">No knowledge documents assigned</p>
+            <p className="text-xs text-gray-400">
+              Add documents in the Knowledge section and assign them to this agent
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* System Prompt */}
       <div className="rounded-lg border bg-white p-6">

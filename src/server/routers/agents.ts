@@ -60,16 +60,38 @@ export const agentsRouter = router({
 
   // Create a new agent
   create: protectedProcedure
-    .input(agentSchema)
+    .input(agentSchema.extend({
+      knowledgeDocumentIds: z.array(z.string()).optional(),
+    }))
     .use(enforceAgentLimit)
     .mutation(async ({ ctx, input }) => {
+      // Get knowledge content if document IDs provided
+      let knowledgeContent = "";
+      if (input.knowledgeDocumentIds?.length) {
+        const docs = await ctx.db.knowledgeDocument.findMany({
+          where: {
+            id: { in: input.knowledgeDocumentIds },
+            organizationId: ctx.orgId,
+            isActive: true,
+          },
+        });
+        if (docs.length > 0) {
+          knowledgeContent = "\n\n--- KNOWLEDGE BASE ---\n" +
+            docs.map(d => `=== ${d.name} ===\n${d.content || ""}`).join("\n\n") +
+            "\n--- END KNOWLEDGE BASE ---";
+        }
+      }
+
+      // Combine system prompt with knowledge
+      const fullSystemPrompt = input.systemPrompt + knowledgeContent;
+
       // Create assistant in Vapi
       let vapiAssistantId: string | null = null;
 
       try {
         const vapiAssistant = await createAssistant({
           name: input.name,
-          systemPrompt: input.systemPrompt,
+          systemPrompt: fullSystemPrompt,
           firstMessage: input.firstMessage,
           voiceProvider: input.voiceProvider,
           voiceId: input.voiceId,
@@ -82,7 +104,7 @@ export const agentsRouter = router({
         // Continue without Vapi ID - can sync later
       }
 
-      // Create agent in database
+      // Create agent in database (store original prompt, not with knowledge)
       const agent = await ctx.db.agent.create({
         data: {
           organizationId: ctx.orgId,
@@ -99,6 +121,17 @@ export const agentsRouter = router({
         },
       });
 
+      // Update knowledge documents to link to this agent
+      if (input.knowledgeDocumentIds?.length) {
+        await ctx.db.knowledgeDocument.updateMany({
+          where: {
+            id: { in: input.knowledgeDocumentIds },
+            organizationId: ctx.orgId,
+          },
+          data: { agentId: agent.id },
+        });
+      }
+
       return agent;
     }),
 
@@ -108,6 +141,7 @@ export const agentsRouter = router({
       z.object({
         id: z.string(),
         data: agentSchema.partial(),
+        knowledgeDocumentIds: z.array(z.string()).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -126,21 +160,66 @@ export const agentsRouter = router({
         });
       }
 
+      // Get knowledge content for Vapi sync
+      let knowledgeContent = "";
+      const knowledgeDocs = await ctx.db.knowledgeDocument.findMany({
+        where: {
+          agentId: input.id,
+          organizationId: ctx.orgId,
+          isActive: true,
+        },
+      });
+      if (knowledgeDocs.length > 0) {
+        knowledgeContent = "\n\n--- KNOWLEDGE BASE ---\n" +
+          knowledgeDocs.map(d => `=== ${d.name} ===\n${d.content || ""}`).join("\n\n") +
+          "\n--- END KNOWLEDGE BASE ---";
+      }
+
+      // Prepare the full system prompt for Vapi (with knowledge)
+      const systemPrompt = input.data.systemPrompt || existingAgent.systemPrompt;
+      const fullSystemPrompt = systemPrompt + knowledgeContent;
+
       // Update in Vapi if we have an assistant ID
       if (existingAgent.vapiAssistantId) {
         try {
-          await updateAssistant(existingAgent.vapiAssistantId, input.data);
+          await updateAssistant(existingAgent.vapiAssistantId, {
+            ...input.data,
+            systemPrompt: fullSystemPrompt,
+          });
         } catch (error) {
           console.error("Failed to update Vapi assistant:", error);
           // Continue with local update
         }
       }
 
-      // Update in database
+      // Update in database (store original prompt, not with knowledge)
       const agent = await ctx.db.agent.update({
         where: { id: input.id },
         data: input.data,
       });
+
+      // Update knowledge document assignments if provided
+      if (input.knowledgeDocumentIds !== undefined) {
+        // First, unassign all documents from this agent
+        await ctx.db.knowledgeDocument.updateMany({
+          where: {
+            agentId: input.id,
+            organizationId: ctx.orgId,
+          },
+          data: { agentId: null },
+        });
+
+        // Then assign the new ones
+        if (input.knowledgeDocumentIds.length > 0) {
+          await ctx.db.knowledgeDocument.updateMany({
+            where: {
+              id: { in: input.knowledgeDocumentIds },
+              organizationId: ctx.orgId,
+            },
+            data: { agentId: input.id },
+          });
+        }
+      }
 
       return agent;
     }),
@@ -246,6 +325,57 @@ export const agentsRouter = router({
       });
 
       return { callId: call.id, vapiCallId: vapiCall.id, status: vapiCall.status };
+    }),
+
+  // Sync agent knowledge to Vapi
+  syncKnowledge: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const agent = await ctx.db.agent.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!agent) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Agent not found",
+        });
+      }
+
+      if (!agent.vapiAssistantId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Agent is not synced with Vapi yet",
+        });
+      }
+
+      // Get knowledge content
+      const knowledgeDocs = await ctx.db.knowledgeDocument.findMany({
+        where: {
+          agentId: input.id,
+          organizationId: ctx.orgId,
+          isActive: true,
+        },
+      });
+
+      let knowledgeContent = "";
+      if (knowledgeDocs.length > 0) {
+        knowledgeContent = "\n\n--- KNOWLEDGE BASE ---\n" +
+          knowledgeDocs.map(d => `=== ${d.name} ===\n${d.content || ""}`).join("\n\n") +
+          "\n--- END KNOWLEDGE BASE ---";
+      }
+
+      const fullSystemPrompt = agent.systemPrompt + knowledgeContent;
+
+      // Update Vapi
+      await updateAssistant(agent.vapiAssistantId, {
+        systemPrompt: fullSystemPrompt,
+      });
+
+      return { success: true, documentsIncluded: knowledgeDocs.length };
     }),
 
   // Toggle agent active status

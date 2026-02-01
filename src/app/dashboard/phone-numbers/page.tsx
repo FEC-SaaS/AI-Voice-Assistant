@@ -2,34 +2,55 @@
 
 import { useState } from "react";
 import {
-  Phone, Hash, Loader2, Trash2, Upload,
+  Phone, Hash, Loader2, Trash2, Plus, Search, Globe,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
+
+// Common country codes for phone numbers
+const COUNTRIES = [
+  { code: "US", name: "United States", flag: "🇺🇸" },
+  { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
+  { code: "CA", name: "Canada", flag: "🇨🇦" },
+  { code: "AU", name: "Australia", flag: "🇦🇺" },
+  { code: "DE", name: "Germany", flag: "🇩🇪" },
+  { code: "FR", name: "France", flag: "🇫🇷" },
+  { code: "GH", name: "Ghana", flag: "🇬🇭" },
+  { code: "NG", name: "Nigeria", flag: "🇳🇬" },
+  { code: "ZA", name: "South Africa", flag: "🇿🇦" },
+  { code: "KE", name: "Kenya", flag: "🇰🇪" },
+  { code: "IN", name: "India", flag: "🇮🇳" },
+  { code: "SG", name: "Singapore", flag: "🇸🇬" },
+];
 
 export default function PhoneNumbersPage() {
   const { data: phoneNumbers, isLoading, refetch } = trpc.phoneNumbers.list.useQuery();
   const { data: agents } = trpc.agents.list.useQuery();
 
   // Panel state
-  const [showImportPanel, setShowImportPanel] = useState(false);
+  const [showBuyPanel, setShowBuyPanel] = useState(false);
 
-  // Import Twilio state
-  const [twilioAccountSid, setTwilioAccountSid] = useState("");
-  const [twilioAuthToken, setTwilioAuthToken] = useState("");
-  const [twilioPhoneNumber, setTwilioPhoneNumber] = useState("");
+  // Buy number state
+  const [selectedCountry, setSelectedCountry] = useState("US");
+  const [areaCode, setAreaCode] = useState("");
+  const [numberType, setNumberType] = useState<"local" | "toll-free" | "mobile">("local");
   const [friendlyName, setFriendlyName] = useState("");
 
-  const importTwilio = trpc.phoneNumbers.importTwilio.useMutation({
+  const buyNumber = trpc.phoneNumbers.buyNumber.useMutation({
     onSuccess: () => {
-      toast.success("Twilio phone number imported successfully!");
-      setShowImportPanel(false);
-      setTwilioAccountSid("");
-      setTwilioAuthToken("");
-      setTwilioPhoneNumber("");
+      toast.success("Phone number purchased successfully!");
+      setShowBuyPanel(false);
+      setAreaCode("");
       setFriendlyName("");
       refetch();
     },
@@ -68,6 +89,8 @@ export default function PhoneNumbersPage() {
     );
   }
 
+  const selectedCountryData = COUNTRIES.find((c) => c.code === selectedCountry);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -77,55 +100,74 @@ export default function PhoneNumbersPage() {
           <p className="text-gray-500">
             {phoneNumbers?.length
               ? `${phoneNumbers.length} phone number${phoneNumbers.length !== 1 ? "s" : ""}`
-              : "Manage phone numbers for your AI agents"}
+              : "Buy phone numbers for your AI agents"}
           </p>
         </div>
-        <Button onClick={() => setShowImportPanel(!showImportPanel)}>
-          <Upload className="mr-2 h-4 w-4" />
-          Import from Twilio
+        <Button onClick={() => setShowBuyPanel(!showBuyPanel)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Buy Phone Number
         </Button>
       </div>
 
-      {/* Import Twilio Panel */}
-      {showImportPanel && (
+      {/* Buy Number Panel */}
+      {showBuyPanel && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
-          <h3 className="text-lg font-semibold text-gray-900">Import Twilio Phone Number</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Buy a Phone Number</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Import an existing phone number from your Twilio account.
+            Purchase a phone number through Vapi for international calling.
           </p>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="twilioSid">Twilio Account SID</Label>
+              <Label>Country</Label>
+              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                <SelectTrigger>
+                  <SelectValue>
+                    {selectedCountryData && (
+                      <span className="flex items-center gap-2">
+                        <span>{selectedCountryData.flag}</span>
+                        <span>{selectedCountryData.name}</span>
+                      </span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country.code} value={country.code}>
+                      <span className="flex items-center gap-2">
+                        <span>{country.flag}</span>
+                        <span>{country.name}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Number Type</Label>
+              <Select value={numberType} onValueChange={(v) => setNumberType(v as typeof numberType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="local">Local</SelectItem>
+                  <SelectItem value="mobile">Mobile</SelectItem>
+                  <SelectItem value="toll-free">Toll-Free</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="areaCode">Area Code (optional)</Label>
               <Input
-                id="twilioSid"
-                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                value={twilioAccountSid}
-                onChange={(e) => setTwilioAccountSid(e.target.value)}
+                id="areaCode"
+                placeholder="e.g., 415"
+                value={areaCode}
+                onChange={(e) => setAreaCode(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="twilioToken">Twilio Auth Token</Label>
+              <Label htmlFor="friendlyName">Label (optional)</Label>
               <Input
-                id="twilioToken"
-                type="password"
-                placeholder="Your Twilio Auth Token"
-                value={twilioAuthToken}
-                onChange={(e) => setTwilioAuthToken(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phoneNum">Phone Number (E.164 format)</Label>
-              <Input
-                id="phoneNum"
-                placeholder="+14155551234"
-                value={twilioPhoneNumber}
-                onChange={(e) => setTwilioPhoneNumber(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="importFriendlyName">Label (optional)</Label>
-              <Input
-                id="importFriendlyName"
+                id="friendlyName"
                 placeholder="e.g., Sales Line"
                 value={friendlyName}
                 onChange={(e) => setFriendlyName(e.target.value)}
@@ -135,30 +177,27 @@ export default function PhoneNumbersPage() {
           <div className="mt-4 flex items-center gap-3">
             <Button
               onClick={() =>
-                importTwilio.mutate({
-                  twilioAccountSid,
-                  twilioAuthToken,
-                  phoneNumber: twilioPhoneNumber,
+                buyNumber.mutate({
+                  countryCode: selectedCountry,
+                  areaCode: areaCode || undefined,
+                  numberType,
                   friendlyName: friendlyName || undefined,
                 })
               }
-              disabled={importTwilio.isLoading || !twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber}
+              disabled={buyNumber.isPending}
             >
-              {importTwilio.isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing...</>
+              {buyNumber.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Purchasing...</>
               ) : (
-                "Import Number"
+                <><Globe className="mr-2 h-4 w-4" /> Buy Number</>
               )}
             </Button>
-            <Button variant="outline" onClick={() => setShowImportPanel(false)}>
+            <Button variant="outline" onClick={() => setShowBuyPanel(false)}>
               Cancel
             </Button>
           </div>
           <p className="mt-4 text-xs text-gray-500">
-            Get your Twilio credentials from{" "}
-            <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-              console.twilio.com
-            </a>
+            Phone numbers are billed through your Vapi account. Pricing varies by country and type.
           </p>
         </div>
       )}
@@ -169,15 +208,12 @@ export default function PhoneNumbersPage() {
           <Hash className="mx-auto h-12 w-12 text-gray-300" />
           <h3 className="mt-4 text-lg font-semibold text-gray-900">No phone numbers yet</h3>
           <p className="mt-2 text-sm text-gray-500">
-            Import a phone number from Twilio to enable voice calls with your AI agents.
+            Buy a phone number to enable voice calls with your AI agents.
           </p>
-          <Button className="mt-6" onClick={() => setShowImportPanel(true)}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import from Twilio
+          <Button className="mt-6" onClick={() => setShowBuyPanel(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Buy Phone Number
           </Button>
-          <p className="mt-4 text-xs text-gray-500">
-            Sign up at <a href="https://twilio.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">twilio.com</a> and get trial credits to test
-          </p>
         </div>
       ) : (
         <div className="rounded-lg border bg-white">
@@ -237,7 +273,7 @@ export default function PhoneNumbersPage() {
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => {
-                          if (confirm("Release this phone number? This cannot be undone.")) {
+                          if (confirm("Release this phone number? This cannot be undone and you will be charged if you buy another.")) {
                             release.mutate({ id: pn.id });
                           }
                         }}
@@ -258,18 +294,18 @@ export default function PhoneNumbersPage() {
       {/* Info Card */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
         <div className="flex gap-3">
-          <Phone className="h-5 w-5 text-blue-500 shrink-0" />
+          <Globe className="h-5 w-5 text-blue-500 shrink-0" />
           <div>
-            <h4 className="font-medium text-blue-900">How to Get a Phone Number</h4>
+            <h4 className="font-medium text-blue-900">International Calling</h4>
             <p className="mt-1 text-sm text-blue-700">
-              To make and receive real phone calls, you need a Twilio phone number:
+              Vapi supports phone numbers in many countries. Phone numbers are purchased through Vapi and billed to your Vapi account.
             </p>
-            <ol className="mt-2 list-decimal list-inside text-sm text-blue-700 space-y-1">
-              <li>Sign up at <a href="https://twilio.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">twilio.com</a> (free trial credits available)</li>
-              <li>Buy or provision a phone number in Twilio Console</li>
-              <li>Copy your Account SID and Auth Token from the Twilio Dashboard</li>
-              <li>Click &quot;Import from Twilio&quot; above and enter your credentials</li>
-            </ol>
+            <ul className="mt-2 list-disc list-inside text-sm text-blue-700 space-y-1">
+              <li>Local numbers for most countries</li>
+              <li>Toll-free numbers (US, UK, CA, and more)</li>
+              <li>Inbound and outbound calling support</li>
+              <li>Automatic carrier routing for best quality</li>
+            </ul>
           </div>
         </div>
       </div>

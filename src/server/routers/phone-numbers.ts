@@ -6,6 +6,8 @@ import {
   releasePhoneNumber,
   importTwilioPhoneNumber,
   listPhoneNumbers as listVapiPhoneNumbers,
+  searchPhoneNumbers,
+  buyPhoneNumber,
 } from "@/lib/vapi";
 import { enforcePhoneNumberLimit } from "../trpc/middleware";
 
@@ -58,6 +60,76 @@ export const phoneNumbersRouter = router({
       return [];
     }
   }),
+
+  // Search for available phone numbers to buy
+  searchAvailable: protectedProcedure
+    .input(
+      z.object({
+        countryCode: z.string().min(2).max(2).default("US"),
+        areaCode: z.string().optional(),
+        numberType: z.enum(["local", "toll-free", "mobile"]).default("local"),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const numbers = await searchPhoneNumbers({
+          countryCode: input.countryCode,
+          areaCode: input.areaCode,
+          numberType: input.numberType,
+          limit: 20,
+        });
+        return numbers;
+      } catch (error) {
+        console.error("Failed to search phone numbers:", error);
+        return [];
+      }
+    }),
+
+  // Buy a specific phone number from Vapi
+  buyNumber: protectedProcedure
+    .input(
+      z.object({
+        phoneNumber: z.string().optional(),
+        countryCode: z.string().min(2).max(2).default("US"),
+        areaCode: z.string().optional(),
+        numberType: z.enum(["local", "toll-free", "mobile"]).default("local"),
+        friendlyName: z.string().optional(),
+      })
+    )
+    .use(enforcePhoneNumberLimit)
+    .mutation(async ({ ctx, input }) => {
+      let vapiPhone;
+      try {
+        vapiPhone = await buyPhoneNumber({
+          phoneNumber: input.phoneNumber,
+          countryCode: input.countryCode,
+          areaCode: input.areaCode,
+          numberType: input.numberType,
+          name: input.friendlyName,
+        });
+      } catch (error) {
+        console.error("Failed to buy phone number:", error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errorMessage || "Failed to buy phone number. Please check your Vapi account credits.",
+        });
+      }
+
+      // Save to database
+      const phoneNumber = await ctx.db.phoneNumber.create({
+        data: {
+          organizationId: ctx.orgId,
+          vapiPhoneId: vapiPhone.id,
+          number: vapiPhone.number,
+          friendlyName: input.friendlyName,
+          type: input.numberType === "toll-free" ? "toll_free" : "local",
+        },
+      });
+
+      return phoneNumber;
+    }),
 
   // Import a Twilio phone number
   importTwilio: protectedProcedure
