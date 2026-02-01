@@ -117,6 +117,14 @@ export const phoneNumbersRouter = router({
           });
         }
 
+        // Trial account limitation
+        if (errorMessage.includes("400") || errorMessage.includes("Bad Request")) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Phone number search requires an upgraded Twilio account. Please use 'Import from Twilio' with your existing Twilio number instead.",
+          });
+        }
+
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Failed to search numbers: ${errorMessage}`,

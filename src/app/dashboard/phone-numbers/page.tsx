@@ -239,12 +239,12 @@ export default function PhoneNumbersPage() {
                 <div className="flex items-center gap-2">
                   <Globe className="h-5 w-5 text-primary" />
                   <span className="font-medium">Get Number Instantly</span>
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                    Recommended
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    Requires Paid Twilio
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  We&apos;ll provision a number for you instantly. Billed monthly.
+                  Search and purchase numbers instantly. Requires upgraded Twilio account.
                 </p>
               </button>
 
@@ -260,9 +260,12 @@ export default function PhoneNumbersPage() {
                 <div className="flex items-center gap-2">
                   <ExternalLink className="h-5 w-5 text-blue-600" />
                   <span className="font-medium">Import from Twilio</span>
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                    Works with Trial
+                  </span>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  Bring your own Twilio number. You manage billing with Twilio.
+                  Import your existing Twilio number. Works with free trial accounts.
                 </p>
               </button>
             </div>
