@@ -91,6 +91,15 @@ export const phoneNumbersRouter = router({
         });
       }
 
+      // Validate we got a phone number
+      if (!vapiPhone.number) {
+        console.error("Vapi response missing number field:", vapiPhone);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get phone number from Vapi. The response was invalid.",
+        });
+      }
+
       // Save to database
       const phoneNumber = await ctx.db.phoneNumber.create({
         data: {
@@ -142,12 +151,15 @@ export const phoneNumbersRouter = router({
         });
       }
 
+      // For Twilio imports, use the input phone number as fallback
+      const phoneNumberValue = vapiPhone.number || vapiPhone.phoneNumber || input.phoneNumber;
+
       // Save to database
       const phoneNumber = await ctx.db.phoneNumber.create({
         data: {
           organizationId: ctx.orgId,
           vapiPhoneId: vapiPhone.id,
-          number: vapiPhone.number,
+          number: phoneNumberValue,
           friendlyName: input.friendlyName,
           type: "local",
         },
@@ -190,6 +202,15 @@ export const phoneNumbersRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to provision phone number. Please try importing a Twilio number instead.",
+        });
+      }
+
+      // Validate we got a phone number
+      if (!vapiPhone.number) {
+        console.error("Provision response missing number field:", vapiPhone);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to get phone number from Vapi. The response was invalid.",
         });
       }
 

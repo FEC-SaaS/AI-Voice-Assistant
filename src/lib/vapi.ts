@@ -237,8 +237,11 @@ export interface PhoneNumberConfig {
 
 export interface VapiPhoneNumber {
   id: string;
-  number: string;
+  number?: string;
+  phoneNumber?: string; // Alternative field name
+  sipUri?: string; // For SIP numbers
   provider: string;
+  name?: string;
 }
 
 // List available phone numbers from Vapi
@@ -280,7 +283,7 @@ export async function getPhoneNumber(phoneNumberId: string): Promise<VapiPhoneNu
 // Get a free Vapi phone number (US only, up to 10 per account)
 export async function getFreeVapiNumber(config?: {
   name?: string;
-}): Promise<VapiPhoneNumber> {
+}): Promise<VapiPhoneNumber & { number: string }> {
   const body: Record<string, unknown> = {
     provider: "vapi",
   };
@@ -289,11 +292,22 @@ export async function getFreeVapiNumber(config?: {
     body.name = config.name;
   }
 
-  return vapiRequest<VapiPhoneNumber>({
+  const response = await vapiRequest<VapiPhoneNumber>({
     method: "POST",
     path: "/phone-number",
     body,
   });
+
+  // Log the response for debugging
+  console.log("[Vapi] Free phone number response:", JSON.stringify(response, null, 2));
+
+  // Normalize the number field - Vapi might return it in different fields
+  const phoneNumber = response.number || response.phoneNumber || response.sipUri || `vapi-${response.id}`;
+
+  return {
+    ...response,
+    number: phoneNumber,
+  };
 }
 
 // Create a Vapi SIP number (free)
@@ -319,7 +333,7 @@ export async function createVapiSipNumber(config?: {
 // Provision a phone number using Vapi's free tier
 export async function provisionPhoneNumber(
   config?: PhoneNumberConfig
-): Promise<VapiPhoneNumber> {
+): Promise<VapiPhoneNumber & { number: string }> {
   try {
     return await getFreeVapiNumber({
       name: config?.name,
