@@ -280,6 +280,46 @@ export async function getPhoneNumber(phoneNumberId: string): Promise<VapiPhoneNu
   });
 }
 
+// Buy a phone number through Vapi (paid plan - uses Vonage/Telnyx)
+export async function buyPhoneNumber(config: {
+  countryCode: string;
+  areaCode?: string;
+  name?: string;
+}): Promise<VapiPhoneNumber & { number: string }> {
+  // For paid Vapi plans, use the byoPhoneNumber endpoint with Vonage
+  const body: Record<string, unknown> = {
+    provider: "vonage",
+    numberDesiredAreaCode: config.areaCode,
+    numberDesiredCountry: config.countryCode,
+  };
+
+  if (config.name) {
+    body.name = config.name;
+  }
+
+  console.log("[Vapi] Buying phone number with config:", JSON.stringify(body, null, 2));
+
+  const response = await vapiRequest<VapiPhoneNumber>({
+    method: "POST",
+    path: "/phone-number",
+    body,
+  });
+
+  console.log("[Vapi] Buy phone number response:", JSON.stringify(response, null, 2));
+
+  // Normalize the number field
+  const phoneNumber = response.number || response.phoneNumber || "";
+
+  if (!phoneNumber) {
+    throw new Error("Vapi did not return a phone number. Please check your Vapi plan and credits.");
+  }
+
+  return {
+    ...response,
+    number: phoneNumber,
+  };
+}
+
 // Get a free Vapi phone number (US only, up to 10 per account)
 export async function getFreeVapiNumber(config?: {
   name?: string;

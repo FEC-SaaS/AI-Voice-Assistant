@@ -7,6 +7,7 @@ import {
   importTwilioPhoneNumber,
   listPhoneNumbers as listVapiPhoneNumbers,
   getFreeVapiNumber,
+  buyPhoneNumber,
 } from "@/lib/vapi";
 import { enforcePhoneNumberLimit } from "../trpc/middleware";
 
@@ -97,6 +98,62 @@ export const phoneNumbersRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to get phone number from Vapi. The response was invalid.",
+        });
+      }
+
+      // Save to database
+      const phoneNumber = await ctx.db.phoneNumber.create({
+        data: {
+          organizationId: ctx.orgId,
+          vapiPhoneId: vapiPhone.id,
+          number: vapiPhone.number,
+          friendlyName: input.friendlyName,
+          type: "local",
+        },
+      });
+
+      return phoneNumber;
+    }),
+
+  // Buy a phone number through Vapi (paid plan)
+  buyNumber: protectedProcedure
+    .input(
+      z.object({
+        countryCode: z.string().min(2).max(2).default("US"),
+        areaCode: z.string().optional(),
+        friendlyName: z.string().optional(),
+      })
+    )
+    .use(enforcePhoneNumberLimit)
+    .mutation(async ({ ctx, input }) => {
+      let vapiPhone;
+      try {
+        vapiPhone = await buyPhoneNumber({
+          countryCode: input.countryCode,
+          areaCode: input.areaCode,
+          name: input.friendlyName,
+        });
+      } catch (error) {
+        console.error("Failed to buy phone number:", error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        if (errorMessage.includes("402") || errorMessage.includes("payment") || errorMessage.includes("credits")) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Insufficient Vapi credits or plan upgrade required. Please check your Vapi billing.",
+          });
+        }
+
+        if (errorMessage.includes("not available") || errorMessage.includes("no numbers")) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "No phone numbers available for the selected country/area code. Try a different area code.",
+          });
+        }
+
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errorMessage || "Failed to buy phone number. Please try again.",
         });
       }
 
