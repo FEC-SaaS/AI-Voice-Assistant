@@ -135,7 +135,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
           return;
         }
 
-        console.log("[ContactUpload] Processing file:", uploadedFile.name, uploadedFile.type);
+        console.log("[ContactUpload] Processing file:", uploadedFile.name, "MIME:", uploadedFile.type, "Size:", uploadedFile.size);
         setFile(uploadedFile);
 
         const reader = new FileReader();
@@ -235,11 +235,13 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
   );
 
   const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
-    console.log("[ContactUpload] File rejected:", fileRejections);
     const rejection = fileRejections[0];
     if (rejection) {
+      console.log("[ContactUpload] File rejected:", rejection.file.name, "MIME:", rejection.file.type, "Errors:", rejection.errors);
       const errorMessages = rejection.errors.map((e) => e.message).join(", ");
-      toast.error(`File rejected: ${errorMessages}`);
+      const errorMsg = `File rejected: ${errorMessages}. File type: ${rejection.file.type || 'unknown'}`;
+      setParseError(errorMsg);
+      toast.error(errorMsg);
     }
   }, []);
 
@@ -248,11 +250,25 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
     onDropRejected,
     accept: {
       "text/csv": [".csv"],
-      "application/vnd.ms-excel": [".csv"],
-      "text/plain": [".csv"],
+      "application/vnd.ms-excel": [".csv", ".xls"],
+      "text/plain": [".csv", ".txt"],
+      "application/csv": [".csv"],
+      "text/comma-separated-values": [".csv"],
+      "application/octet-stream": [".csv"], // Some browsers report this for CSV
     },
     maxFiles: 1,
     multiple: false,
+    validator: (file) => {
+      // Custom validator to allow CSV files regardless of MIME type
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      if (extension === 'csv' || extension === 'txt') {
+        return null; // Valid
+      }
+      return {
+        code: 'file-invalid-type',
+        message: 'Only CSV files are allowed',
+      };
+    },
   });
 
   const handleMappingConfirm = () => {

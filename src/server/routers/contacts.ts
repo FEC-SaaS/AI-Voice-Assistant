@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 
-// Phone number validation and normalization
+// Phone number validation and normalization (E.164 international format)
 function normalizePhoneNumber(phone: string): string {
   let phoneStr = phone.trim();
 
@@ -19,29 +19,46 @@ function normalizePhoneNumber(phone: string): string {
     }
   }
 
-  // Remove all non-numeric characters
+  // Remove all non-numeric characters except leading +
+  const hasPlus = phoneStr.startsWith("+");
   const digits = phoneStr.replace(/\D/g, "");
 
-  // Handle US numbers
+  // If already has + prefix, keep it
+  if (hasPlus) {
+    return `+${digits}`;
+  }
+
+  // Handle US numbers (10 digits without country code)
   if (digits.length === 10) {
     return `+1${digits}`;
   }
+
+  // Handle US numbers with country code
   if (digits.length === 11 && digits.startsWith("1")) {
     return `+${digits}`;
   }
 
-  // Return with + prefix if not already present
-  return digits.startsWith("+") ? phone : `+${digits}`;
+  // For other international numbers, add + prefix
+  // Most international numbers are 8-15 digits including country code
+  return `+${digits}`;
 }
 
-function isValidUSPhone(phone: string): boolean {
+// Validate phone number in E.164 format (international)
+function isValidPhoneNumber(phone: string): boolean {
   const normalized = normalizePhoneNumber(phone);
-  // US numbers: +1 followed by 10 digits
-  return /^\+1\d{10}$/.test(normalized);
+  // E.164 format: + followed by 7-15 digits (country code + number)
+  // Minimum: +1234567 (7 digits - some small countries)
+  // Maximum: +123456789012345 (15 digits - ITU-T E.164 max)
+  return /^\+\d{7,15}$/.test(normalized);
+}
+
+// Keep for backward compatibility but use isValidPhoneNumber instead
+function isValidUSPhone(phone: string): boolean {
+  return isValidPhoneNumber(phone);
 }
 
 const contactSchema = z.object({
-  phoneNumber: z.string().min(10, "Phone number is required"),
+  phoneNumber: z.string().min(7, "Phone number is required"),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
@@ -157,10 +174,10 @@ export const contactsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const normalizedPhone = normalizePhoneNumber(input.phoneNumber);
 
-      if (!isValidUSPhone(normalizedPhone)) {
+      if (!isValidPhoneNumber(normalizedPhone)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Invalid US phone number format",
+          message: "Invalid phone number format. Use international format: +[country code][number]",
         });
       }
 
@@ -255,7 +272,7 @@ export const contactsRouter = router({
         const normalizedPhone = normalizePhoneNumber(contact.phoneNumber);
 
         // Validate phone number
-        if (!isValidUSPhone(normalizedPhone)) {
+        if (!isValidPhoneNumber(normalizedPhone)) {
           results.skippedInvalid++;
           results.errors.push(`Row ${i + 1}: Invalid phone number ${contact.phoneNumber}`);
           continue;
@@ -327,10 +344,10 @@ export const contactsRouter = router({
       const updateData = { ...input.data };
       if (input.data.phoneNumber) {
         const normalizedPhone = normalizePhoneNumber(input.data.phoneNumber);
-        if (!isValidUSPhone(normalizedPhone)) {
+        if (!isValidPhoneNumber(normalizedPhone)) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Invalid US phone number format",
+            message: "Invalid phone number format. Use international format: +[country code][number]",
           });
         }
         updateData.phoneNumber = normalizedPhone;
