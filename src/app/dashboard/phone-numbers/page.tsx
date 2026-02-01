@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Phone, Hash, Loader2, Trash2, Plus, Globe, Zap,
+  Phone, Hash, Loader2, Trash2, Plus, Globe, Zap, Upload, PhoneIncoming, PhoneOutgoing,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -15,15 +15,21 @@ export default function PhoneNumbersPage() {
   const { data: agents } = trpc.agents.list.useQuery();
 
   // Panel state
-  const [showGetPanel, setShowGetPanel] = useState(false);
+  const [activePanel, setActivePanel] = useState<"none" | "twilio">("none");
 
-  // Get number state
+  // Twilio import state
+  const [twilioAccountSid, setTwilioAccountSid] = useState("");
+  const [twilioAuthToken, setTwilioAuthToken] = useState("");
+  const [twilioPhoneNumber, setTwilioPhoneNumber] = useState("");
   const [friendlyName, setFriendlyName] = useState("");
 
-  const getFreeNumber = trpc.phoneNumbers.getFreeNumber.useMutation({
+  const importTwilio = trpc.phoneNumbers.importTwilio.useMutation({
     onSuccess: () => {
-      toast.success("Phone number obtained successfully!");
-      setShowGetPanel(false);
+      toast.success("Twilio phone number imported successfully!");
+      setActivePanel("none");
+      setTwilioAccountSid("");
+      setTwilioAuthToken("");
+      setTwilioPhoneNumber("");
       setFriendlyName("");
       refetch();
     },
@@ -74,32 +80,60 @@ export default function PhoneNumbersPage() {
               : "Buy phone numbers for your AI agents"}
           </p>
         </div>
-        <Button onClick={() => setShowGetPanel(!showGetPanel)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Get Phone Number
+        <Button onClick={() => setActivePanel(activePanel === "twilio" ? "none" : "twilio")}>
+          <Upload className="mr-2 h-4 w-4" />
+          Import Twilio Number
         </Button>
       </div>
 
-      {/* Get Free Number Panel */}
-      {showGetPanel && (
+      {/* Import Twilio Number Panel */}
+      {activePanel === "twilio" && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
           <div className="flex items-start gap-3">
             <div className="rounded-lg bg-primary/10 p-2">
-              <Zap className="h-5 w-5 text-primary" />
+              <Upload className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900">Get a Free US Phone Number</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Import Twilio Phone Number</h3>
               <p className="mt-1 text-sm text-gray-500">
-                Vapi provides free US phone numbers for testing and development. You can have up to 10 free numbers per account.
+                Import your existing Twilio phone number for full inbound and outbound calling support.
               </p>
             </div>
           </div>
-          <div className="mt-4 max-w-md">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="twilioAccountSid">Twilio Account SID</Label>
+              <Input
+                id="twilioAccountSid"
+                placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                value={twilioAccountSid}
+                onChange={(e) => setTwilioAccountSid(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="twilioAuthToken">Twilio Auth Token</Label>
+              <Input
+                id="twilioAuthToken"
+                type="password"
+                placeholder="Your Twilio Auth Token"
+                value={twilioAuthToken}
+                onChange={(e) => setTwilioAuthToken(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="twilioPhoneNumber">Phone Number (E.164 format)</Label>
+              <Input
+                id="twilioPhoneNumber"
+                placeholder="+14155551234"
+                value={twilioPhoneNumber}
+                onChange={(e) => setTwilioPhoneNumber(e.target.value)}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="friendlyName">Label (optional)</Label>
               <Input
                 id="friendlyName"
-                placeholder="e.g., Sales Line, Support"
+                placeholder="e.g., Sales Line"
                 value={friendlyName}
                 onChange={(e) => setFriendlyName(e.target.value)}
               />
@@ -107,22 +141,32 @@ export default function PhoneNumbersPage() {
           </div>
           <div className="mt-4 flex items-center gap-3">
             <Button
-              onClick={() => getFreeNumber.mutate({ friendlyName: friendlyName || undefined })}
-              disabled={getFreeNumber.isPending}
+              onClick={() => importTwilio.mutate({
+                twilioAccountSid,
+                twilioAuthToken,
+                phoneNumber: twilioPhoneNumber,
+                friendlyName: friendlyName || undefined,
+              })}
+              disabled={importTwilio.isPending || !twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber}
             >
-              {getFreeNumber.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Getting Number...</>
+              {importTwilio.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Importing...</>
               ) : (
-                <><Phone className="mr-2 h-4 w-4" /> Get Free Number</>
+                <><Upload className="mr-2 h-4 w-4" /> Import Number</>
               )}
             </Button>
-            <Button variant="outline" onClick={() => setShowGetPanel(false)}>
+            <Button variant="outline" onClick={() => setActivePanel("none")}>
               Cancel
             </Button>
           </div>
-          <p className="mt-4 text-xs text-gray-500">
-            Free Vapi numbers are US-based and support both inbound and outbound calling. Perfect for testing your AI agents.
-          </p>
+          <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3">
+            <p className="text-xs text-amber-800">
+              <strong>Note:</strong> You can find your Account SID and Auth Token in your{" "}
+              <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" className="underline">
+                Twilio Console
+              </a>. The phone number must be in E.164 format (e.g., +14155551234 for US, +233558256383 for Ghana).
+            </p>
+          </div>
         </div>
       )}
 
@@ -134,9 +178,9 @@ export default function PhoneNumbersPage() {
           <p className="mt-2 text-sm text-gray-500">
             Buy a phone number to enable voice calls with your AI agents.
           </p>
-          <Button className="mt-6" onClick={() => setShowGetPanel(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Get Phone Number
+          <Button className="mt-6" onClick={() => setActivePanel("twilio")}>
+            <Upload className="mr-2 h-4 w-4" />
+            Import Twilio Number
           </Button>
         </div>
       ) : (
@@ -215,21 +259,37 @@ export default function PhoneNumbersPage() {
         </div>
       )}
 
-      {/* Info Card */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-        <div className="flex gap-3">
-          <Globe className="h-5 w-5 text-blue-500 shrink-0" />
-          <div>
-            <h4 className="font-medium text-blue-900">About Vapi Phone Numbers</h4>
-            <p className="mt-1 text-sm text-blue-700">
-              Vapi provides free US phone numbers for testing your AI voice agents. For production use, you can import your own Twilio numbers.
-            </p>
-            <ul className="mt-2 list-disc list-inside text-sm text-blue-700 space-y-1">
-              <li>Up to 10 free US phone numbers per account</li>
-              <li>Inbound and outbound calling support</li>
-              <li>Import your own Twilio numbers for international calling</li>
-              <li>Automatic carrier routing for best quality</li>
-            </ul>
+      {/* Info Cards */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div className="flex gap-3">
+            <PhoneOutgoing className="h-5 w-5 text-blue-500 shrink-0" />
+            <div>
+              <h4 className="font-medium text-blue-900">Outbound Calling</h4>
+              <p className="mt-1 text-sm text-blue-700">
+                To make outbound calls (test calls, campaigns), you need to import a Twilio phone number with a paid Twilio account.
+              </p>
+              <ul className="mt-2 list-disc list-inside text-sm text-blue-700 space-y-1">
+                <li>Twilio trial accounts can only call verified numbers</li>
+                <li>Upgrade Twilio for international calling</li>
+                <li>Import your Twilio number here</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+          <div className="flex gap-3">
+            <PhoneIncoming className="h-5 w-5 text-green-500 shrink-0" />
+            <div>
+              <h4 className="font-medium text-green-900">Inbound Calling</h4>
+              <p className="mt-1 text-sm text-green-700">
+                For receiving calls, you can use either Twilio numbers or Vapi&apos;s free SIP endpoints.
+              </p>
+              <ul className="mt-2 list-disc list-inside text-sm text-green-700 space-y-1">
+                <li>Twilio numbers work for both inbound and outbound</li>
+                <li>Share your number to receive AI-handled calls</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
