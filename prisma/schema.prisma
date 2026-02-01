@@ -19,6 +19,9 @@ model Organization {
   planId               String   @default("free-trial")
   onboardingComplete   Boolean  @default(false)
   settings             Json     @default("{}")
+  // Twilio subaccount for isolated phone number management
+  twilioSubaccountSid  String?
+  twilioAuthToken      String?  // Encrypted in production
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -34,6 +37,7 @@ model Organization {
 
   @@index([slug])
   @@index([stripeCustomerId])
+  @@index([twilioSubaccountSid])
 }
 
 model User {
@@ -83,18 +87,24 @@ model PhoneNumber {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  vapiPhoneId    String?
+  vapiPhoneId    String?      // Vapi phone number ID (after import to Vapi)
+  twilioSid      String?      // Twilio phone number SID (for SaaS-managed numbers)
   number         String
   friendlyName   String?
-  type           String       @default("local") // local, toll_free
+  type           String       @default("local") // local, toll_free, mobile
+  provider       String       @default("twilio-managed") // twilio-managed, twilio-imported, vapi
+  countryCode    String?      // ISO country code (US, GB, GH, etc.)
   agentId        String?
   agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
   isActive       Boolean      @default(true)
+  monthlyCost    Int          @default(0) // Cost in cents for billing
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   @@index([organizationId])
   @@index([vapiPhoneId])
+  @@index([twilioSid])
+  @@index([provider])
 }
 
 model Campaign {
