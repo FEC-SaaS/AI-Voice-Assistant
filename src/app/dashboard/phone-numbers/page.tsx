@@ -239,12 +239,12 @@ export default function PhoneNumbersPage() {
                 <div className="flex items-center gap-2">
                   <Globe className="h-5 w-5 text-primary" />
                   <span className="font-medium">Get Number Instantly</span>
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                    Requires Paid Twilio
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                    Recommended
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  Search and purchase numbers instantly. Requires upgraded Twilio account.
+                  Search and purchase phone numbers from 30+ countries instantly.
                 </p>
               </button>
 
@@ -260,12 +260,9 @@ export default function PhoneNumbersPage() {
                 <div className="flex items-center gap-2">
                   <ExternalLink className="h-5 w-5 text-blue-600" />
                   <span className="font-medium">Import from Twilio</span>
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                    Works with Trial
-                  </span>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  Import your existing Twilio number. Works with free trial accounts.
+                  Use your existing Twilio phone number with VoxForge.
                 </p>
               </button>
             </div>

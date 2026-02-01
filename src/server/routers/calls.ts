@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { analyzeCall, getAnalyticsSummary } from "../services/call-analysis.service";
 
 export const callsRouter = router({
   // List calls with filters
@@ -135,5 +136,76 @@ export const callsRouter = router({
         totalMinutes: Math.round((totalDuration._sum.durationSeconds || 0) / 60),
         sentimentBreakdown: avgSentiment,
       };
+    }),
+
+  // Analyze a call with AI
+  analyze: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Verify call belongs to this organization
+      const call = await ctx.db.call.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!call) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Call not found",
+        });
+      }
+
+      if (!call.transcript) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Call has no transcript to analyze",
+        });
+      }
+
+      // Run AI analysis
+      const result = await analyzeCall(input.id);
+
+      if (!result.success) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: result.error || "Failed to analyze call",
+        });
+      }
+
+      // Return updated call
+      const updatedCall = await ctx.db.call.findUnique({
+        where: { id: input.id },
+        include: {
+          agent: true,
+          campaign: true,
+          contact: true,
+        },
+      });
+
+      return {
+        call: updatedCall,
+        analysis: result.analysis,
+        optOutDetected: result.optOutDetected,
+      };
+    }),
+
+  // Get conversation intelligence analytics
+  getAnalytics: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.date(),
+        endDate: z.date(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const summary = await getAnalyticsSummary(
+        ctx.orgId,
+        input.startDate,
+        input.endDate
+      );
+
+      return summary;
     }),
 });

@@ -4,10 +4,12 @@ import Link from "next/link";
 import {
   ArrowLeft, Loader2, Phone, PhoneIncoming, PhoneOutgoing,
   Clock, CheckCircle, XCircle, AlertCircle, Bot, User, Play, Pause,
+  Sparkles, TrendingUp, ThumbsUp, ThumbsDown, Target, ListChecks, AlertTriangle,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 function formatDuration(seconds: number | null) {
   if (!seconds) return "—";
@@ -43,9 +45,33 @@ const SENTIMENT_MAP: Record<string, string> = {
 };
 
 export default function CallDetailPage({ params }: { params: { id: string } }) {
-  const { data: call, isLoading } = trpc.calls.get.useQuery({ id: params.id });
+  const { data: call, isLoading, refetch } = trpc.calls.get.useQuery({ id: params.id });
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const analyzeMutation = trpc.calls.analyze.useMutation({
+    onSuccess: () => {
+      toast.success("Call analyzed successfully!");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleAnalyze = () => {
+    analyzeMutation.mutate({ id: params.id });
+  };
+
+  // Parse analysis data
+  const analysisData = call?.analysis as {
+    keyPoints?: string[];
+    objections?: string[];
+    buyingSignals?: string[];
+    actionItems?: string[];
+    analyzedAt?: string;
+    optOutDetected?: boolean;
+  } | null;
 
   if (isLoading) {
     return (
@@ -208,13 +234,199 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* Call Summary */}
-      {call.summary && (
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900">Summary</h2>
-          <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">{call.summary}</p>
+      {/* AI Analysis Section */}
+      <div className="rounded-lg border bg-white p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            AI Analysis
+          </h2>
+          {call.transcript && !call.sentiment && (
+            <Button
+              onClick={handleAnalyze}
+              disabled={analyzeMutation.isPending}
+              size="sm"
+            >
+              {analyzeMutation.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>
+              ) : (
+                <><Sparkles className="mr-2 h-4 w-4" /> Analyze with AI</>
+              )}
+            </Button>
+          )}
         </div>
-      )}
+
+        {call.sentiment ? (
+          <div className="mt-4 space-y-6">
+            {/* Summary */}
+            {call.summary && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Summary</h3>
+                <p className="text-sm text-gray-700">{call.summary}</p>
+              </div>
+            )}
+
+            {/* Metrics Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Sentiment */}
+              <div className="rounded-lg bg-gray-50 p-4">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  {call.sentiment === "positive" ? (
+                    <ThumbsUp className="h-4 w-4 text-green-500" />
+                  ) : call.sentiment === "negative" ? (
+                    <ThumbsDown className="h-4 w-4 text-red-500" />
+                  ) : (
+                    <TrendingUp className="h-4 w-4 text-gray-500" />
+                  )}
+                  Sentiment
+                </div>
+                <p className={`mt-1 text-lg font-semibold capitalize ${
+                  call.sentiment === "positive" ? "text-green-600" :
+                  call.sentiment === "negative" ? "text-red-600" : "text-gray-600"
+                }`}>
+                  {call.sentiment}
+                </p>
+              </div>
+
+              {/* Lead Score */}
+              {call.leadScore !== null && (
+                <div className="rounded-lg bg-gray-50 p-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Target className="h-4 w-4" />
+                    Lead Score
+                  </div>
+                  <p className={`mt-1 text-lg font-semibold ${
+                    call.leadScore >= 70 ? "text-green-600" :
+                    call.leadScore >= 40 ? "text-yellow-600" : "text-red-600"
+                  }`}>
+                    {call.leadScore}/100
+                  </p>
+                </div>
+              )}
+
+              {/* Opt-Out Warning */}
+              {analysisData?.optOutDetected && (
+                <div className="rounded-lg bg-red-50 p-4 col-span-2">
+                  <div className="flex items-center gap-2 text-sm text-red-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="font-medium">Opt-Out Detected</span>
+                  </div>
+                  <p className="mt-1 text-sm text-red-700">
+                    Customer requested to be added to DNC list
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Key Points */}
+            {analysisData?.keyPoints && analysisData.keyPoints.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                  <ListChecks className="h-4 w-4" />
+                  Key Points
+                </h3>
+                <ul className="space-y-1">
+                  {analysisData.keyPoints.map((point, i) => (
+                    <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                      <span className="text-primary mt-1">•</span>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Buying Signals */}
+            {analysisData?.buyingSignals && analysisData.buyingSignals.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                  <ThumbsUp className="h-4 w-4 text-green-500" />
+                  Buying Signals
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {analysisData.buyingSignals.map((signal, i) => (
+                    <span key={i} className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                      {signal}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Objections */}
+            {analysisData?.objections && analysisData.objections.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  Objections Raised
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {analysisData.objections.map((objection, i) => (
+                    <span key={i} className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+                      {objection}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action Items */}
+            {analysisData?.actionItems && analysisData.actionItems.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-blue-500" />
+                  Action Items
+                </h3>
+                <ul className="space-y-1">
+                  {analysisData.actionItems.map((item, i) => (
+                    <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                      <span className="text-blue-500 mt-0.5">
+                        <CheckCircle className="h-3.5 w-3.5" />
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {analysisData?.analyzedAt && (
+              <p className="text-xs text-gray-400">
+                Analyzed on {new Date(analysisData.analyzedAt).toLocaleString()}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4 text-center py-8">
+            {call.transcript ? (
+              <div>
+                <Sparkles className="mx-auto h-12 w-12 text-gray-300" />
+                <p className="mt-2 text-sm text-gray-500">
+                  This call has not been analyzed yet.
+                </p>
+                <Button
+                  onClick={handleAnalyze}
+                  disabled={analyzeMutation.isPending}
+                  className="mt-4"
+                >
+                  {analyzeMutation.isPending ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>
+                  ) : (
+                    <><Sparkles className="mr-2 h-4 w-4" /> Analyze with AI</>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <AlertCircle className="mx-auto h-12 w-12 text-gray-300" />
+                <p className="mt-2 text-sm text-gray-500">
+                  No transcript available to analyze.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Audio Player */}
       {call.recordingUrl && (
