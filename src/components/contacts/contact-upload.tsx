@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useDropzone } from "react-dropzone";
+import { useDropzone, FileRejection } from "react-dropzone";
 import { Upload, FileText, AlertCircle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,6 +58,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [csvData, setCsvData] = useState<string[][]>([]);
+  const [parseError, setParseError] = useState<string | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>(defaultMapping);
   const [step, setStep] = useState<"upload" | "mapping" | "preview" | "result">("upload");
@@ -125,85 +126,133 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      const uploadedFile = acceptedFiles[0];
-      if (!uploadedFile) return;
-
-      setFile(uploadedFile);
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const parsed = parseCSV(text);
-
-        if (parsed.length < 2) {
-          toast.error("CSV file must have at least a header row and one data row");
+      setParseError(null);
+      try {
+        const uploadedFile = acceptedFiles[0];
+        if (!uploadedFile) {
+          setParseError("No file selected");
+          toast.error("No file selected");
           return;
         }
 
-        const headerRow = parsed[0] || [];
-        setHeaders(headerRow);
-        setCsvData(parsed.slice(1));
+        console.log("[ContactUpload] Processing file:", uploadedFile.name, uploadedFile.type);
+        setFile(uploadedFile);
 
-        // Auto-detect column mappings
-        const autoMapping = { ...defaultMapping };
-        const lowerHeaders = headerRow.map((h: string) => h.toLowerCase());
+        const reader = new FileReader();
 
-        // Phone number detection
-        const phoneIndex = lowerHeaders.findIndex(
-          (h) =>
-            h.includes("phone") ||
-            h.includes("mobile") ||
-            h.includes("cell") ||
-            h === "number"
-        );
-        if (phoneIndex >= 0) autoMapping.phoneNumber = headerRow[phoneIndex] || "";
+        reader.onerror = () => {
+          console.error("[ContactUpload] FileReader error:", reader.error);
+          setParseError("Failed to read file. Please try again.");
+          toast.error("Failed to read file. Please try again.");
+        };
 
-        // First name detection
-        const firstNameIndex = lowerHeaders.findIndex(
-          (h) =>
-            h.includes("first") ||
-            h === "firstname" ||
-            h === "first_name" ||
-            h === "fname"
-        );
-        if (firstNameIndex >= 0) autoMapping.firstName = headerRow[firstNameIndex] || "";
+        reader.onload = (e) => {
+          try {
+            const text = e.target?.result as string;
+            if (!text) {
+              toast.error("File appears to be empty");
+              return;
+            }
 
-        // Last name detection
-        const lastNameIndex = lowerHeaders.findIndex(
-          (h) =>
-            h.includes("last") ||
-            h === "lastname" ||
-            h === "last_name" ||
-            h === "lname"
-        );
-        if (lastNameIndex >= 0) autoMapping.lastName = headerRow[lastNameIndex] || "";
+            console.log("[ContactUpload] File content length:", text.length);
+            const parsed = parseCSV(text);
+            console.log("[ContactUpload] Parsed rows:", parsed.length);
 
-        // Email detection
-        const emailIndex = lowerHeaders.findIndex((h) => h.includes("email"));
-        if (emailIndex >= 0) autoMapping.email = headerRow[emailIndex] || "";
+            if (parsed.length < 2) {
+              toast.error("CSV file must have at least a header row and one data row");
+              return;
+            }
 
-        // Company detection
-        const companyIndex = lowerHeaders.findIndex(
-          (h) => h.includes("company") || h.includes("organization") || h.includes("org")
-        );
-        if (companyIndex >= 0) autoMapping.company = headerRow[companyIndex] || "";
+            const headerRow = parsed[0] || [];
+            console.log("[ContactUpload] Headers found:", headerRow);
+            setHeaders(headerRow);
+            setCsvData(parsed.slice(1));
 
-        setMapping(autoMapping);
-        setStep("mapping");
-      };
+            // Auto-detect column mappings
+            const autoMapping = { ...defaultMapping };
+            const lowerHeaders = headerRow.map((h: string) => h.toLowerCase());
 
-      reader.readAsText(uploadedFile);
+            // Phone number detection
+            const phoneIndex = lowerHeaders.findIndex(
+              (h) =>
+                h.includes("phone") ||
+                h.includes("mobile") ||
+                h.includes("cell") ||
+                h === "number"
+            );
+            if (phoneIndex >= 0) autoMapping.phoneNumber = headerRow[phoneIndex] || "";
+
+            // First name detection
+            const firstNameIndex = lowerHeaders.findIndex(
+              (h) =>
+                h.includes("first") ||
+                h === "firstname" ||
+                h === "first_name" ||
+                h === "fname"
+            );
+            if (firstNameIndex >= 0) autoMapping.firstName = headerRow[firstNameIndex] || "";
+
+            // Last name detection
+            const lastNameIndex = lowerHeaders.findIndex(
+              (h) =>
+                h.includes("last") ||
+                h === "lastname" ||
+                h === "last_name" ||
+                h === "lname"
+            );
+            if (lastNameIndex >= 0) autoMapping.lastName = headerRow[lastNameIndex] || "";
+
+            // Email detection
+            const emailIndex = lowerHeaders.findIndex((h) => h.includes("email"));
+            if (emailIndex >= 0) autoMapping.email = headerRow[emailIndex] || "";
+
+            // Company detection
+            const companyIndex = lowerHeaders.findIndex(
+              (h) => h.includes("company") || h.includes("organization") || h.includes("org")
+            );
+            if (companyIndex >= 0) autoMapping.company = headerRow[companyIndex] || "";
+
+            console.log("[ContactUpload] Auto-detected mapping:", autoMapping);
+            setMapping(autoMapping);
+            setStep("mapping");
+          } catch (err) {
+            console.error("[ContactUpload] Parse error:", err);
+            const errorMsg = "Failed to parse CSV file. Please check the file format.";
+            setParseError(errorMsg);
+            toast.error(errorMsg);
+          }
+        };
+
+        reader.readAsText(uploadedFile);
+      } catch (error) {
+        console.error("[ContactUpload] onDrop error:", error);
+        const errorMsg = "An error occurred while processing the file";
+        setParseError(errorMsg);
+        toast.error(errorMsg);
+      }
     },
     [parseCSV]
   );
 
+  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+    console.log("[ContactUpload] File rejected:", fileRejections);
+    const rejection = fileRejections[0];
+    if (rejection) {
+      const errorMessages = rejection.errors.map((e) => e.message).join(", ");
+      toast.error(`File rejected: ${errorMessages}`);
+    }
+  }, []);
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: {
       "text/csv": [".csv"],
       "application/vnd.ms-excel": [".csv"],
+      "text/plain": [".csv"],
     },
     maxFiles: 1,
+    multiple: false,
   });
 
   const handleMappingConfirm = () => {
@@ -284,6 +333,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
     setMapping(defaultMapping);
     setStep("upload");
     setResult(null);
+    setParseError(null);
   };
 
   return (
@@ -303,24 +353,34 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
           </DialogHeader>
 
           {step === "upload" && (
-            <div
-              {...getRootProps()}
-              className={`mt-4 cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
-                isDragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-gray-300 hover:border-gray-400"
-              }`}
-            >
-              <input {...getInputProps()} />
-              <Upload className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-sm text-gray-600">
-                {isDragActive
-                  ? "Drop the CSV file here..."
-                  : "Drag and drop a CSV file, or click to browse"}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                Supported format: .csv (max 10,000 rows)
-              </p>
+            <div className="space-y-4">
+              <div
+                {...getRootProps()}
+                className={`mt-4 cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+                  isDragActive
+                    ? "border-primary bg-primary/5"
+                    : parseError
+                    ? "border-red-300 bg-red-50"
+                    : "border-gray-300 hover:border-gray-400"
+                }`}
+              >
+                <input {...getInputProps()} />
+                <Upload className={`mx-auto h-12 w-12 ${parseError ? "text-red-400" : "text-gray-400"}`} />
+                <p className="mt-2 text-sm text-gray-600">
+                  {isDragActive
+                    ? "Drop the CSV file here..."
+                    : "Drag and drop a CSV file, or click to browse"}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Supported format: .csv (max 10,000 rows)
+                </p>
+              </div>
+              {parseError && (
+                <div className="flex items-center gap-2 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{parseError}</span>
+                </div>
+              )}
             </div>
           )}
 

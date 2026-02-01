@@ -20,6 +20,8 @@ prisma/generated/
 SaaS-logic/
 LLM/
 contacts.csv
+sunrise-realty-knowledge-base.txt
+nul
 
 # Environment variables
 .env
