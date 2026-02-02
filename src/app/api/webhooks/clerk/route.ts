@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
   // Handle organization created
   if (eventType === "organization.created") {
-    const { id, name, slug } = evt.data;
+    const { id, name, slug, created_by } = evt.data;
 
     // Create Stripe customer
     let stripeCustomerId: string | undefined;
@@ -84,15 +84,21 @@ export async function POST(req: Request) {
       console.error("Failed to create Stripe customer:", error);
     }
 
-    // Create organization in database
+    // Create organization in database with clerkOrgId set
     await db.organization.create({
       data: {
         id,
+        clerkOrgId: id, // Store the Clerk org ID for lookups
         name,
         slug: slug || slugify(name),
         stripeCustomerId,
       },
     });
+
+    // If we have the creator's user ID, mark them as owner
+    if (created_by) {
+      console.log("📝 Organization created by user:", created_by);
+    }
   }
 
   // Handle organization updated
@@ -124,13 +130,34 @@ export async function POST(req: Request) {
     const { organization, public_user_data, role } = evt.data;
 
     if (organization && public_user_data) {
+      // Map Clerk roles to our roles
+      // Clerk sends: "org:admin", "org:member", or "admin", "member"
+      // We support: owner, admin, manager, member, viewer
+      let userRole = "member";
+      const clerkRole = role?.toLowerCase() || "";
+
+      if (clerkRole === "org:admin" || clerkRole === "admin") {
+        // Check if this is the first user (org creator) - they should be owner
+        const existingUsers = await db.user.count({
+          where: { organizationId: organization.id },
+        });
+        userRole = existingUsers === 0 ? "owner" : "admin";
+      }
+
+      console.log("👤 Creating user:", {
+        userId: public_user_data.user_id,
+        orgId: organization.id,
+        clerkRole: role,
+        mappedRole: userRole,
+      });
+
       await db.user.create({
         data: {
           clerkId: public_user_data.user_id,
           email: public_user_data.identifier || "",
           name: `${public_user_data.first_name || ""} ${public_user_data.last_name || ""}`.trim() || null,
           imageUrl: public_user_data.image_url,
-          role: role === "admin" ? "admin" : "member",
+          role: userRole,
           organizationId: organization.id,
         },
       });
@@ -142,13 +169,36 @@ export async function POST(req: Request) {
     const { organization, public_user_data, role } = evt.data;
 
     if (organization && public_user_data) {
+      // Map Clerk roles to our roles (preserve owner status if already owner)
+      const clerkRole = role?.toLowerCase() || "";
+      let userRole = "member";
+
+      if (clerkRole === "org:admin" || clerkRole === "admin") {
+        // Check if user is already owner - don't downgrade them
+        const existingUser = await db.user.findFirst({
+          where: {
+            clerkId: public_user_data.user_id,
+            organizationId: organization.id,
+          },
+          select: { role: true },
+        });
+        userRole = existingUser?.role === "owner" ? "owner" : "admin";
+      }
+
+      console.log("👤 Updating user role:", {
+        userId: public_user_data.user_id,
+        orgId: organization.id,
+        clerkRole: role,
+        mappedRole: userRole,
+      });
+
       await db.user.updateMany({
         where: {
           clerkId: public_user_data.user_id,
           organizationId: organization.id,
         },
         data: {
-          role: role === "admin" ? "admin" : "member",
+          role: userRole,
         },
       });
     }

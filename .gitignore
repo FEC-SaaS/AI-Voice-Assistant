@@ -23,6 +23,7 @@ contacts.csv
 contacts.txt
 sunrise-realty-knowledge-base.txt
 nul
+scripts/fix-user-role.ts
 
 # Environment variables
 .env

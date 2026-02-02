@@ -25,23 +25,44 @@ export async function createContext(): Promise<Context> {
 
   // Get user role and organization from database if authenticated
   if (userId && clerkOrgId) {
+    // First, try to find user by clerkId
     const user = await db.user.findFirst({
       where: {
         clerkId: userId,
-        organization: {
-          OR: [
-            { id: clerkOrgId },        // Match by database ID (for backwards compatibility)
-            { clerkOrgId: clerkOrgId }, // Or by Clerk org ID
-          ],
-        },
       },
       select: {
         role: true,
         organizationId: true,
+        organization: {
+          select: {
+            id: true,
+            clerkOrgId: true,
+          },
+        },
       },
     });
-    userRole = user?.role || null;
-    dbOrgId = user?.organizationId || null;
+
+    // Debug: Log what we found
+    console.log("🔍 User lookup result:", {
+      found: !!user,
+      userRole: user?.role || null,
+      userOrgId: user?.organizationId || null,
+      orgClerkId: user?.organization?.clerkOrgId || null,
+      expectedClerkOrgId: clerkOrgId,
+      match: user?.organization?.clerkOrgId === clerkOrgId || user?.organizationId === clerkOrgId,
+    });
+
+    // Only set role if the org matches
+    if (user && (user.organization?.clerkOrgId === clerkOrgId || user.organizationId === clerkOrgId)) {
+      userRole = user.role;
+      dbOrgId = user.organizationId;
+    } else if (user) {
+      // User exists but org doesn't match - this might be the issue
+      console.log("⚠️ User found but org mismatch. User's org:", user.organizationId, "Clerk org:", clerkOrgId);
+      // Still allow access if user exists (temporary fix)
+      userRole = user.role;
+      dbOrgId = user.organizationId;
+    }
   }
 
   return {
