@@ -4,43 +4,51 @@ import { db } from "@/lib/db";
 export interface Context {
   db: typeof db;
   userId: string | null;
-  orgId: string | null;
+  orgId: string | null;       // Database organization ID
+  clerkOrgId: string | null;  // Clerk organization ID
   userRole: string | null;
 }
 
 export async function createContext(): Promise<Context> {
   const authData = await auth();
-  const { userId, orgId } = authData;
+  const { userId, orgId: clerkOrgId } = authData;
 
   // Debug logging - remove after fixing
   console.log("🔐 tRPC Context Auth:", {
     userId: userId ? `${userId.slice(0, 10)}...` : null,
-    orgId: orgId || null,
+    clerkOrgId: clerkOrgId || null,
     sessionId: authData.sessionId ? "present" : "missing",
   });
 
   let userRole: string | null = null;
+  let dbOrgId: string | null = null;
 
-  // Get user role from database if authenticated
-  if (userId && orgId) {
+  // Get user role and organization from database if authenticated
+  if (userId && clerkOrgId) {
     const user = await db.user.findFirst({
       where: {
         clerkId: userId,
         organization: {
-          id: orgId,
+          OR: [
+            { id: clerkOrgId },        // Match by database ID (for backwards compatibility)
+            { clerkOrgId: clerkOrgId }, // Or by Clerk org ID
+          ],
         },
       },
       select: {
         role: true,
+        organizationId: true,
       },
     });
     userRole = user?.role || null;
+    dbOrgId = user?.organizationId || null;
   }
 
   return {
     db,
     userId: userId ?? null,
-    orgId: orgId ?? null,
+    orgId: dbOrgId,           // Use database org ID for queries
+    clerkOrgId: clerkOrgId ?? null,
     userRole,
   };
 }

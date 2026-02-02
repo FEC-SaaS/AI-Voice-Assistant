@@ -33,6 +33,7 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
     ctx: {
       userId: ctx.userId,
       orgId: ctx.orgId,
+      clerkOrgId: ctx.clerkOrgId,
     },
   });
 });
@@ -60,6 +61,7 @@ const enforceUserRole = (allowedRoles: string[]) =>
       ctx: {
         userId: ctx.userId,
         orgId: ctx.orgId,
+        clerkOrgId: ctx.clerkOrgId,
         userRole: ctx.userRole,
       },
     });
