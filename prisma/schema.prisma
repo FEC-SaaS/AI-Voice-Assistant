@@ -37,6 +37,8 @@ model Organization {
   consents           Consent[]
   pendingInvitations PendingInvitation[]
   apiKeys            ApiKey[]
+  appointments       Appointment[]
+  calendarSettings   CalendarSettings?
 
   @@index([slug])
   @@index([clerkOrgId])
@@ -82,6 +84,7 @@ model Agent {
   calls        Call[]
   campaigns    Campaign[]
   phoneNumbers PhoneNumber[]
+  appointments Appointment[]
 
   @@index([organizationId])
   @@index([vapiAssistantId])
@@ -155,7 +158,8 @@ model Contact {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  calls Call[]
+  calls        Call[]
+  appointments Appointment[]
 
   @@index([organizationId])
   @@index([campaignId])
@@ -190,6 +194,8 @@ model Call {
   costCents       Int          @default(0)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+
+  appointments    Appointment[]
 
   @@index([organizationId])
   @@index([agentId])
@@ -279,4 +285,102 @@ model ApiKey {
 
   @@index([organizationId])
   @@index([keyHash])
+}
+
+model Appointment {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contactId      String?
+  contact        Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  agentId        String?      // Agent that booked the appointment
+  agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  callId         String?      // Call during which appointment was booked
+  call           Call?        @relation(fields: [callId], references: [id], onDelete: SetNull)
+
+  // Appointment details
+  title          String
+  description    String?      @db.Text
+  scheduledAt    DateTime     // Start time of appointment
+  duration       Int          @default(30) // Duration in minutes
+  endAt          DateTime     // Computed end time
+  timeZone       String       @default("America/New_York")
+
+  // Meeting details
+  meetingType    String       @default("phone") // phone, video, in_person
+  meetingLink    String?      // Video call link (Zoom, Google Meet, etc.)
+  location       String?      // Physical location if in-person
+  phoneNumber    String?      // Phone number for phone meetings
+
+  // Attendee info (from contact or manually entered)
+  attendeeName   String?
+  attendeeEmail  String?
+  attendeePhone  String?
+
+  // Status tracking
+  status         String       @default("scheduled") // scheduled, confirmed, completed, cancelled, no_show, rescheduled
+  confirmedAt    DateTime?
+  cancelledAt    DateTime?
+  cancelReason   String?
+  completedAt    DateTime?
+
+  // Reminders
+  reminderSentAt DateTime?
+
+  // External calendar sync
+  externalCalendarId String?  // ID in external calendar (Google, Outlook)
+  externalCalendarType String? // google, outlook, calendly
+
+  notes          String?      @db.Text
+  metadata       Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([agentId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model CalendarSettings {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Availability settings
+  timeZone       String       @default("America/New_York")
+  availableDays  Json         @default("[1,2,3,4,5]") // 0=Sunday, 1=Monday, etc.
+  startTime      String       @default("09:00") // Daily start time (HH:mm)
+  endTime        String       @default("17:00") // Daily end time (HH:mm)
+
+  // Meeting defaults
+  defaultDuration    Int      @default(30) // Default meeting duration in minutes
+  bufferBefore       Int      @default(0)  // Buffer time before meetings (minutes)
+  bufferAfter        Int      @default(15) // Buffer time after meetings (minutes)
+  maxAdvanceBooking  Int      @default(30) // Max days in advance to book
+  minNoticeTime      Int      @default(24) // Minimum hours notice required
+
+  // Meeting types enabled
+  allowPhone     Boolean      @default(true)
+  allowVideo     Boolean      @default(true)
+  allowInPerson  Boolean      @default(false)
+
+  // Video conferencing integration
+  videoProvider  String?      // zoom, google_meet, teams
+  videoApiKey    String?      // Encrypted API key for video provider
+
+  // External calendar sync
+  googleCalendarId    String?
+  googleRefreshToken  String?
+  outlookCalendarId   String?
+  outlookRefreshToken String?
+
+  // Notifications
+  sendConfirmation   Boolean  @default(true)
+  sendReminder       Boolean  @default(true)
+  reminderHoursBefore Int     @default(24)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 }

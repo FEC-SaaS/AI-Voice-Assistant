@@ -14,6 +14,7 @@ import {
   Settings,
   ChevronLeft,
   Users,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -24,6 +25,7 @@ const navItems = [
   { title: "Campaigns", href: "/dashboard/campaigns", icon: Megaphone },
   { title: "Contacts", href: "/dashboard/contacts", icon: Users },
   { title: "Calls", href: "/dashboard/calls", icon: Phone },
+  { title: "Appointments", href: "/dashboard/appointments", icon: Calendar },
   { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { title: "Knowledge Base", href: "/dashboard/knowledge", icon: BookOpen },
   { title: "Phone Numbers", href: "/dashboard/phone-numbers", icon: Hash },

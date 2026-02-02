@@ -157,3 +157,316 @@ export async function sendTrialEndingEmail(email: string, name: string, daysRema
     `,
   });
 }
+
+// Appointment email templates
+
+interface AppointmentDetails {
+  title: string;
+  scheduledAt: Date;
+  duration: number;
+  meetingType: string;
+  meetingLink?: string | null;
+  location?: string | null;
+  phoneNumber?: string | null;
+}
+
+function formatAppointmentDate(date: Date): string {
+  return new Date(date).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function formatAppointmentTime(date: Date): string {
+  return new Date(date).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
+function getMeetingTypeIcon(type: string): string {
+  switch (type) {
+    case "video":
+      return "📹";
+    case "phone":
+      return "📞";
+    case "in_person":
+      return "🏢";
+    default:
+      return "📅";
+  }
+}
+
+function getMeetingTypeLabel(type: string): string {
+  switch (type) {
+    case "video":
+      return "Video Call";
+    case "phone":
+      return "Phone Call";
+    case "in_person":
+      return "In-Person Meeting";
+    default:
+      return "Meeting";
+  }
+}
+
+function getMeetingDetails(details: AppointmentDetails): string {
+  let html = "";
+
+  if (details.meetingType === "video" && details.meetingLink) {
+    html = `
+      <p><strong>Join Video Call:</strong></p>
+      <p>
+        <a href="${details.meetingLink}"
+           style="background: #0070f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          Join Meeting
+        </a>
+      </p>
+      <p style="font-size: 12px; color: #666;">
+        Or copy this link: <a href="${details.meetingLink}">${details.meetingLink}</a>
+      </p>
+    `;
+  } else if (details.meetingType === "phone" && details.phoneNumber) {
+    html = `
+      <p><strong>Call Number:</strong> ${details.phoneNumber}</p>
+      <p style="font-size: 12px; color: #666;">
+        We will call you at this number at the scheduled time.
+      </p>
+    `;
+  } else if (details.meetingType === "in_person" && details.location) {
+    html = `
+      <p><strong>Location:</strong> ${details.location}</p>
+    `;
+  }
+
+  return html;
+}
+
+export async function sendAppointmentConfirmation(
+  email: string,
+  name: string,
+  details: AppointmentDetails
+) {
+  const meetingIcon = getMeetingTypeIcon(details.meetingType);
+  const meetingLabel = getMeetingTypeLabel(details.meetingType);
+  const meetingDetails = getMeetingDetails(details);
+
+  return sendEmail({
+    to: email,
+    subject: `Appointment Confirmed: ${details.title}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #22c55e; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">✓ Appointment Confirmed</h1>
+        </div>
+
+        <div style="border: 1px solid #e5e5e5; border-top: none; padding: 30px; border-radius: 0 0 8px 8px;">
+          <p style="font-size: 16px;">Hi ${name},</p>
+          <p>Your appointment has been scheduled. Here are the details:</p>
+
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="margin: 0 0 15px 0; color: #1a1a1a;">${meetingIcon} ${details.title}</h2>
+            <table style="width: 100%;">
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Date:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${formatAppointmentDate(details.scheduledAt)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Time:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${formatAppointmentTime(details.scheduledAt)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Duration:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${details.duration} minutes</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Type:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${meetingLabel}</td>
+              </tr>
+            </table>
+          </div>
+
+          ${meetingDetails}
+
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+
+          <p style="color: #666; font-size: 14px;">
+            Need to reschedule or cancel? Reply to this email and we'll help you out.
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendAppointmentReminder(
+  email: string,
+  name: string,
+  details: AppointmentDetails,
+  hoursUntil: number
+) {
+  const meetingIcon = getMeetingTypeIcon(details.meetingType);
+  const meetingLabel = getMeetingTypeLabel(details.meetingType);
+  const meetingDetails = getMeetingDetails(details);
+
+  const reminderText = hoursUntil >= 24
+    ? `in ${Math.floor(hoursUntil / 24)} day${Math.floor(hoursUntil / 24) > 1 ? "s" : ""}`
+    : `in ${hoursUntil} hour${hoursUntil > 1 ? "s" : ""}`;
+
+  return sendEmail({
+    to: email,
+    subject: `Reminder: ${details.title} ${reminderText}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #f59e0b; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">⏰ Appointment Reminder</h1>
+        </div>
+
+        <div style="border: 1px solid #e5e5e5; border-top: none; padding: 30px; border-radius: 0 0 8px 8px;">
+          <p style="font-size: 16px;">Hi ${name},</p>
+          <p>This is a friendly reminder that your appointment is coming up <strong>${reminderText}</strong>.</p>
+
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="margin: 0 0 15px 0; color: #1a1a1a;">${meetingIcon} ${details.title}</h2>
+            <table style="width: 100%;">
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Date:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${formatAppointmentDate(details.scheduledAt)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Time:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${formatAppointmentTime(details.scheduledAt)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Duration:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${details.duration} minutes</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Type:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${meetingLabel}</td>
+              </tr>
+            </table>
+          </div>
+
+          ${meetingDetails}
+
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+
+          <p style="color: #666; font-size: 14px;">
+            Can't make it? Reply to this email as soon as possible so we can reschedule.
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendAppointmentCancellation(
+  email: string,
+  name: string,
+  details: {
+    title: string;
+    scheduledAt: Date;
+    reason?: string;
+  }
+) {
+  return sendEmail({
+    to: email,
+    subject: `Appointment Cancelled: ${details.title}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #ef4444; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">Appointment Cancelled</h1>
+        </div>
+
+        <div style="border: 1px solid #e5e5e5; border-top: none; padding: 30px; border-radius: 0 0 8px 8px;">
+          <p style="font-size: 16px;">Hi ${name},</p>
+          <p>Your appointment has been cancelled.</p>
+
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="margin: 0 0 15px 0; color: #1a1a1a; text-decoration: line-through;">${details.title}</h2>
+            <p style="margin: 0; color: #666;">
+              Originally scheduled for ${formatAppointmentDate(details.scheduledAt)} at ${formatAppointmentTime(details.scheduledAt)}
+            </p>
+            ${details.reason ? `<p style="margin: 15px 0 0 0;"><strong>Reason:</strong> ${details.reason}</p>` : ""}
+          </div>
+
+          <p>Would you like to reschedule? Reply to this email and we'll find a new time that works for you.</p>
+
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+
+          <p style="color: #666; font-size: 14px;">
+            If you have any questions, feel free to reach out.
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+export async function sendAppointmentRescheduled(
+  email: string,
+  name: string,
+  details: AppointmentDetails,
+  previousDate: Date
+) {
+  const meetingIcon = getMeetingTypeIcon(details.meetingType);
+  const meetingLabel = getMeetingTypeLabel(details.meetingType);
+  const meetingDetails = getMeetingDetails(details);
+
+  return sendEmail({
+    to: email,
+    subject: `Appointment Rescheduled: ${details.title}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #3b82f6; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">📅 Appointment Rescheduled</h1>
+        </div>
+
+        <div style="border: 1px solid #e5e5e5; border-top: none; padding: 30px; border-radius: 0 0 8px 8px;">
+          <p style="font-size: 16px;">Hi ${name},</p>
+          <p>Your appointment has been rescheduled to a new time.</p>
+
+          <div style="background: #fef2f2; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ef4444;">
+            <p style="margin: 0; color: #666; text-decoration: line-through;">
+              Previously: ${formatAppointmentDate(previousDate)} at ${formatAppointmentTime(previousDate)}
+            </p>
+          </div>
+
+          <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
+            <h2 style="margin: 0 0 15px 0; color: #1a1a1a;">${meetingIcon} ${details.title}</h2>
+            <table style="width: 100%;">
+              <tr>
+                <td style="padding: 8px 0; color: #666;">New Date:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #22c55e;">${formatAppointmentDate(details.scheduledAt)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666;">New Time:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #22c55e;">${formatAppointmentTime(details.scheduledAt)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Duration:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${details.duration} minutes</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #666;">Type:</td>
+                <td style="padding: 8px 0; text-align: right; font-weight: bold;">${meetingLabel}</td>
+              </tr>
+            </table>
+          </div>
+
+          ${meetingDetails}
+
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+
+          <p style="color: #666; font-size: 14px;">
+            If this new time doesn't work for you, please reply to this email.
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}

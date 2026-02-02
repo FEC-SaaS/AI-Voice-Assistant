@@ -9,6 +9,7 @@ import { billingRouter } from "./billing";
 import { usersRouter } from "./users";
 import { contactsRouter } from "./contacts";
 import { apiKeysRouter } from "./api-keys";
+import { appointmentsRouter } from "./appointments";
 
 export const appRouter = router({
   agents: agentsRouter,
@@ -21,6 +22,7 @@ export const appRouter = router({
   billing: billingRouter,
   users: usersRouter,
   apiKeys: apiKeysRouter,
+  appointments: appointmentsRouter,
 });
 
 export type AppRouter = typeof appRouter;

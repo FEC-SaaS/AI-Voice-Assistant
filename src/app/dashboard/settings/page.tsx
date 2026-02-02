@@ -23,6 +23,7 @@ const settingsNav = [
   { title: "General", href: "/dashboard/settings" },
   { title: "Billing", href: "/dashboard/settings/billing" },
   { title: "Team", href: "/dashboard/settings/team" },
+  { title: "Calendar", href: "/dashboard/settings/calendar" },
   { title: "API Keys", href: "/dashboard/settings/api-keys" },
 ];
 
