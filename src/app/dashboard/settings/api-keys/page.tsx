@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   Key, Plus, Copy, Eye, EyeOff, Trash2, Loader2,
-  AlertTriangle, CheckCircle,
+  AlertTriangle, CheckCircle, Clock,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -21,23 +21,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-interface ApiKey {
-  id: string;
-  name: string;
-  keyPrefix: string;
-  createdAt: string;
-  lastUsed?: string;
-}
-
-function generateApiKey(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let key = "vxf_";
-  for (let i = 0; i < 32; i++) {
-    key += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return key;
-}
-
 export default function ApiKeysPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
@@ -46,14 +29,25 @@ export default function ApiKeysPage() {
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
 
   const { data: currentUser } = trpc.users.me.useQuery();
+  const { data: apiKeys, isLoading } = trpc.apiKeys.list.useQuery();
   const utils = trpc.useUtils();
 
-  // Get API keys from organization settings
-  const apiKeys: ApiKey[] = (currentUser?.organization?.settings as { apiKeys?: ApiKey[] })?.apiKeys || [];
+  const createApiKey = trpc.apiKeys.create.useMutation({
+    onSuccess: (data) => {
+      setCreatedKey(data.key);
+      utils.apiKeys.list.invalidate();
+      toast.success("API key created");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
-  const updateOrg = trpc.users.updateOrganization.useMutation({
+  const revokeApiKey = trpc.apiKeys.revoke.useMutation({
     onSuccess: () => {
-      utils.users.me.invalidate();
+      utils.apiKeys.list.invalidate();
+      setDeleteId(null);
+      toast.success("API key revoked");
     },
     onError: (error) => {
       toast.error(error.message);
@@ -65,41 +59,12 @@ export default function ApiKeysPage() {
       toast.error("Please enter a name for the API key");
       return;
     }
-
-    const fullKey = generateApiKey();
-    const newKey: ApiKey = {
-      id: crypto.randomUUID(),
-      name: newKeyName.trim(),
-      keyPrefix: fullKey.substring(0, 12) + "...",
-      createdAt: new Date().toISOString(),
-    };
-
-    const existingKeys = apiKeys;
-    updateOrg.mutate({
-      settings: {
-        ...(currentUser?.organization?.settings as object || {}),
-        apiKeys: [...existingKeys, newKey],
-      },
-    });
-
-    setCreatedKey(fullKey);
-    setNewKeyName("");
-    toast.success("API key created");
+    createApiKey.mutate({ name: newKeyName.trim() });
   };
 
   const handleDeleteKey = () => {
     if (!deleteId) return;
-
-    const existingKeys = apiKeys.filter((k) => k.id !== deleteId);
-    updateOrg.mutate({
-      settings: {
-        ...(currentUser?.organization?.settings as object || {}),
-        apiKeys: existingKeys,
-      },
-    });
-
-    setDeleteId(null);
-    toast.success("API key deleted");
+    revokeApiKey.mutate({ keyId: deleteId });
   };
 
   const handleCopy = (text: string) => {
@@ -115,6 +80,14 @@ export default function ApiKeysPage() {
       newVisible.add(id);
     }
     setVisibleKeys(newVisible);
+  };
+
+  const formatDate = (date: Date | string) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   const isAdmin = currentUser?.role === "owner" || currentUser?.role === "admin";
@@ -160,7 +133,11 @@ export default function ApiKeysPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {apiKeys.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          ) : !apiKeys || apiKeys.length === 0 ? (
             <div className="py-8 text-center">
               <Key className="mx-auto h-12 w-12 text-gray-300" />
               <h3 className="mt-4 text-lg font-semibold text-gray-900">No API keys yet</h3>
@@ -198,10 +175,15 @@ export default function ApiKeysPage() {
                           )}
                         </Button>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Created {new Date(key.createdAt).toLocaleDateString()}
-                        {key.lastUsed && ` • Last used ${new Date(key.lastUsed).toLocaleDateString()}`}
-                      </p>
+                      <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
+                        <span>Created {formatDate(key.createdAt)}</span>
+                        {key.lastUsedAt && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Last used {formatDate(key.lastUsedAt)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -209,6 +191,7 @@ export default function ApiKeysPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleCopy(key.keyPrefix)}
+                      title="Copy key prefix"
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -265,9 +248,10 @@ export default function ApiKeysPage() {
             <Badge variant="secondary">Available Endpoints</Badge>
             <ul className="mt-2 space-y-1 text-sm text-gray-600">
               <li><code className="text-primary">GET /agents</code> - List all agents</li>
+              <li><code className="text-primary">POST /agents</code> - Create a new agent</li>
               <li><code className="text-primary">GET /calls</code> - List call history</li>
-              <li><code className="text-primary">GET /campaigns</code> - List campaigns</li>
               <li><code className="text-primary">POST /calls</code> - Initiate a call</li>
+              <li><code className="text-primary">GET /campaigns</code> - List campaigns</li>
             </ul>
           </div>
         </CardContent>
@@ -340,8 +324,8 @@ export default function ApiKeysPage() {
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreateKey} disabled={updateOrg.isPending}>
-                  {updateOrg.isPending ? (
+                <Button onClick={handleCreateKey} disabled={createApiKey.isPending}>
+                  {createApiKey.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Key className="mr-2 h-4 w-4" />
@@ -358,9 +342,9 @@ export default function ApiKeysPage() {
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete API Key</DialogTitle>
+            <DialogTitle>Revoke API Key</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this API key? Any integrations using this key will stop working.
+              Are you sure you want to revoke this API key? Any integrations using this key will stop working immediately.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -370,14 +354,14 @@ export default function ApiKeysPage() {
             <Button
               variant="destructive"
               onClick={handleDeleteKey}
-              disabled={updateOrg.isPending}
+              disabled={revokeApiKey.isPending}
             >
-              {updateOrg.isPending ? (
+              {revokeApiKey.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Trash2 className="mr-2 h-4 w-4" />
               )}
-              Delete Key
+              Revoke Key
             </Button>
           </DialogFooter>
         </DialogContent>

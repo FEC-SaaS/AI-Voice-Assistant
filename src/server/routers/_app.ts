@@ -8,6 +8,7 @@ import { knowledgeRouter } from "./knowledge";
 import { billingRouter } from "./billing";
 import { usersRouter } from "./users";
 import { contactsRouter } from "./contacts";
+import { apiKeysRouter } from "./api-keys";
 
 export const appRouter = router({
   agents: agentsRouter,
@@ -19,6 +20,7 @@ export const appRouter = router({
   knowledge: knowledgeRouter,
   billing: billingRouter,
   users: usersRouter,
+  apiKeys: apiKeysRouter,
 });
 
 export type AppRouter = typeof appRouter;

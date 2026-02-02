@@ -3,7 +3,8 @@
 import { useState } from "react";
 import {
   Users, UserPlus, Loader2, MoreVertical, Shield,
-  Crown, UserCog, User, Eye, Trash2, Mail,
+  Crown, UserCog, User, Eye, Trash2, Mail, Clock,
+  RefreshCw, XCircle,
 } from "lucide-react";
 import { useOrganization } from "@clerk/nextjs";
 import { trpc } from "@/lib/trpc";
@@ -11,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,12 +38,12 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-const ROLE_CONFIG: Record<string, { icon: typeof User; label: string; color: string }> = {
-  owner: { icon: Crown, label: "Owner", color: "text-yellow-600 bg-yellow-50" },
-  admin: { icon: Shield, label: "Admin", color: "text-purple-600 bg-purple-50" },
-  manager: { icon: UserCog, label: "Manager", color: "text-blue-600 bg-blue-50" },
-  member: { icon: User, label: "Member", color: "text-gray-600 bg-gray-50" },
-  viewer: { icon: Eye, label: "Viewer", color: "text-gray-500 bg-gray-50" },
+const ROLE_CONFIG: Record<string, { icon: typeof User; label: string; color: string; description: string }> = {
+  owner: { icon: Crown, label: "Owner", color: "text-yellow-600 bg-yellow-50", description: "Full control over organization" },
+  admin: { icon: Shield, label: "Admin", color: "text-purple-600 bg-purple-50", description: "Full access to all features and settings" },
+  manager: { icon: UserCog, label: "Manager", color: "text-blue-600 bg-blue-50", description: "Can manage agents, campaigns, and calls" },
+  member: { icon: User, label: "Member", color: "text-gray-600 bg-gray-50", description: "Can view and use agents, limited settings" },
+  viewer: { icon: Eye, label: "Viewer", color: "text-gray-500 bg-gray-50", description: "Read-only access to analytics and calls" },
 };
 
 export default function TeamPage() {
@@ -48,9 +51,16 @@ export default function TeamPage() {
   const [removeUserId, setRemoveUserId] = useState<string | null>(null);
   const [editUser, setEditUser] = useState<{ id: string; role: string } | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
+  const [revokeInvitationId, setRevokeInvitationId] = useState<string | null>(null);
 
   const { data: currentUser } = trpc.users.me.useQuery();
   const { data: users, isLoading } = trpc.users.list.useQuery();
+  const { data: pendingInvitations, isLoading: loadingInvitations } = trpc.users.listInvitations.useQuery(
+    undefined,
+    { enabled: currentUser?.role === "owner" || currentUser?.role === "admin" }
+  );
   const utils = trpc.useUtils();
 
   const updateRole = trpc.users.updateRole.useMutation({
@@ -75,6 +85,40 @@ export default function TeamPage() {
     },
   });
 
+  const inviteMember = trpc.users.inviteMember.useMutation({
+    onSuccess: () => {
+      toast.success("Invitation sent successfully!");
+      utils.users.listInvitations.invalidate();
+      setInviteOpen(false);
+      setInviteEmail("");
+      setInviteRole("member");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const revokeInvitation = trpc.users.revokeInvitation.useMutation({
+    onSuccess: () => {
+      toast.success("Invitation revoked");
+      utils.users.listInvitations.invalidate();
+      setRevokeInvitationId(null);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const resendInvitation = trpc.users.resendInvitation.useMutation({
+    onSuccess: () => {
+      toast.success("Invitation resent");
+      utils.users.listInvitations.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const isAdmin = currentUser?.role === "owner" || currentUser?.role === "admin";
 
   const handleRoleChange = (role: string) => {
@@ -90,6 +134,33 @@ export default function TeamPage() {
     if (removeUserId) {
       removeUser.mutate({ userId: removeUserId });
     }
+  };
+
+  const handleInvite = () => {
+    if (!inviteEmail.trim()) {
+      toast.error("Please enter an email address");
+      return;
+    }
+    inviteMember.mutate({
+      email: inviteEmail.trim(),
+      role: inviteRole as "admin" | "manager" | "member" | "viewer",
+    });
+  };
+
+  const handleRevokeInvitation = () => {
+    if (revokeInvitationId) {
+      revokeInvitation.mutate({ invitationId: revokeInvitationId });
+    }
+  };
+
+  const formatTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - new Date(date).getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    return "Just now";
   };
 
   return (
@@ -138,7 +209,90 @@ export default function TeamPage() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="rounded-full bg-orange-100 p-3">
+                <Mail className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{pendingInvitations?.length || 0}</p>
+                <p className="text-sm text-gray-500">Pending Invites</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Pending Invitations */}
+      {isAdmin && pendingInvitations && pendingInvitations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Pending Invitations
+            </CardTitle>
+            <CardDescription>Invitations waiting to be accepted</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingInvitations ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <div className="divide-y">
+                {pendingInvitations.map((invitation: { id: string; email: string; role: string; createdAt: Date }) => {
+                  const roleConfig = ROLE_CONFIG[invitation.role] ?? {
+                    icon: User,
+                    label: "Member",
+                    color: "text-gray-600 bg-gray-50",
+                    description: "",
+                  };
+                  const RoleIcon = roleConfig.icon;
+
+                  return (
+                    <div key={invitation.id} className="flex items-center justify-between py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+                          <Mail className="h-5 w-5 text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{invitation.email}</p>
+                          <p className="text-sm text-gray-500">
+                            Invited {formatTimeAgo(invitation.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge className={roleConfig.color}>
+                          <RoleIcon className="mr-1 h-3 w-3" />
+                          {roleConfig.label}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => resendInvitation.mutate({ invitationId: invitation.id })}
+                          disabled={resendInvitation.isPending}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => setRevokeInvitationId(invitation.id)}
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Members List */}
       <Card>
@@ -163,6 +317,7 @@ export default function TeamPage() {
                   icon: User,
                   label: "Member",
                   color: "text-gray-600 bg-gray-50",
+                  description: "",
                 };
                 const RoleIcon = roleConfig.icon;
                 const isCurrentUser = user.clerkId === currentUser?.clerkId;
@@ -239,12 +394,7 @@ export default function TeamPage() {
                     <Icon className="h-5 w-5 text-gray-600" />
                     <h4 className="font-medium">{config.label}</h4>
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">
-                    {key === "admin" && "Full access to all features and settings"}
-                    {key === "manager" && "Can manage agents, campaigns, and calls"}
-                    {key === "member" && "Can view and use agents, limited settings"}
-                    {key === "viewer" && "Read-only access to analytics and calls"}
-                  </p>
+                  <p className="mt-2 text-sm text-gray-500">{config.description}</p>
                 </div>
               );
             })}
@@ -266,10 +416,10 @@ export default function TeamPage() {
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="manager">Manager</SelectItem>
-              <SelectItem value="member">Member</SelectItem>
-              <SelectItem value="viewer">Viewer</SelectItem>
+              <SelectItem value="admin">Admin - Full access to all features</SelectItem>
+              <SelectItem value="manager">Manager - Manage agents and campaigns</SelectItem>
+              <SelectItem value="member">Member - Use agents, limited settings</SelectItem>
+              <SelectItem value="viewer">Viewer - Read-only access</SelectItem>
             </SelectContent>
           </Select>
           <DialogFooter>
@@ -315,28 +465,75 @@ export default function TeamPage() {
           <DialogHeader>
             <DialogTitle>Invite Team Member</DialogTitle>
             <DialogDescription>
-              Team invitations are managed through Clerk. Use your Clerk dashboard to invite new members.
+              Send an invitation to join your organization. They&apos;ll receive an email with a link to accept.
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-lg bg-blue-50 p-4">
-            <div className="flex items-start gap-3">
-              <Mail className="h-5 w-5 text-blue-600 shrink-0" />
-              <div>
-                <p className="text-sm text-blue-800">
-                  To invite team members, go to your Clerk Dashboard and use the organization management
-                  features to send invitations. New members will automatically appear here once they accept.
-                </p>
-              </div>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="colleague@company.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin - Full access to all features</SelectItem>
+                  <SelectItem value="manager">Manager - Manage agents and campaigns</SelectItem>
+                  <SelectItem value="member">Member - Use agents, limited settings</SelectItem>
+                  <SelectItem value="viewer">Viewer - Read-only access</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setInviteOpen(false)}>
-              Close
+              Cancel
             </Button>
-            <Button asChild>
-              <a href="https://dashboard.clerk.com" target="_blank" rel="noopener noreferrer">
-                Open Clerk Dashboard
-              </a>
+            <Button onClick={handleInvite} disabled={inviteMember.isPending}>
+              {inviteMember.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Mail className="mr-2 h-4 w-4" />
+              )}
+              Send Invitation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revoke Invitation Dialog */}
+      <Dialog open={!!revokeInvitationId} onOpenChange={() => setRevokeInvitationId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Revoke Invitation</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to revoke this invitation? The recipient will no longer be able to join.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRevokeInvitationId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRevokeInvitation}
+              disabled={revokeInvitation.isPending}
+            >
+              {revokeInvitation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <XCircle className="mr-2 h-4 w-4" />
+              )}
+              Revoke
             </Button>
           </DialogFooter>
         </DialogContent>

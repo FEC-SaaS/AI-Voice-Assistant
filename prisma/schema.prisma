@@ -12,6 +12,7 @@ datasource db {
 
 model Organization {
   id                   String   @id @default(cuid())
+  clerkOrgId           String?  @unique // Clerk organization ID
   name                 String
   slug                 String   @unique
   stripeCustomerId     String?
@@ -25,17 +26,20 @@ model Organization {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  users          User[]
-  agents         Agent[]
-  campaigns      Campaign[]
-  calls          Call[]
-  phoneNumbers   PhoneNumber[]
-  knowledgeDocs  KnowledgeDocument[]
-  contacts       Contact[]
-  dncEntries     DNCEntry[]
-  consents       Consent[]
+  users              User[]
+  agents             Agent[]
+  campaigns          Campaign[]
+  calls              Call[]
+  phoneNumbers       PhoneNumber[]
+  knowledgeDocs      KnowledgeDocument[]
+  contacts           Contact[]
+  dncEntries         DNCEntry[]
+  consents           Consent[]
+  pendingInvitations PendingInvitation[]
+  apiKeys            ApiKey[]
 
   @@index([slug])
+  @@index([clerkOrgId])
   @@index([stripeCustomerId])
   @@index([twilioSubaccountSid])
 }
@@ -241,4 +245,38 @@ model Consent {
 
   @@index([organizationId])
   @@index([contactPhone])
+}
+
+model PendingInvitation {
+  id                String       @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email             String
+  role              String       @default("member") // admin, manager, member, viewer
+  clerkInvitationId String?      // Clerk invitation ID for tracking
+  invitedById       String       // Clerk user ID of inviter
+  acceptedAt        DateTime?
+  revokedAt         DateTime?
+  expiresAt         DateTime
+  createdAt         DateTime     @default(now())
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@index([email])
+}
+
+model ApiKey {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  keyHash        String       @unique // SHA256 hash of the API key
+  keyPrefix      String       // First 12 chars for display (vxf_xxxxxxxx...)
+  createdById    String       // Clerk user ID who created the key
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([keyHash])
 }
