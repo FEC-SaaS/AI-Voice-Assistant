@@ -56,8 +56,6 @@ export default function AnalyticsPage() {
 
   const { data: agentPerformance, isLoading: loadingAgents } = trpc.analytics.getAgentPerformance.useQuery();
 
-  const isLoading = loadingOverview || loadingCallsByDay || loadingSentiment || loadingAgents;
-
   // Calculate max calls for chart scaling
   const maxCalls = callsByDay?.reduce((max, day) => Math.max(max, day.count), 0) || 1;
 
@@ -200,7 +198,7 @@ export default function AnalyticsPage() {
                 {/* Simple bar chart */}
                 <div className="flex h-full flex-col">
                   <div className="flex flex-1 items-end gap-1">
-                    {callsByDay.slice(-Math.min(days, 30)).map((day, i) => (
+                    {callsByDay.slice(-Math.min(days, 30)).map((day) => (
                       <div
                         key={day.date}
                         className="group relative flex-1"

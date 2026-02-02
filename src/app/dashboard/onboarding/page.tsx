@@ -83,7 +83,7 @@ export default function OnboardingPage() {
   const { organization, isLoaded } = useOrganization();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [_createdAgentId, setCreatedAgentId] = useState<string | null>(null);
+  const [, setCreatedAgentId] = useState<string | null>(null);
 
   // Agent form state
   const [agentName, setAgentName] = useState("");

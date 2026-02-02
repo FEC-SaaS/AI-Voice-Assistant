@@ -52,11 +52,6 @@ function isValidPhoneNumber(phone: string): boolean {
   return /^\+\d{7,15}$/.test(normalized);
 }
 
-// Keep for backward compatibility but use isValidPhoneNumber instead
-function isValidUSPhone(phone: string): boolean {
-  return isValidPhoneNumber(phone);
-}
-
 const contactSchema = z.object({
   phoneNumber: z.string().min(7, "Phone number is required"),
   firstName: z.string().optional(),

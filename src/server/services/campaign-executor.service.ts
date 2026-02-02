@@ -298,7 +298,7 @@ async function processContact(
 export async function executeCampaign(
   config: CampaignExecutionConfig
 ): Promise<CampaignExecutionResult> {
-  const { campaignId, organizationId, maxConcurrentCalls: _maxConcurrentCalls = 1, delayBetweenCallsMs = 5000 } = config;
+  const { campaignId, organizationId, delayBetweenCallsMs = 5000 } = config;
 
   // Set campaign state to running
   campaignStates.set(campaignId, "running");
