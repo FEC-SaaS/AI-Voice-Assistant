@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { sendAppointmentConfirmation, sendAppointmentReminder, sendAppointmentCancellation } from "@/lib/email";
+import { sendAppointmentConfirmation, sendAppointmentReminder, sendAppointmentCancellation, sendAppointmentRescheduled } from "@/lib/email";
 
 // Helper to generate time slots
 function generateTimeSlots(
@@ -329,6 +329,7 @@ export const appointmentsRouter = router({
         status: z.enum(["scheduled", "confirmed", "completed", "cancelled", "no_show", "rescheduled"]).optional(),
         notes: z.string().optional(),
         cancelReason: z.string().optional(),
+        notifyAttendee: z.boolean().default(true),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -420,6 +421,34 @@ export const appointmentsRouter = router({
           agent: true,
         },
       });
+
+      // Send rescheduled email if the time was changed and notification is enabled
+      if (
+        updateData.status === "rescheduled" &&
+        existing.attendeeEmail &&
+        input.scheduledAt &&
+        input.notifyAttendee
+      ) {
+        try {
+          await sendAppointmentRescheduled(
+            existing.attendeeEmail,
+            existing.attendeeName || "there",
+            {
+              title: appointment.title,
+              scheduledAt: appointment.scheduledAt,
+              duration: appointment.duration,
+              meetingType: appointment.meetingType,
+              meetingLink: appointment.meetingLink,
+              location: appointment.location,
+              phoneNumber: appointment.phoneNumber,
+            },
+            existing.scheduledAt // Previous date
+          );
+        } catch (error) {
+          console.error("Failed to send rescheduled email:", error);
+          // Don't fail the update
+        }
+      }
 
       return appointment;
     }),
