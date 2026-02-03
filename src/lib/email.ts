@@ -2,7 +2,10 @@ import { Resend } from "resend";
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
-const FROM_EMAIL = "VoxForge AI <hello@voxforge.ai>";
+// Use custom FROM_EMAIL if set, otherwise use Resend's test domain (for development)
+// For production, set EMAIL_FROM_ADDRESS to your verified domain email
+// Format: "Name <email@domain.com>"
+const FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || "VoxForge AI <onboarding@resend.dev>";
 
 interface SendEmailOptions {
   to: string | string[];
@@ -14,6 +17,15 @@ interface SendEmailOptions {
 export async function sendEmail(options: SendEmailOptions) {
   const { to, subject, html, text } = options;
 
+  // Check if API key is configured
+  if (!process.env.RESEND_API_KEY) {
+    console.error("[Email] RESEND_API_KEY is not configured");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  console.log(`[Email] Sending email to ${to} with subject: ${subject}`);
+  console.log(`[Email] From: ${FROM_EMAIL}`);
+
   try {
     const result = await resend.emails.send({
       from: FROM_EMAIL,
@@ -23,9 +35,15 @@ export async function sendEmail(options: SendEmailOptions) {
       text,
     });
 
+    if (result.error) {
+      console.error("[Email] Resend API error:", result.error);
+      return { success: false, error: result.error };
+    }
+
+    console.log(`[Email] Successfully sent email, ID: ${result.data?.id}`);
     return { success: true, id: result.data?.id };
   } catch (error) {
-    console.error("Email send error:", error);
+    console.error("[Email] Send error:", error);
     return { success: false, error };
   }
 }
