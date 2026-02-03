@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Bot, Edit, Phone, Megaphone, Power, Trash2,
-  PhoneCall, Loader2, CheckCircle, XCircle, BookOpen, RefreshCw, AlertTriangle
+  PhoneCall, Loader2, CheckCircle, XCircle, BookOpen, RefreshCw, AlertTriangle, Calendar
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -224,6 +224,19 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
               <p className={`text-sm font-medium ${agent.vapiAssistantId ? "text-green-600" : "text-yellow-600"}`}>
                 {agent.vapiAssistantId ? "Connected" : "Not Connected"}
               </p>
+            </div>
+            <div>
+              <span className="text-xs font-medium uppercase text-gray-400">Capabilities</span>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {((agent.settings as Record<string, unknown>)?.enableAppointments) ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                    <Calendar className="h-3 w-3" />
+                    Appointment Scheduling
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-500">None enabled</span>
+                )}
+              </div>
             </div>
           </div>
         </div>

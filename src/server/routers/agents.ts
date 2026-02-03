@@ -2,7 +2,14 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { createAssistant, updateAssistant, deleteAssistant, createCall } from "@/lib/vapi";
+import { getAgentTools, getAppointmentSystemPromptAddition } from "@/lib/vapi-tools";
 import { enforceAgentLimit } from "../trpc/middleware";
+
+// Get the webhook URL for Vapi tool calls
+function getVapiWebhookUrl(): string {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  return `${baseUrl}/api/webhooks/vapi`;
+}
 
 const agentSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -14,6 +21,7 @@ const agentSchema = z.object({
   language: z.string().default("en-US"),
   modelProvider: z.string().default("openai"),
   model: z.string().default("gpt-4o"),
+  enableAppointments: z.boolean().default(false),
 });
 
 export const agentsRouter = router({
@@ -82,8 +90,16 @@ export const agentsRouter = router({
         }
       }
 
-      // Combine system prompt with knowledge
-      const fullSystemPrompt = input.systemPrompt + knowledgeContent;
+      // Combine system prompt with knowledge and appointment capabilities
+      let fullSystemPrompt = input.systemPrompt + knowledgeContent;
+
+      // Add appointment scheduling instructions if enabled
+      if (input.enableAppointments) {
+        fullSystemPrompt += getAppointmentSystemPromptAddition();
+      }
+
+      // Get tools for this agent
+      const tools = getAgentTools(input.enableAppointments);
 
       // Create assistant in voice system (Vapi) - this is required
       let vapiAssistantId: string;
@@ -97,6 +113,9 @@ export const agentsRouter = router({
           voiceId: input.voiceId,
           modelProvider: input.modelProvider,
           model: input.model,
+          tools: tools.length > 0 ? tools : undefined,
+          serverUrl: tools.length > 0 ? getVapiWebhookUrl() : undefined,
+          serverUrlSecret: tools.length > 0 ? process.env.VAPI_WEBHOOK_SECRET : undefined,
         });
         vapiAssistantId = vapiAssistant.id;
       } catch (error) {
@@ -109,6 +128,7 @@ export const agentsRouter = router({
       }
 
       // Create agent in database (store original prompt, not with knowledge)
+      // Store enableAppointments in settings JSON field
       const agent = await ctx.db.agent.create({
         data: {
           organizationId: ctx.orgId,
@@ -122,6 +142,9 @@ export const agentsRouter = router({
           language: input.language,
           modelProvider: input.modelProvider,
           model: input.model,
+          settings: {
+            enableAppointments: input.enableAppointments,
+          },
         },
       });
 
@@ -179,9 +202,22 @@ export const agentsRouter = router({
           "\n--- END KNOWLEDGE BASE ---";
       }
 
-      // Prepare the full system prompt for Vapi (with knowledge)
+      // Determine enableAppointments - check if it's being updated or use existing
+      const existingSettings = (existingAgent.settings as Record<string, unknown>) || {};
+      const enableAppointments = input.data.enableAppointments !== undefined
+        ? input.data.enableAppointments
+        : (existingSettings.enableAppointments as boolean) || false;
+
+      // Prepare the full system prompt for Vapi (with knowledge and appointment capabilities)
       const systemPrompt = input.data.systemPrompt || existingAgent.systemPrompt;
-      const fullSystemPrompt = systemPrompt + knowledgeContent;
+      let fullSystemPrompt = systemPrompt + knowledgeContent;
+
+      if (enableAppointments) {
+        fullSystemPrompt += getAppointmentSystemPromptAddition();
+      }
+
+      // Get tools for this agent
+      const tools = getAgentTools(enableAppointments);
 
       // Update in Vapi if we have an assistant ID
       if (existingAgent.vapiAssistantId) {
@@ -189,6 +225,9 @@ export const agentsRouter = router({
           await updateAssistant(existingAgent.vapiAssistantId, {
             ...input.data,
             systemPrompt: fullSystemPrompt,
+            tools: tools.length > 0 ? tools : undefined,
+            serverUrl: tools.length > 0 ? getVapiWebhookUrl() : undefined,
+            serverUrlSecret: tools.length > 0 ? process.env.VAPI_WEBHOOK_SECRET : undefined,
           });
         } catch (error) {
           console.error("Failed to update Vapi assistant:", error);
@@ -196,10 +235,21 @@ export const agentsRouter = router({
         }
       }
 
+      // Prepare update data, including settings if enableAppointments changed
+      const updateData: Record<string, unknown> = { ...input.data };
+      delete updateData.enableAppointments; // Remove from direct data since it goes in settings
+
+      if (input.data.enableAppointments !== undefined) {
+        updateData.settings = {
+          ...existingSettings,
+          enableAppointments: input.data.enableAppointments,
+        };
+      }
+
       // Update in database (store original prompt, not with knowledge)
       const agent = await ctx.db.agent.update({
         where: { id: input.id },
-        data: input.data,
+        data: updateData,
       });
 
       // Update knowledge document assignments if provided
@@ -365,6 +415,10 @@ export const agentsRouter = router({
         },
       });
 
+      // Get enableAppointments from agent settings
+      const agentSettings = (agent.settings as Record<string, unknown>) || {};
+      const enableAppointments = (agentSettings.enableAppointments as boolean) || false;
+
       let knowledgeContent = "";
       if (knowledgeDocs.length > 0) {
         knowledgeContent = "\n\n--- KNOWLEDGE BASE ---\n" +
@@ -372,11 +426,20 @@ export const agentsRouter = router({
           "\n--- END KNOWLEDGE BASE ---";
       }
 
-      const fullSystemPrompt = agent.systemPrompt + knowledgeContent;
+      let fullSystemPrompt = agent.systemPrompt + knowledgeContent;
+      if (enableAppointments) {
+        fullSystemPrompt += getAppointmentSystemPromptAddition();
+      }
+
+      // Get tools
+      const tools = getAgentTools(enableAppointments);
 
       // Update Vapi
       await updateAssistant(agent.vapiAssistantId, {
         systemPrompt: fullSystemPrompt,
+        tools: tools.length > 0 ? tools : undefined,
+        serverUrl: tools.length > 0 ? getVapiWebhookUrl() : undefined,
+        serverUrlSecret: tools.length > 0 ? process.env.VAPI_WEBHOOK_SECRET : undefined,
       });
 
       return { success: true, documentsIncluded: knowledgeDocs.length };
@@ -400,6 +463,10 @@ export const agentsRouter = router({
         });
       }
 
+      // Get enableAppointments from agent settings
+      const agentSettings = (agent.settings as Record<string, unknown>) || {};
+      const enableAppointments = (agentSettings.enableAppointments as boolean) || false;
+
       // Get knowledge content
       const knowledgeDocs = await ctx.db.knowledgeDocument.findMany({
         where: {
@@ -416,7 +483,13 @@ export const agentsRouter = router({
           "\n--- END KNOWLEDGE BASE ---";
       }
 
-      const fullSystemPrompt = agent.systemPrompt + knowledgeContent;
+      let fullSystemPrompt = agent.systemPrompt + knowledgeContent;
+      if (enableAppointments) {
+        fullSystemPrompt += getAppointmentSystemPromptAddition();
+      }
+
+      // Get tools
+      const tools = getAgentTools(enableAppointments);
 
       // If agent doesn't have a Vapi ID, create the assistant
       if (!agent.vapiAssistantId) {
@@ -429,10 +502,13 @@ export const agentsRouter = router({
             voiceId: agent.voiceId,
             modelProvider: agent.modelProvider,
             model: agent.model,
+            tools: tools.length > 0 ? tools : undefined,
+            serverUrl: tools.length > 0 ? getVapiWebhookUrl() : undefined,
+            serverUrlSecret: tools.length > 0 ? process.env.VAPI_WEBHOOK_SECRET : undefined,
           });
 
           // Update agent with Vapi ID
-          const updated = await ctx.db.agent.update({
+          await ctx.db.agent.update({
             where: { id: input.id },
             data: { vapiAssistantId: vapiAssistant.id },
           });
@@ -463,6 +539,9 @@ export const agentsRouter = router({
           voiceId: agent.voiceId,
           modelProvider: agent.modelProvider,
           model: agent.model,
+          tools: tools.length > 0 ? tools : undefined,
+          serverUrl: tools.length > 0 ? getVapiWebhookUrl() : undefined,
+          serverUrlSecret: tools.length > 0 ? process.env.VAPI_WEBHOOK_SECRET : undefined,
         });
 
         return {

@@ -29,6 +29,29 @@ async function vapiRequest<T>(options: VapiRequestOptions): Promise<T> {
   return response.json();
 }
 
+// Tool definition for Vapi
+export interface VapiTool {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: "object";
+      properties: Record<string, {
+        type: string;
+        description: string;
+        enum?: string[];
+      }>;
+      required?: string[];
+    };
+  };
+  async?: boolean;
+  server?: {
+    url: string;
+    secret?: string;
+  };
+}
+
 // Assistant types
 export interface AssistantConfig {
   name: string;
@@ -38,6 +61,9 @@ export interface AssistantConfig {
   voiceId?: string;
   modelProvider?: string;
   model?: string;
+  tools?: VapiTool[];
+  serverUrl?: string;
+  serverUrlSecret?: string;
 }
 
 export interface VapiAssistant {
@@ -116,24 +142,35 @@ export async function createAssistant(config: AssistantConfig): Promise<VapiAssi
     voiceId: voiceId,
   };
 
+  const assistantBody: Record<string, unknown> = {
+    name: config.name,
+    model: {
+      provider: config.modelProvider || "openai",
+      model: config.model || "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: config.systemPrompt,
+        },
+      ],
+      tools: config.tools,
+    },
+    voice: voiceConfig,
+    firstMessage: config.firstMessage || "Hello, how can I help you today?",
+  };
+
+  // Add server URL for tool/function webhooks
+  if (config.serverUrl) {
+    assistantBody.serverUrl = config.serverUrl;
+    if (config.serverUrlSecret) {
+      assistantBody.serverUrlSecret = config.serverUrlSecret;
+    }
+  }
+
   return vapiRequest<VapiAssistant>({
     method: "POST",
     path: "/assistant",
-    body: {
-      name: config.name,
-      model: {
-        provider: config.modelProvider || "openai",
-        model: config.model || "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: config.systemPrompt,
-          },
-        ],
-      },
-      voice: voiceConfig,
-      firstMessage: config.firstMessage || "Hello, how can I help you today?",
-    },
+    body: assistantBody,
   });
 }
 
@@ -180,6 +217,23 @@ export async function updateAssistant(
       provider: voiceProvider,
       voiceId: voiceId,
     };
+  }
+
+  // Add tools if provided
+  if (config.tools) {
+    if (body.model) {
+      (body.model as Record<string, unknown>).tools = config.tools;
+    } else {
+      body.model = { tools: config.tools };
+    }
+  }
+
+  // Add server URL for tool/function webhooks
+  if (config.serverUrl !== undefined) {
+    body.serverUrl = config.serverUrl;
+  }
+  if (config.serverUrlSecret !== undefined) {
+    body.serverUrlSecret = config.serverUrlSecret;
   }
 
   return vapiRequest<VapiAssistant>({

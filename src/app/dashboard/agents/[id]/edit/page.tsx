@@ -43,6 +43,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (agent) {
+      const settings = (agent.settings as Record<string, unknown>) || {};
       reset({
         name: agent.name,
         description: agent.description || "",
@@ -53,6 +54,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
         language: agent.language,
         modelProvider: agent.modelProvider,
         model: agent.model,
+        enableAppointments: (settings.enableAppointments as boolean) || false,
       });
     }
   }, [agent, reset]);
@@ -158,6 +160,27 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
               <option key={m.value} value={m.value}>{m.label}</option>
             ))}
           </select>
+        </div>
+
+        <div className="rounded-lg border bg-white p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">Capabilities</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="enableAppointments" className="text-base">Enable Appointment Scheduling</Label>
+              <p className="text-sm text-gray-500">
+                Allow this agent to check availability and schedule appointments during calls
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="enableAppointments"
+                className="sr-only peer"
+                {...register("enableAppointments")}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-4">

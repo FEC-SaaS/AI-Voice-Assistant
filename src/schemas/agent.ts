@@ -10,6 +10,7 @@ export const createAgentSchema = z.object({
   language: z.string().default("en-US"),
   modelProvider: z.string().default("openai"),
   model: z.string().default("gpt-4-turbo"),
+  enableAppointments: z.boolean().default(false),
 });
 
 export const updateAgentSchema = createAgentSchema.partial();
