@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Bot, Edit, Phone, Megaphone, Power, Trash2,
-  PhoneCall, Loader2, CheckCircle, XCircle, BookOpen, RefreshCw
+  PhoneCall, Loader2, CheckCircle, XCircle, BookOpen, RefreshCw, AlertTriangle
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,14 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
     onSuccess: () => { toast.success("Agent deleted"); router.push("/dashboard/agents"); },
     onError: (err) => toast.error(err.message),
   });
-  const syncKnowledge = trpc.agents.syncKnowledge.useMutation({
+  const syncToVapi = trpc.agents.syncToVapi.useMutation({
     onSuccess: (data) => {
-      toast.success(`Knowledge synced! ${data.documentsIncluded} document(s) included.`);
+      refetch();
+      if (data.created) {
+        toast.success(`Agent synced to Vapi! ${data.documentsIncluded} document(s) included.`);
+      } else {
+        toast.success(`Vapi updated! ${data.documentsIncluded} document(s) included.`);
+      }
     },
     onError: (err) => toast.error(err.message),
   });
@@ -127,6 +132,32 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
           </Button>
         </div>
       </div>
+
+      {/* Not Synced Warning */}
+      {!agent.vapiAssistantId && (
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-medium text-yellow-800">Agent not synced with Vapi</h3>
+              <p className="mt-1 text-sm text-yellow-700">
+                This agent is not connected to Vapi and cannot make calls. Click &quot;Sync to Vapi&quot; to connect it.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => syncToVapi.mutate({ id: agent.id })}
+              disabled={syncToVapi.isPending}
+            >
+              {syncToVapi.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Syncing...</>
+              ) : (
+                <><RefreshCw className="mr-2 h-4 w-4" /> Sync to Vapi</>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Test Call Panel */}
       {showTestCall && (
@@ -238,10 +269,10 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
             <Button
               variant="outline"
               size="sm"
-              onClick={() => syncKnowledge.mutate({ id: agent.id })}
-              disabled={syncKnowledge.isPending || !agent.vapiAssistantId}
+              onClick={() => syncToVapi.mutate({ id: agent.id })}
+              disabled={syncToVapi.isPending}
             >
-              {syncKnowledge.isPending ? (
+              {syncToVapi.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Syncing...</>
               ) : (
                 <><RefreshCw className="mr-2 h-4 w-4" /> Sync to Vapi</>

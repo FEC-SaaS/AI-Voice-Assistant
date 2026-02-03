@@ -378,6 +378,105 @@ export const agentsRouter = router({
       return { success: true, documentsIncluded: knowledgeDocs.length };
     }),
 
+  // Sync agent to Vapi (create or update)
+  syncToVapi: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const agent = await ctx.db.agent.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!agent) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Agent not found",
+        });
+      }
+
+      // Get knowledge content
+      const knowledgeDocs = await ctx.db.knowledgeDocument.findMany({
+        where: {
+          agentId: input.id,
+          organizationId: ctx.orgId,
+          isActive: true,
+        },
+      });
+
+      let knowledgeContent = "";
+      if (knowledgeDocs.length > 0) {
+        knowledgeContent = "\n\n--- KNOWLEDGE BASE ---\n" +
+          knowledgeDocs.map(d => `=== ${d.name} ===\n${d.content || ""}`).join("\n\n") +
+          "\n--- END KNOWLEDGE BASE ---";
+      }
+
+      const fullSystemPrompt = agent.systemPrompt + knowledgeContent;
+
+      // If agent doesn't have a Vapi ID, create the assistant
+      if (!agent.vapiAssistantId) {
+        try {
+          const vapiAssistant = await createAssistant({
+            name: agent.name,
+            systemPrompt: fullSystemPrompt,
+            firstMessage: agent.firstMessage || undefined,
+            voiceProvider: agent.voiceProvider,
+            voiceId: agent.voiceId,
+            modelProvider: agent.modelProvider,
+            model: agent.model,
+          });
+
+          // Update agent with Vapi ID
+          const updated = await ctx.db.agent.update({
+            where: { id: input.id },
+            data: { vapiAssistantId: vapiAssistant.id },
+          });
+
+          return {
+            success: true,
+            created: true,
+            vapiAssistantId: vapiAssistant.id,
+            documentsIncluded: knowledgeDocs.length,
+          };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          console.error("Failed to create Vapi assistant:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Failed to sync to Vapi: ${errorMessage}`,
+          });
+        }
+      }
+
+      // If agent has a Vapi ID, update the assistant
+      try {
+        await updateAssistant(agent.vapiAssistantId, {
+          name: agent.name,
+          systemPrompt: fullSystemPrompt,
+          firstMessage: agent.firstMessage || undefined,
+          voiceProvider: agent.voiceProvider,
+          voiceId: agent.voiceId,
+          modelProvider: agent.modelProvider,
+          model: agent.model,
+        });
+
+        return {
+          success: true,
+          created: false,
+          vapiAssistantId: agent.vapiAssistantId,
+          documentsIncluded: knowledgeDocs.length,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        console.error("Failed to update Vapi assistant:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to sync to Vapi: ${errorMessage}`,
+        });
+      }
+    }),
+
   // Toggle agent active status
   toggleActive: protectedProcedure
     .input(z.object({ id: z.string() }))
