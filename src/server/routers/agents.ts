@@ -85,8 +85,8 @@ export const agentsRouter = router({
       // Combine system prompt with knowledge
       const fullSystemPrompt = input.systemPrompt + knowledgeContent;
 
-      // Create assistant in Vapi
-      let vapiAssistantId: string | null = null;
+      // Create assistant in voice system (Vapi) - this is required
+      let vapiAssistantId: string;
 
       try {
         const vapiAssistant = await createAssistant({
@@ -100,8 +100,12 @@ export const agentsRouter = router({
         });
         vapiAssistantId = vapiAssistant.id;
       } catch (error) {
-        console.error("Failed to create Vapi assistant:", error);
-        // Continue without Vapi ID - can sync later
+        console.error("Failed to create agent in voice system:", error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to create agent: ${errorMessage}`,
+        });
       }
 
       // Create agent in database (store original prompt, not with knowledge)

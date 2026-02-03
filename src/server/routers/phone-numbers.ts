@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { importTwilioPhoneNumber, releasePhoneNumber as releaseVapiPhoneNumber } from "@/lib/vapi";
+import { importTwilioPhoneNumber, releasePhoneNumber as releaseVapiPhoneNumber, updatePhoneNumber as updateVapiPhoneNumber } from "@/lib/vapi";
 import {
   createSubaccount,
   searchAvailableNumbers,
@@ -343,7 +343,8 @@ export const phoneNumbersRouter = router({
         });
       }
 
-      // If assigning to an agent, verify it exists
+      // Get the agent's vapiAssistantId if assigning
+      let vapiAssistantId: string | null = null;
       if (input.agentId) {
         const agent = await ctx.db.agent.findFirst({
           where: {
@@ -357,6 +358,27 @@ export const phoneNumbersRouter = router({
             code: "NOT_FOUND",
             message: "Agent not found",
           });
+        }
+
+        vapiAssistantId = agent.vapiAssistantId;
+
+        // Warn if agent is not connected to voice system
+        if (!vapiAssistantId) {
+          console.warn(`[PhoneNumber] Agent ${input.agentId} is not connected to voice system`);
+        }
+      }
+
+      // Sync to Vapi if phone number has a Vapi ID
+      if (phoneNumber.vapiPhoneId) {
+        try {
+          await updateVapiPhoneNumber(phoneNumber.vapiPhoneId, {
+            assistantId: vapiAssistantId, // null will unassign in Vapi
+          });
+          console.log(`[Vapi] ${vapiAssistantId ? 'Assigned' : 'Unassigned'} phone number ${phoneNumber.vapiPhoneId} ${vapiAssistantId ? `to assistant ${vapiAssistantId}` : ''}`);
+        } catch (error) {
+          console.error("[Vapi] Failed to sync phone number assignment:", error);
+          // Don't throw - save locally even if Vapi sync fails
+          // User can retry or it will work on next assignment
         }
       }
 

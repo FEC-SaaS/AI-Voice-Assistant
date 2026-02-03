@@ -430,3 +430,31 @@ export async function releasePhoneNumber(phoneNumberId: string): Promise<void> {
     path: `/phone-number/${phoneNumberId}`,
   });
 }
+
+// Update phone number (assign/unassign assistant)
+export async function updatePhoneNumber(
+  phoneNumberId: string,
+  config: {
+    assistantId?: string | null;
+    name?: string;
+  }
+): Promise<VapiPhoneNumber> {
+  const body: Record<string, unknown> = {};
+
+  // If assistantId is explicitly set (including null to unassign)
+  if (config.assistantId !== undefined) {
+    body.assistantId = config.assistantId;
+  }
+
+  if (config.name) {
+    body.name = config.name;
+  }
+
+  console.log(`[Vapi] Updating phone number ${phoneNumberId}:`, body);
+
+  return vapiRequest<VapiPhoneNumber>({
+    method: "PATCH",
+    path: `/phone-number/${phoneNumberId}`,
+    body,
+  });
+}

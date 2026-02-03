@@ -33,9 +33,9 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
     onSuccess: (data) => {
       refetch();
       if (data.created) {
-        toast.success(`Agent synced to Vapi! ${data.documentsIncluded} document(s) included.`);
+        toast.success(`Agent connected! ${data.documentsIncluded} knowledge document(s) included.`);
       } else {
-        toast.success(`Vapi updated! ${data.documentsIncluded} document(s) included.`);
+        toast.success(`Agent updated! ${data.documentsIncluded} knowledge document(s) included.`);
       }
     },
     onError: (err) => toast.error(err.message),
@@ -133,15 +133,15 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
         </div>
       </div>
 
-      {/* Not Synced Warning */}
+      {/* Not Connected Warning */}
       {!agent.vapiAssistantId && (
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-medium text-yellow-800">Agent not synced with Vapi</h3>
+              <h3 className="font-medium text-yellow-800">Agent not connected</h3>
               <p className="mt-1 text-sm text-yellow-700">
-                This agent is not connected to Vapi and cannot make calls. Click &quot;Sync to Vapi&quot; to connect it.
+                This agent is not connected to the voice system and cannot make calls. Click &quot;Connect Agent&quot; to enable it.
               </p>
             </div>
             <Button
@@ -150,9 +150,9 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
               disabled={syncToVapi.isPending}
             >
               {syncToVapi.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Syncing...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...</>
               ) : (
-                <><RefreshCw className="mr-2 h-4 w-4" /> Sync to Vapi</>
+                <><RefreshCw className="mr-2 h-4 w-4" /> Connect Agent</>
               )}
             </Button>
           </div>
@@ -220,8 +220,10 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
               <p className="text-sm text-gray-900">{agent.language}</p>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">Vapi ID</span>
-              <p className="text-sm font-mono text-gray-500">{agent.vapiAssistantId || "Not synced"}</p>
+              <span className="text-xs font-medium uppercase text-gray-400">Status</span>
+              <p className={`text-sm font-medium ${agent.vapiAssistantId ? "text-green-600" : "text-yellow-600"}`}>
+                {agent.vapiAssistantId ? "Connected" : "Not Connected"}
+              </p>
             </div>
           </div>
         </div>
@@ -265,20 +267,6 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
       <div className="rounded-lg border bg-white p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Knowledge Base</h2>
-          {knowledgeData?.documents && knowledgeData.documents.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => syncToVapi.mutate({ id: agent.id })}
-              disabled={syncToVapi.isPending}
-            >
-              {syncToVapi.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Syncing...</>
-              ) : (
-                <><RefreshCw className="mr-2 h-4 w-4" /> Sync to Vapi</>
-              )}
-            </Button>
-          )}
         </div>
         {knowledgeData?.documents && knowledgeData.documents.length > 0 ? (
           <div className="mt-4 space-y-2">
@@ -294,8 +282,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
               </div>
             ))}
             <p className="mt-2 text-xs text-gray-500">
-              Knowledge documents are included in the agent&apos;s system prompt when calling.
-              Click &quot;Sync to Vapi&quot; after adding or updating knowledge documents.
+              Knowledge documents are automatically included in the agent&apos;s knowledge base.
             </p>
           </div>
         ) : (
