@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -46,18 +46,24 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse }: SidebarProps) {
   const pathname = usePathname();
-  const isFirstRender = useRef(true);
+  const prevPathname = useRef(pathname);
+  const onCloseRef = useRef(onClose);
 
-  // Close mobile menu on route change (but not on initial mount)
+  // Keep onClose ref updated
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  console.log("Sidebar render: isOpen =", isOpen);
+
+  // Close mobile menu on route change only
+  useEffect(() => {
+    if (prevPathname.current !== pathname) {
+      console.log("Sidebar: pathname changed from", prevPathname.current, "to", pathname);
+      prevPathname.current = pathname;
+      onCloseRef.current?.();
     }
-    if (onClose) {
-      onClose();
-    }
-  }, [pathname, onClose]);
+  }, [pathname]);
 
   const sidebarContent = (
     <>

@@ -14,8 +14,12 @@ export function Header({ onMenuClick }: HeaderProps) {
       {/* Mobile menu button and logo */}
       <div className="flex items-center gap-3">
         <button
-          onClick={onMenuClick}
-          className="lg:hidden flex items-center justify-center h-10 w-10 rounded-xl hover:bg-gray-100 transition-colors"
+          type="button"
+          onClick={() => {
+            console.log("Menu button clicked");
+            onMenuClick?.();
+          }}
+          className="lg:hidden flex items-center justify-center h-10 w-10 rounded-xl hover:bg-gray-100 transition-colors active:bg-gray-200"
         >
           <Menu className="h-5 w-5 text-gray-600" />
         </button>
