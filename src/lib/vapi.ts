@@ -431,7 +431,7 @@ export async function releasePhoneNumber(phoneNumberId: string): Promise<void> {
   });
 }
 
-// Update phone number (assign/unassign assistant)
+// Update phone number (assign/unassign assistant for both inbound and outbound)
 export async function updatePhoneNumber(
   phoneNumberId: string,
   config: {
@@ -443,14 +443,19 @@ export async function updatePhoneNumber(
 
   // If assistantId is explicitly set (including null to unassign)
   if (config.assistantId !== undefined) {
+    // Set assistant for inbound calls
     body.assistantId = config.assistantId;
+
+    // Set server message for outbound - this makes the assistant also handle outbound calls
+    // When a call is created, if serverUrl is set, Vapi will use it to get assistant config
+    // But for direct assistant assignment on outbound, we rely on createCall() passing assistantId
   }
 
   if (config.name) {
     body.name = config.name;
   }
 
-  console.log(`[Vapi] Updating phone number ${phoneNumberId}:`, body);
+  console.log(`[Vapi] Updating phone number ${phoneNumberId}:`, JSON.stringify(body, null, 2));
 
   return vapiRequest<VapiPhoneNumber>({
     method: "PATCH",
