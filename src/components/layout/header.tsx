@@ -13,19 +13,21 @@ export function Header({ onMenuClick }: HeaderProps) {
     <header className="flex h-16 items-center justify-between border-b border-gray-200/50 bg-white/80 backdrop-blur-xl px-4 lg:px-6">
       {/* Mobile menu button and logo */}
       <div className="flex items-center gap-3">
+        {/* Menu button - visible on mobile only */}
         <button
           type="button"
           onClick={() => {
             console.log("Menu button clicked");
             onMenuClick?.();
           }}
-          className="lg:hidden flex items-center justify-center h-10 w-10 rounded-xl hover:bg-gray-100 transition-colors active:bg-gray-200"
+          className="flex lg:hidden items-center justify-center h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors active:bg-gray-300"
+          aria-label="Open menu"
         >
-          <Menu className="h-5 w-5 text-gray-600" />
+          <Menu className="h-6 w-6 text-gray-700" />
         </button>
 
         {/* Mobile logo */}
-        <Link href="/dashboard" className="lg:hidden flex items-center gap-2">
+        <Link href="/dashboard" className="flex lg:hidden items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 text-white shadow-md shadow-primary/20">
             <Bot className="h-4 w-4" />
           </div>
