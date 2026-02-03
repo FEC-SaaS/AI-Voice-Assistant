@@ -134,8 +134,8 @@ export default function CampaignsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-6 max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
             <p className="text-gray-500">Loading...</p>
@@ -149,9 +149,9 @@ export default function CampaignsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
           <p className="text-gray-500">
@@ -161,7 +161,7 @@ export default function CampaignsPage() {
           </p>
         </div>
         <Link href="/dashboard/campaigns/new">
-          <Button>
+          <Button className="w-full sm:w-auto rounded-xl shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all">
             <Plus className="mr-2 h-4 w-4" />
             Create Campaign
           </Button>
@@ -170,21 +170,23 @@ export default function CampaignsPage() {
 
       {/* Campaigns List */}
       {!campaigns?.length ? (
-        <div className="rounded-lg border bg-white p-12 text-center">
-          <Megaphone className="mx-auto h-12 w-12 text-gray-300" />
+        <div className="rounded-2xl border border-gray-200/50 bg-white p-8 lg:p-12 text-center shadow-sm">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center">
+            <Megaphone className="h-8 w-8 text-amber-500" />
+          </div>
           <h3 className="mt-4 text-lg font-semibold text-gray-900">No campaigns yet</h3>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 max-w-sm mx-auto">
             Create a campaign to start making outbound calls to your contacts.
           </p>
           <Link href="/dashboard/campaigns/new">
-            <Button className="mt-6">
+            <Button className="mt-6 rounded-xl shadow-md shadow-primary/20">
               <Plus className="mr-2 h-4 w-4" />
               Create Your First Campaign
             </Button>
           </Link>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {campaigns.map((campaign) => {
             const status = STATUS_CONFIG[campaign.status] ?? DEFAULT_STATUS;
             const isActioning = actioningId === campaign.id;
@@ -193,7 +195,7 @@ export default function CampaignsPage() {
             return (
               <div
                 key={campaign.id}
-                className="rounded-lg border bg-white p-5 hover:shadow-md transition-shadow"
+                className="rounded-2xl border border-gray-200/50 bg-white p-5 hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-0.5 transition-all"
               >
                 {/* Header */}
                 <div className="flex items-start justify-between">
