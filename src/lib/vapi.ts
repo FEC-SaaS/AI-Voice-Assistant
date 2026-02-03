@@ -61,6 +61,17 @@ const VAPI_VOICES = [
   "Harry", "Paige", "Spencer", "Leah", "Tara", "Jess", "Leo", "Dan", "Mia", "Zac", "Zoe"
 ];
 
+// Deepgram voices supported by Vapi
+const DEEPGRAM_VOICES = [
+  "asteria", "luna", "stella", "athena", "hera", "orion", "arcas", "perseus",
+  "angus", "orpheus", "helios", "zeus", "thalia", "andromeda", "helena", "apollo",
+  "aries", "amalthea", "atlas", "aurora", "callista", "cora", "cordelia", "delia",
+  "draco", "electra", "harmonia", "hermes", "hyperion", "iris", "janus", "juno",
+  "jupiter", "mars", "minerva", "neptune", "odysseus", "ophelia", "pandora",
+  "phoebe", "pluto", "saturn", "selene", "theia", "vesta", "celeste", "estrella",
+  "nestor", "sirio", "carina", "alvaro", "diana", "aquila", "selena", "javier"
+];
+
 // Map voice provider names to Vapi's expected format
 function mapVoiceProvider(provider: string): string {
   const providerMap: Record<string, string> = {
@@ -70,6 +81,9 @@ function mapVoiceProvider(provider: string): string {
     playht: "playht",
     deepgram: "deepgram",
     openai: "openai",
+    cartesia: "cartesia",
+    lmnt: "lmnt",
+    "rime-ai": "rime-ai",
   };
   return providerMap[provider.toLowerCase()] || "vapi";
 }
@@ -79,18 +93,23 @@ export async function createAssistant(config: AssistantConfig): Promise<VapiAssi
   let voiceProvider = mapVoiceProvider(config.voiceProvider || "vapi");
   let voiceId = config.voiceId || "Elliot";
 
-  // If using 11labs but no custom voice ID, fall back to Vapi voices
-  // (11labs requires your own credentials and voice IDs)
-  if (voiceProvider === "11labs" && !config.voiceId) {
-    console.log("[Vapi] No ElevenLabs voice ID provided, falling back to Vapi voice");
+  // Determine the correct provider based on voice ID
+  if (VAPI_VOICES.includes(voiceId)) {
+    // Vapi built-in voices
     voiceProvider = "vapi";
-    voiceId = "Elliot";
+  } else if (DEEPGRAM_VOICES.includes(voiceId.toLowerCase())) {
+    // Deepgram voices
+    voiceProvider = "deepgram";
+    voiceId = voiceId.toLowerCase(); // Deepgram uses lowercase
+  } else if (voiceProvider === "11labs" || voiceProvider === "elevenlabs") {
+    // ElevenLabs - ensure provider is correct
+    voiceProvider = "11labs";
+  } else if (voiceProvider === "playht") {
+    // PlayHT - keep as is
+    voiceProvider = "playht";
   }
 
-  // If the voice ID is a Vapi built-in voice, use vapi provider
-  if (VAPI_VOICES.includes(voiceId)) {
-    voiceProvider = "vapi";
-  }
+  console.log("[Vapi] Creating assistant with voice:", { provider: voiceProvider, voiceId });
 
   const voiceConfig: Record<string, string> = {
     provider: voiceProvider,
@@ -144,11 +163,18 @@ export async function updateAssistant(
   }
 
   if (config.voiceProvider || config.voiceId) {
-    const voiceId = config.voiceId || "Elliot";
-    // If the voice ID is a Vapi built-in voice, use vapi provider
-    const voiceProvider = VAPI_VOICES.includes(voiceId)
-      ? "vapi"
-      : mapVoiceProvider(config.voiceProvider || "vapi");
+    let voiceId = config.voiceId || "Elliot";
+    let voiceProvider = mapVoiceProvider(config.voiceProvider || "vapi");
+
+    // Determine the correct provider based on voice ID
+    if (VAPI_VOICES.includes(voiceId)) {
+      voiceProvider = "vapi";
+    } else if (DEEPGRAM_VOICES.includes(voiceId.toLowerCase())) {
+      voiceProvider = "deepgram";
+      voiceId = voiceId.toLowerCase();
+    } else if (voiceProvider === "11labs" || voiceProvider === "elevenlabs") {
+      voiceProvider = "11labs";
+    }
 
     body.voice = {
       provider: voiceProvider,
