@@ -473,7 +473,9 @@ export async function POST(req: NextRequest) {
         let agentId = call?.metadata?.agentId;
         const customerPhone = call?.customer?.number;
 
+        // Try to get from call.assistantId
         if (!organizationId && call?.assistantId) {
+          console.log("[Vapi Webhook] Looking up agent by assistantId:", call.assistantId);
           const agent = await db.agent.findFirst({
             where: { vapiAssistantId: call.assistantId },
             select: { id: true, organizationId: true },
@@ -481,11 +483,48 @@ export async function POST(req: NextRequest) {
           if (agent) {
             organizationId = agent.organizationId;
             agentId = agent.id;
+            console.log("[Vapi Webhook] Found agent:", { agentId, organizationId });
+          }
+        }
+
+        // Try to get from x-call-id header by looking up call record
+        if (!organizationId) {
+          const xCallId = req.headers.get("x-call-id");
+          console.log("[Vapi Webhook] Looking up call by x-call-id header:", xCallId);
+          if (xCallId) {
+            const callRecord = await db.call.findFirst({
+              where: { vapiCallId: xCallId },
+              select: { organizationId: true, agentId: true, agent: { select: { vapiAssistantId: true } } },
+            });
+            if (callRecord) {
+              organizationId = callRecord.organizationId;
+              agentId = callRecord.agentId || undefined;
+              console.log("[Vapi Webhook] Found call record:", { organizationId, agentId });
+            }
+          }
+        }
+
+        // Try to get from call.id if different from x-call-id
+        if (!organizationId && call?.id) {
+          console.log("[Vapi Webhook] Looking up call by call.id:", call.id);
+          const callRecord = await db.call.findFirst({
+            where: { vapiCallId: call.id },
+            select: { organizationId: true, agentId: true },
+          });
+          if (callRecord) {
+            organizationId = callRecord.organizationId;
+            agentId = callRecord.agentId || undefined;
+            console.log("[Vapi Webhook] Found call record by call.id:", { organizationId, agentId });
           }
         }
 
         if (!organizationId) {
-          console.error("[Vapi Webhook] Could not determine organization for tool call");
+          console.error("[Vapi Webhook] Could not determine organization for tool call. Available data:", {
+            callId: call?.id,
+            assistantId: call?.assistantId,
+            xCallId: req.headers.get("x-call-id"),
+            metadata: call?.metadata,
+          });
           return NextResponse.json({
             results: toolCalls.map((tc) => ({
               toolCallId: tc.id,
