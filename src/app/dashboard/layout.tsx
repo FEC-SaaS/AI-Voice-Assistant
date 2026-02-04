@@ -19,27 +19,15 @@ export default function DashboardLayout({
   // OrgGuard ensures user has selected an organization before accessing dashboard pages.
 
   const handleMenuClick = () => {
-    console.log("Layout: handleMenuClick called, setting sidebarOpen to true");
     setSidebarOpen(true);
   };
 
-  console.log("Layout render: sidebarOpen =", sidebarOpen);
-
   return (
     <TRPCProvider>
-      {/* Debug indicator - remove after testing */}
-      {sidebarOpen && (
-        <div className="fixed top-0 right-0 z-[9999] bg-red-500 text-white px-4 py-2 text-sm">
-          Sidebar is OPEN
-        </div>
-      )}
       <div className="flex h-screen overflow-hidden bg-gray-50/50">
         <Sidebar
           isOpen={sidebarOpen}
-          onClose={() => {
-            console.log("Layout: onClose called, setting sidebarOpen to false");
-            setSidebarOpen(false);
-          }}
+          onClose={() => setSidebarOpen(false)}
           collapsed={sidebarCollapsed}
           onCollapse={setSidebarCollapsed}
         />

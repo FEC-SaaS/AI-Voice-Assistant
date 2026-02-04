@@ -441,7 +441,7 @@ export async function POST(req: NextRequest) {
 
     console.log("[Vapi Webhook] ========== INCOMING REQUEST ==========");
     console.log("[Vapi Webhook] Headers:", Object.fromEntries(req.headers.entries()));
-    console.log("[Vapi Webhook] Body preview:", rawBody.substring(0, 500));
+    console.log("[Vapi Webhook] Full body:", rawBody);
 
     // Verify webhook signature
     const isValid = await verifySignature(req, rawBody);
@@ -521,7 +521,9 @@ export async function POST(req: NextRequest) {
         // Fallback: For inbound calls, find organization from phone number with an assigned agent
         if (!organizationId) {
           console.log("[Vapi Webhook] Trying fallback: looking up from phone number with assigned agent");
-          const phoneWithAgent = await db.phoneNumber.findFirst({
+
+          // First, log what phone numbers exist to help debug
+          const allPhonesWithAgents = await db.phoneNumber.findMany({
             where: {
               agentId: { not: null },
             },
@@ -529,47 +531,82 @@ export async function POST(req: NextRequest) {
               agent: {
                 select: {
                   id: true,
+                  name: true,
                   organizationId: true,
                   vapiAssistantId: true,
                   settings: true,
                 },
               },
             },
-            orderBy: { updatedAt: "desc" },
           });
 
-          if (phoneWithAgent?.agent) {
-            // Check if this agent has appointment scheduling enabled
-            const agentSettings = (phoneWithAgent.agent.settings as Record<string, unknown>) || {};
-            if (agentSettings.enableAppointments) {
-              organizationId = phoneWithAgent.agent.organizationId;
-              agentId = phoneWithAgent.agent.id;
-              console.log("[Vapi Webhook] Found agent via phone number fallback:", {
-                organizationId,
-                agentId,
-                phoneNumber: phoneWithAgent.number,
-              });
+          console.log("[Vapi Webhook] Phone numbers with assigned agents:",
+            allPhonesWithAgents.map(p => ({
+              phoneId: p.id,
+              number: p.number,
+              agentId: p.agentId,
+              agentName: p.agent?.name,
+              organizationId: p.agent?.organizationId,
+              vapiAssistantId: p.agent?.vapiAssistantId,
+            }))
+          );
 
-              // Also create/update the call record for future lookups
-              const xCallId = req.headers.get("x-call-id");
-              if (xCallId) {
-                await db.call.upsert({
-                  where: { vapiCallId: xCallId },
-                  create: {
-                    vapiCallId: xCallId,
-                    organizationId,
-                    agentId,
-                    direction: "inbound",
-                    status: "in-progress",
-                    startedAt: new Date(),
-                  },
-                  update: {
-                    organizationId,
-                    agentId,
-                  },
-                });
-                console.log("[Vapi Webhook] Created/updated call record for future lookups");
-              }
+          // Try to find a phone that matches - use any phone with an agent assigned
+          const phoneWithAgent = allPhonesWithAgents[0]; // Get the first one for now
+
+          if (phoneWithAgent?.agent) {
+            organizationId = phoneWithAgent.agent.organizationId;
+            agentId = phoneWithAgent.agent.id;
+            console.log("[Vapi Webhook] Found agent via phone number fallback:", {
+              organizationId,
+              agentId,
+              agentName: phoneWithAgent.agent.name,
+              phoneNumber: phoneWithAgent.number,
+            });
+
+            // Also create/update the call record for future lookups
+            const xCallId = req.headers.get("x-call-id");
+            if (xCallId) {
+              await db.call.upsert({
+                where: { vapiCallId: xCallId },
+                create: {
+                  vapiCallId: xCallId,
+                  organizationId,
+                  agentId,
+                  direction: "inbound",
+                  status: "in-progress",
+                  startedAt: new Date(),
+                },
+                update: {
+                  organizationId,
+                  agentId,
+                },
+              });
+              console.log("[Vapi Webhook] Created/updated call record for future lookups");
+            }
+          } else {
+            console.log("[Vapi Webhook] No phone numbers with assigned agents found in database");
+          }
+        }
+
+        // Final fallback: If still no org, try to find from any agent that matches assistantId from full webhook body
+        if (!organizationId) {
+          // Parse the full body to check for assistantId at different levels
+          const fullBody = JSON.parse(rawBody);
+          console.log("[Vapi Webhook] Full webhook body keys:", Object.keys(fullBody));
+
+          // Check for assistantId at root level or in different structures
+          const possibleAssistantId = fullBody.assistantId || fullBody.assistant?.id;
+          if (possibleAssistantId) {
+            console.log("[Vapi Webhook] Found assistantId in body:", possibleAssistantId);
+            const agentByAssistant = await db.agent.findFirst({
+              where: { vapiAssistantId: possibleAssistantId },
+              select: { id: true, organizationId: true },
+            });
+            if (agentByAssistant) {
+              organizationId = agentByAssistant.organizationId;
+              agentId = agentByAssistant.id;
+              console.log("[Vapi Webhook] Found agent via assistantId fallback:", { organizationId, agentId });
             }
           }
         }

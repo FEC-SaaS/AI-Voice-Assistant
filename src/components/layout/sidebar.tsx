@@ -54,12 +54,9 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  console.log("Sidebar render: isOpen =", isOpen);
-
   // Close mobile menu on route change only
   useEffect(() => {
     if (prevPathname.current !== pathname) {
-      console.log("Sidebar: pathname changed from", prevPathname.current, "to", pathname);
       prevPathname.current = pathname;
       onCloseRef.current?.();
     }

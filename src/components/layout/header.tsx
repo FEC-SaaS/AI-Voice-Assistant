@@ -16,10 +16,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         {/* Menu button - visible on mobile only */}
         <button
           type="button"
-          onClick={() => {
-            console.log("Menu button clicked");
-            onMenuClick?.();
-          }}
+          onClick={() => onMenuClick?.()}
           className="flex lg:hidden items-center justify-center h-10 w-10 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors active:bg-gray-300"
           aria-label="Open menu"
         >
