@@ -222,13 +222,13 @@ async function processContact(
     };
   }
 
-  // Check if agent has Vapi assistant ID
+  // Check if agent has voice system assistant ID
   const assistantId = agent.vapiAssistantId;
   if (!assistantId) {
     return {
       contactId: contact.id,
       success: false,
-      error: "Agent is not synced with Vapi",
+      error: "Agent is not connected to voice system",
     };
   }
 
@@ -337,7 +337,7 @@ export async function executeCampaign(
     }
 
     if (!campaign.agent.vapiAssistantId) {
-      throw new Error("Agent is not synced with Vapi");
+      throw new Error("Agent is not connected to voice system");
     }
 
     const callingHours = campaign.callingHours as { start: string; end: string };

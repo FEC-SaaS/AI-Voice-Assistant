@@ -398,7 +398,7 @@ export const VOICES: Voice[] = [
 ];
 
 export const VOICE_PROVIDERS = [
-  { id: "vapi", name: "Vapi (Recommended)", premium: false, description: "Free built-in voices, no setup required" },
+  { id: "vapi", name: "Standard (Recommended)", premium: false, description: "Free built-in voices, no setup required" },
   { id: "deepgram", name: "Deepgram", premium: false, description: "High-quality AI voices" },
   { id: "playht", name: "PlayHT", premium: false, description: "Natural sounding voices" },
   { id: "11labs", name: "ElevenLabs", premium: true, description: "Premium voices (may require credentials)" },

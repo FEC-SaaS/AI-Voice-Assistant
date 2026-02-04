@@ -279,7 +279,7 @@ export const phoneNumbersRouter = router({
         if (errorMessage.includes("already exists")) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: "This phone number is already imported in Vapi.",
+            message: "This phone number is already imported to the voice system.",
           });
         }
 
@@ -470,7 +470,7 @@ export const phoneNumbersRouter = router({
       if (phoneNumber.vapiPhoneId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Phone number is already imported to Vapi.",
+          message: "Phone number is already synced.",
         });
       }
 
@@ -502,10 +502,10 @@ export const phoneNumbersRouter = router({
           name: phoneNumber.friendlyName || undefined,
         });
       } catch (error) {
-        console.error("Failed to import to Vapi:", error);
+        console.error("Failed to sync phone number:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to import to Vapi. Please try again.",
+          message: "Failed to sync phone number. Please try again.",
         });
       }
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Bot, Edit, Phone, Megaphone, Power, Trash2,
-  PhoneCall, Loader2, CheckCircle, XCircle, BookOpen, RefreshCw, AlertTriangle, Calendar
+  PhoneCall, Loader2, CheckCircle, XCircle, BookOpen, RefreshCw, AlertTriangle, Calendar, Link as LinkIcon
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,20 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
   const [showTestCall, setShowTestCall] = useState(false);
   const [testNumber, setTestNumber] = useState("");
   const [callStatus, setCallStatus] = useState<string | null>(null);
+
+  // Import Vapi ID state
+  const [showImportVapi, setShowImportVapi] = useState(false);
+  const [vapiIdInput, setVapiIdInput] = useState("");
+  const importVapiId = trpc.agents.importVapiId.useMutation({
+    onSuccess: (data) => {
+      refetch();
+      toast.success(data.message);
+      setShowImportVapi(false);
+      setVapiIdInput("");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const testCall = trpc.agents.testCall.useMutation({
     onSuccess: (data) => {
       setCallStatus(data.status);
@@ -141,21 +155,63 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
             <div className="flex-1">
               <h3 className="font-medium text-yellow-800">Agent not connected</h3>
               <p className="mt-1 text-sm text-yellow-700">
-                This agent is not connected to the voice system and cannot make calls. Click &quot;Connect Agent&quot; to enable it.
+                This agent is not connected to the voice system and cannot make calls.
               </p>
             </div>
-            <Button
-              size="sm"
-              onClick={() => syncToVapi.mutate({ id: agent.id })}
-              disabled={syncToVapi.isPending}
-            >
-              {syncToVapi.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...</>
-              ) : (
-                <><RefreshCw className="mr-2 h-4 w-4" /> Connect Agent</>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowImportVapi(!showImportVapi)}
+              >
+                <LinkIcon className="mr-2 h-4 w-4" />
+                Link Voice ID
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => syncToVapi.mutate({ id: agent.id })}
+                disabled={syncToVapi.isPending}
+              >
+                {syncToVapi.isPending ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...</>
+                ) : (
+                  <><RefreshCw className="mr-2 h-4 w-4" /> Create New</>
+                )}
+              </Button>
+            </div>
           </div>
+
+          {/* Import Voice System ID Form */}
+          {showImportVapi && (
+            <div className="mt-4 pt-4 border-t border-yellow-200">
+              <h4 className="font-medium text-yellow-800">Link Existing Voice Assistant</h4>
+              <p className="mt-1 text-sm text-yellow-700">
+                If you have an existing voice assistant, paste its ID here to link it to this VoxForge agent.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Input
+                  placeholder="e.g., 79c4900c-b55c-4e1f-b0b1-cb49f0dbb67e"
+                  value={vapiIdInput}
+                  onChange={(e) => setVapiIdInput(e.target.value)}
+                  className="flex-1 bg-white"
+                />
+                <Button
+                  size="sm"
+                  onClick={() => importVapiId.mutate({ id: agent.id, vapiAssistantId: vapiIdInput })}
+                  disabled={importVapiId.isPending || !vapiIdInput.trim()}
+                >
+                  {importVapiId.isPending ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Linking...</>
+                  ) : (
+                    "Link Assistant"
+                  )}
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-yellow-600">
+                Contact support if you need help finding your voice assistant ID.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -225,6 +281,12 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
                 {agent.vapiAssistantId ? "Connected" : "Not Connected"}
               </p>
             </div>
+            {agent.vapiAssistantId && (
+              <div>
+                <span className="text-xs font-medium uppercase text-gray-400">Voice System ID</span>
+                <p className="text-sm text-gray-900 font-mono break-all">{agent.vapiAssistantId}</p>
+              </div>
+            )}
             <div>
               <span className="text-xs font-medium uppercase text-gray-400">Capabilities</span>
               <div className="mt-1 flex flex-wrap gap-2">

@@ -45,7 +45,7 @@ export async function initiateCall(input: InitiateCallInput) {
   if (!agent || !agent.vapiAssistantId) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Agent not found or not synced with Vapi",
+      message: "Agent not found or not connected to voice system",
     });
   }
 

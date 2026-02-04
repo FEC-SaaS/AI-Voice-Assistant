@@ -114,7 +114,7 @@ export default function PhoneNumbersPage() {
 
   const retryVapiImport = trpc.phoneNumbers.retryVapiImport.useMutation({
     onSuccess: () => {
-      toast.success("Phone number synced with Vapi");
+      toast.success("Phone number synced successfully");
       refetch();
     },
     onError: (err) => toast.error(err.message),
@@ -178,7 +178,7 @@ export default function PhoneNumbersPage() {
       case "vapi":
         return (
           <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
-            Vapi
+            Cloud Voice
           </span>
         );
       default:
@@ -572,7 +572,7 @@ export default function PhoneNumbersPage() {
                           ) : (
                             <RefreshCw className="h-3 w-3" />
                           )}
-                          Sync to Vapi
+                          Sync
                         </button>
                       )}
                     </td>
@@ -626,7 +626,7 @@ export default function PhoneNumbersPage() {
               <li><strong>Managed numbers:</strong> We provision and bill you monthly. Simplest option.</li>
               <li><strong>Imported numbers:</strong> Use your own Twilio numbers. You pay Twilio directly.</li>
               <li>All numbers support inbound and outbound calling with your AI agents.</li>
-              <li>Numbers are automatically connected to Vapi for voice AI capabilities.</li>
+              <li>Numbers are automatically connected for voice AI capabilities.</li>
             </ul>
           </div>
         </div>

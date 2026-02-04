@@ -340,7 +340,7 @@ export const agentsRouter = router({
       if (!agent.vapiAssistantId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Agent is not synced with Vapi. Please edit and save the agent first.",
+          message: "Agent is not connected to voice system. Please click 'Create New' to connect it first.",
         });
       }
 
@@ -402,7 +402,7 @@ export const agentsRouter = router({
       if (!agent.vapiAssistantId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Agent is not synced with Vapi yet",
+          message: "Agent is not connected to voice system yet",
         });
       }
 
@@ -521,10 +521,10 @@ export const agentsRouter = router({
           };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Unknown error";
-          console.error("Failed to create Vapi assistant:", error);
+          console.error("Failed to create voice assistant:", error);
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: `Failed to sync to Vapi: ${errorMessage}`,
+            message: `Failed to connect agent: ${errorMessage}`,
           });
         }
       }
@@ -552,10 +552,10 @@ export const agentsRouter = router({
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        console.error("Failed to update Vapi assistant:", error);
+        console.error("Failed to update voice assistant:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Failed to sync to Vapi: ${errorMessage}`,
+          message: `Failed to update agent: ${errorMessage}`,
         });
       }
     }),
@@ -584,5 +584,56 @@ export const agentsRouter = router({
       });
 
       return updated;
+    }),
+
+  // Import an existing voice assistant ID to link it to this agent
+  // Use this when the assistant was created externally
+  importVapiId: protectedProcedure
+    .input(z.object({
+      id: z.string(), // VoxForge agent ID
+      vapiAssistantId: z.string().min(1, "Voice System ID is required"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Verify the agent exists and belongs to this org
+      const agent = await ctx.db.agent.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!agent) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Agent not found",
+        });
+      }
+
+      // Check if this Vapi ID is already used by another agent
+      const existingAgent = await ctx.db.agent.findFirst({
+        where: {
+          vapiAssistantId: input.vapiAssistantId,
+          id: { not: input.id },
+        },
+      });
+
+      if (existingAgent) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This Voice System ID is already linked to another agent",
+        });
+      }
+
+      // Update the agent with the Vapi ID
+      const updated = await ctx.db.agent.update({
+        where: { id: input.id },
+        data: { vapiAssistantId: input.vapiAssistantId },
+      });
+
+      return {
+        success: true,
+        agent: updated,
+        message: `Voice assistant has been linked to agent "${agent.name}"`,
+      };
     }),
 });

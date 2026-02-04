@@ -214,10 +214,10 @@ export async function syncAgentToVapi(agentId: string, organizationId: string) {
       data: { vapiAssistantId: vapiAssistant.id },
     });
   } catch (error) {
-    console.error("[Agent Service] Failed to sync agent to Vapi:", error);
+    console.error("[Agent Service] Failed to sync agent to voice system:", error);
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to sync agent to Vapi",
+      message: "Failed to sync agent to voice system",
     });
   }
 }

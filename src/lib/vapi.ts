@@ -391,7 +391,7 @@ export async function buyPhoneNumber(config: {
   const phoneNumber = response.number || response.phoneNumber || "";
 
   if (!phoneNumber) {
-    throw new Error("Vapi did not return a phone number. Please check your Vapi plan and credits.");
+    throw new Error("Voice system did not return a phone number. Please contact support.");
   }
 
   return {
@@ -463,13 +463,13 @@ export async function provisionPhoneNumber(
 
     if (errorMessage.includes("limit") || errorMessage.includes("maximum")) {
       throw new Error(
-        "You have reached the maximum number of free Vapi phone numbers (10). Please release unused numbers or upgrade your plan."
+        "You have reached the maximum number of free phone numbers (10). Please release unused numbers or upgrade your plan."
       );
     }
 
     if (errorMessage.includes("402") || errorMessage.includes("payment") || errorMessage.includes("credits")) {
       throw new Error(
-        "Insufficient Vapi credits. Please check your Vapi account."
+        "Insufficient voice system credits. Please contact support."
       );
     }
 

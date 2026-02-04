@@ -380,7 +380,7 @@ export const campaignsRouter = router({
       if (!campaign.agent.vapiAssistantId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Agent is not synced with Vapi. Please save the agent first.",
+          message: "Agent is not connected to voice system. Please connect the agent first.",
         });
       }
 
