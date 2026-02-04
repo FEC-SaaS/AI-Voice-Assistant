@@ -518,6 +518,62 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Fallback: For inbound calls, find organization from phone number with an assigned agent
+        if (!organizationId) {
+          console.log("[Vapi Webhook] Trying fallback: looking up from phone number with assigned agent");
+          const phoneWithAgent = await db.phoneNumber.findFirst({
+            where: {
+              agentId: { not: null },
+            },
+            include: {
+              agent: {
+                select: {
+                  id: true,
+                  organizationId: true,
+                  vapiAssistantId: true,
+                  settings: true,
+                },
+              },
+            },
+            orderBy: { updatedAt: "desc" },
+          });
+
+          if (phoneWithAgent?.agent) {
+            // Check if this agent has appointment scheduling enabled
+            const agentSettings = (phoneWithAgent.agent.settings as Record<string, unknown>) || {};
+            if (agentSettings.enableAppointments) {
+              organizationId = phoneWithAgent.agent.organizationId;
+              agentId = phoneWithAgent.agent.id;
+              console.log("[Vapi Webhook] Found agent via phone number fallback:", {
+                organizationId,
+                agentId,
+                phoneNumber: phoneWithAgent.number,
+              });
+
+              // Also create/update the call record for future lookups
+              const xCallId = req.headers.get("x-call-id");
+              if (xCallId) {
+                await db.call.upsert({
+                  where: { vapiCallId: xCallId },
+                  create: {
+                    vapiCallId: xCallId,
+                    organizationId,
+                    agentId,
+                    direction: "inbound",
+                    status: "in-progress",
+                    startedAt: new Date(),
+                  },
+                  update: {
+                    organizationId,
+                    agentId,
+                  },
+                });
+                console.log("[Vapi Webhook] Created/updated call record for future lookups");
+              }
+            }
+          }
+        }
+
         if (!organizationId) {
           console.error("[Vapi Webhook] Could not determine organization for tool call. Available data:", {
             callId: call?.id,
