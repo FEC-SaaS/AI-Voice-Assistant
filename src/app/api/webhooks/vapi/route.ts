@@ -42,7 +42,7 @@ interface VapiWebhookEvent {
       type: string;
       function: {
         name: string;
-        arguments: string;
+        arguments: string | Record<string, unknown>;
       };
     }>;
     toolCallList?: Array<{
@@ -50,7 +50,7 @@ interface VapiWebhookEvent {
       type: string;
       function: {
         name: string;
-        arguments: string;
+        arguments: string | Record<string, unknown>;
       };
     }>;
   };
@@ -629,7 +629,13 @@ export async function POST(req: NextRequest) {
         // Process each tool call
         const results: ToolCallResult[] = [];
         for (const toolCall of toolCalls) {
-          const args = JSON.parse(toolCall.function.arguments || "{}");
+          // Handle both string and object arguments - Vapi sometimes sends them pre-parsed
+          let args: Record<string, string>;
+          if (typeof toolCall.function.arguments === "string") {
+            args = JSON.parse(toolCall.function.arguments || "{}");
+          } else {
+            args = (toolCall.function.arguments as Record<string, string>) || {};
+          }
           console.log(`[Vapi Webhook] Processing tool: ${toolCall.function.name}`, args);
 
           const result = await processToolCall(
