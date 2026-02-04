@@ -385,11 +385,11 @@ async function processToolCall(
 }
 
 /**
- * Verify Vapi webhook signature
- * Vapi uses HMAC-SHA256 signature verification
+ * Verify Vapi webhook secret
+ * Vapi sends the secret in the x-vapi-secret header
  */
-async function verifySignature(req: NextRequest, body: string): Promise<boolean> {
-  const signature = req.headers.get("x-vapi-signature");
+async function verifySignature(req: NextRequest, _body: string): Promise<boolean> {
+  const vapiSecret = req.headers.get("x-vapi-secret");
   const secret = process.env.VAPI_WEBHOOK_SECRET;
 
   // If no secret configured, skip verification (not recommended for production)
@@ -398,29 +398,29 @@ async function verifySignature(req: NextRequest, body: string): Promise<boolean>
     return true;
   }
 
-  if (!signature) {
-    console.error("[Vapi Webhook] Missing x-vapi-signature header");
+  if (!vapiSecret) {
+    console.error("[Vapi Webhook] Missing x-vapi-secret header");
     return false;
   }
 
+  // Simple comparison - Vapi sends the secret directly in the header
+  // Use timing-safe comparison to prevent timing attacks
   try {
-    // Vapi uses HMAC-SHA256
-    const expectedSignature = crypto
-      .createHmac("sha256", secret)
-      .update(body)
-      .digest("hex");
+    const secretBuffer = Buffer.from(secret);
+    const vapiSecretBuffer = Buffer.from(vapiSecret);
 
-    // Compare signatures using timing-safe comparison
-    const sigBuffer = Buffer.from(signature, "hex");
-    const expectedBuffer = Buffer.from(expectedSignature, "hex");
-
-    if (sigBuffer.length !== expectedBuffer.length) {
+    if (secretBuffer.length !== vapiSecretBuffer.length) {
+      console.error("[Vapi Webhook] Secret length mismatch");
       return false;
     }
 
-    return crypto.timingSafeEqual(sigBuffer, expectedBuffer);
+    const isValid = crypto.timingSafeEqual(secretBuffer, vapiSecretBuffer);
+    if (!isValid) {
+      console.error("[Vapi Webhook] Secret mismatch - received:", vapiSecret.substring(0, 10) + "...", "expected:", secret.substring(0, 10) + "...");
+    }
+    return isValid;
   } catch (error) {
-    console.error("[Vapi Webhook] Signature verification error:", error);
+    console.error("[Vapi Webhook] Secret verification error:", error);
     return false;
   }
 }
