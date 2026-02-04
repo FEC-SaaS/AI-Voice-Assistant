@@ -124,9 +124,18 @@ async function processToolCall(
   agentId: string | undefined,
   customerPhone: string | undefined
 ): Promise<string> {
+  console.log("[Vapi Tool] Processing tool call:", {
+    toolName,
+    args,
+    organizationId,
+    agentId,
+    customerPhone,
+  });
+
   const db = await getDb();
 
-  switch (toolName) {
+  try {
+    switch (toolName) {
     case "check_availability": {
       const { date, duration: durationStr } = args;
       const duration = parseInt(durationStr || "30", 10);
@@ -366,7 +375,12 @@ async function processToolCall(
     }
 
     default:
+      console.log("[Vapi Tool] Unknown tool:", toolName);
       return `I'm not sure how to handle that request. Is there something else I can help you with?`;
+    }
+  } catch (error) {
+    console.error("[Vapi Tool] Error processing tool call:", error);
+    return "I'm having trouble processing your request right now. Please try again.";
   }
 }
 
@@ -425,6 +439,10 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
 
+    console.log("[Vapi Webhook] ========== INCOMING REQUEST ==========");
+    console.log("[Vapi Webhook] Headers:", Object.fromEntries(req.headers.entries()));
+    console.log("[Vapi Webhook] Body preview:", rawBody.substring(0, 500));
+
     // Verify webhook signature
     const isValid = await verifySignature(req, rawBody);
     if (!isValid) {
@@ -435,7 +453,13 @@ export async function POST(req: NextRequest) {
     const body = JSON.parse(rawBody) as VapiWebhookEvent;
     const { type, call, message } = body;
 
-    console.log(`[Vapi Webhook] Received event: ${type}`, { callId: call?.id, messageType: message?.type });
+    console.log(`[Vapi Webhook] Received event: ${type}`, {
+      callId: call?.id,
+      messageType: message?.type,
+      assistantId: call?.assistantId,
+      hasToolCalls: !!(message?.toolCalls || message?.toolCallList),
+      toolCallCount: (message?.toolCalls || message?.toolCallList)?.length || 0,
+    });
 
     // Handle tool/function calls (Vapi sends these as assistant-request or tool-calls)
     if (message?.type === "tool-calls" || message?.toolCalls || message?.toolCallList) {
@@ -712,7 +736,20 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Reject non-POST requests
+// Health check / status endpoint
 export async function GET() {
-  return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "NOT SET";
+  const hasWebhookSecret = !!process.env.VAPI_WEBHOOK_SECRET;
+  const hasVapiKey = !!process.env.VAPI_API_KEY;
+
+  return NextResponse.json({
+    status: "Vapi webhook endpoint is active",
+    configuration: {
+      appUrl,
+      webhookUrl: `${appUrl}/api/webhooks/vapi`,
+      hasWebhookSecret,
+      hasVapiKey,
+    },
+    timestamp: new Date().toISOString(),
+  });
 }
