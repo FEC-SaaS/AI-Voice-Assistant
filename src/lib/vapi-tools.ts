@@ -1,20 +1,42 @@
 // Vapi tool definitions for AI agent capabilities
 import type { VapiTool } from "./vapi";
 
-// Tool definitions for appointment scheduling
-export const appointmentTools: VapiTool[] = [
-  {
-    type: "function",
-    function: {
-      name: "check_availability",
-      description: "Check available appointment time slots for a specific date. Use this when the customer wants to schedule an appointment or asks about availability.",
-      parameters: {
-        type: "object",
-        properties: {
-          date: {
-            type: "string",
-            description: "The date to check availability for, in YYYY-MM-DD format (e.g., 2024-01-15)",
-          },
+// Helper to get current date in YYYY-MM-DD format
+function getCurrentDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// Helper to get example date (tomorrow)
+function getExampleDateString(): string {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const year = tomorrow.getFullYear();
+  const month = String(tomorrow.getMonth() + 1).padStart(2, "0");
+  const day = String(tomorrow.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// Generate tool definitions for appointment scheduling (with dynamic dates)
+export function getAppointmentTools(): VapiTool[] {
+  const exampleDate = getExampleDateString();
+
+  return [
+    {
+      type: "function",
+      function: {
+        name: "check_availability",
+        description: "Check available appointment time slots for a specific date. Use this when the customer wants to schedule an appointment or asks about availability.",
+        parameters: {
+          type: "object",
+          properties: {
+            date: {
+              type: "string",
+              description: `The date to check availability for, in YYYY-MM-DD format (e.g., ${exampleDate})`,
+            },
           duration: {
             type: "string",
             description: "The desired appointment duration in minutes. Default is 30.",
@@ -77,6 +99,36 @@ export const appointmentTools: VapiTool[] = [
   {
     type: "function",
     function: {
+      name: "update_appointment",
+      description: "Update an existing appointment with additional information like email address. Use this when the customer has ALREADY scheduled an appointment and wants to add or update their contact information (like email). Do NOT use schedule_appointment if they already have an appointment - use this instead.",
+      parameters: {
+        type: "object",
+        properties: {
+          customer_name: {
+            type: "string",
+            description: "The customer's name to find their appointment",
+          },
+          customer_phone: {
+            type: "string",
+            description: "The customer's phone number to find their appointment",
+          },
+          customer_email: {
+            type: "string",
+            description: "The customer's email address to add to the appointment",
+          },
+          notes: {
+            type: "string",
+            description: "Additional notes to add to the appointment",
+          },
+        },
+        required: ["customer_name"],
+      },
+    },
+    async: false,
+  },
+  {
+    type: "function",
+    function: {
       name: "cancel_appointment",
       description: "Cancel an existing appointment. Use this when the customer wants to cancel their scheduled appointment.",
       parameters: {
@@ -100,11 +152,27 @@ export const appointmentTools: VapiTool[] = [
     },
     async: false,
   },
-];
+  ];
+}
+
+// Legacy export for backwards compatibility
+export const appointmentTools: VapiTool[] = getAppointmentTools();
 
 // Generate the system prompt addition for appointment scheduling
 export function getAppointmentSystemPromptAddition(): string {
+  const currentDate = getCurrentDateString();
+  const now = new Date();
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const formattedDate = `${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
   return `
+
+--- IMPORTANT: CURRENT DATE INFORMATION ---
+Today's date is ${formattedDate} (${currentDate}).
+ALWAYS use this as your reference for the current date when discussing scheduling.
+When a customer says "today", "tomorrow", "next week", etc., calculate the actual date from ${formattedDate}.
+--- END CURRENT DATE INFORMATION ---
 
 --- APPOINTMENT SCHEDULING CAPABILITIES ---
 You have the ability to check appointment availability and schedule appointments for customers.
@@ -121,11 +189,17 @@ When checking availability:
 - Always confirm the date with the customer before checking
 - Present times in a friendly format (e.g., "2:30 PM" instead of "14:30")
 - If no slots are available, offer to check another date
+- IMPORTANT: Use the current date (${currentDate}) as your reference point
 
 When scheduling:
 - Always collect the customer's name
 - Try to get their email for confirmation (optional but recommended)
 - Confirm all details before finalizing the booking
+
+IMPORTANT - Updating vs Creating New Appointments:
+- If you have ALREADY scheduled an appointment for this customer during this call and they provide their email afterwards, use the update_appointment tool to add their email - DO NOT schedule a new appointment!
+- Only use schedule_appointment when creating a NEW appointment, not when adding info to an existing one
+- If the customer provides email after booking, say something like "Great, let me add that email to your appointment" and use update_appointment
 --- END APPOINTMENT SCHEDULING CAPABILITIES ---`;
 }
 
@@ -134,7 +208,7 @@ export function getAgentTools(enableAppointments: boolean): VapiTool[] {
   const tools: VapiTool[] = [];
 
   if (enableAppointments) {
-    tools.push(...appointmentTools);
+    tools.push(...getAppointmentTools());
   }
 
   return tools;

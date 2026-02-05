@@ -21,6 +21,11 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
     { agentId: params.id },
     { enabled: !!params.id }
   );
+  // Check sync status only when agent has a vapiAssistantId
+  const { data: syncStatus, refetch: refetchSyncStatus } = trpc.agents.checkSyncStatus.useQuery(
+    { id: params.id },
+    { enabled: !!agent?.vapiAssistantId, staleTime: 60000 } // Cache for 1 minute
+  );
   const toggleActive = trpc.agents.toggleActive.useMutation({
     onSuccess: () => { refetch(); toast.success("Agent status updated"); },
     onError: (err) => toast.error(err.message),
@@ -32,6 +37,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
   const syncToVapi = trpc.agents.syncToVapi.useMutation({
     onSuccess: (data) => {
       refetch();
+      refetchSyncStatus();
       if (data.created) {
         toast.success(`Agent connected! ${data.documentsIncluded} knowledge document(s) included.`);
       } else {
@@ -215,6 +221,37 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
         </div>
       )}
 
+      {/* Sync Status Warning - shown when agent has ID but assistant was deleted externally */}
+      {agent.vapiAssistantId && syncStatus && !syncStatus.synced && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-medium text-red-800">Voice connection lost</h3>
+              <p className="mt-1 text-sm text-red-700">
+                {syncStatus.reason}
+              </p>
+              {syncStatus.action && (
+                <p className="mt-1 text-sm text-red-600 font-medium">
+                  {syncStatus.action}
+                </p>
+              )}
+            </div>
+            <Button
+              size="sm"
+              onClick={() => syncToVapi.mutate({ id: agent.id })}
+              disabled={syncToVapi.isPending}
+            >
+              {syncToVapi.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Reconnecting...</>
+              ) : (
+                <><RefreshCw className="mr-2 h-4 w-4" /> Reconnect</>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Test Call Panel */}
       {showTestCall && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
@@ -277,8 +314,23 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
             </div>
             <div>
               <span className="text-xs font-medium uppercase text-gray-400">Status</span>
-              <p className={`text-sm font-medium ${agent.vapiAssistantId ? "text-green-600" : "text-yellow-600"}`}>
-                {agent.vapiAssistantId ? "Connected" : "Not Connected"}
+              <p className={`text-sm font-medium ${
+                !agent.vapiAssistantId
+                  ? "text-yellow-600"
+                  : syncStatus?.synced
+                    ? "text-green-600"
+                    : syncStatus === undefined
+                      ? "text-gray-600"
+                      : "text-red-600"
+              }`}>
+                {!agent.vapiAssistantId
+                  ? "Not Connected"
+                  : syncStatus?.synced
+                    ? "Connected"
+                    : syncStatus === undefined
+                      ? "Checking..."
+                      : "Connection Lost"
+                }
               </p>
             </div>
             {agent.vapiAssistantId && (

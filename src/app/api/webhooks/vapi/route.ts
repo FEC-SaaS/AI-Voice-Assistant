@@ -328,6 +328,93 @@ async function processToolCall(
       return response;
     }
 
+    case "update_appointment": {
+      const { customer_name, customer_phone, customer_email, notes } = args;
+
+      if (!customer_name && !customer_phone && !customerPhone) {
+        return "I need your name or phone number to find your appointment.";
+      }
+
+      // Find the most recent appointment for this customer
+      const whereClause: Record<string, unknown> = {
+        organizationId,
+        status: { in: ["scheduled", "confirmed"] },
+        scheduledAt: { gte: new Date() },
+      };
+
+      // Try to find by name first, then by phone
+      if (customer_name) {
+        whereClause.attendeeName = { contains: customer_name, mode: "insensitive" };
+      }
+      if (customer_phone || customerPhone) {
+        whereClause.attendeePhone = customer_phone || customerPhone;
+      }
+
+      const appointment = await db.appointment.findFirst({
+        where: whereClause,
+        orderBy: { createdAt: "desc" }, // Get the most recently created one
+      });
+
+      if (!appointment) {
+        return "I couldn't find an upcoming appointment with that information. Let me schedule a new one for you instead.";
+      }
+
+      // Update the appointment with new info
+      const updateData: Record<string, unknown> = {};
+      if (customer_email) {
+        updateData.attendeeEmail = customer_email;
+      }
+      if (notes) {
+        updateData.notes = appointment.notes
+          ? `${appointment.notes}\n${notes}`
+          : notes;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return "Your appointment is already up to date!";
+      }
+
+      await db.appointment.update({
+        where: { id: appointment.id },
+        data: updateData,
+      });
+
+      // Send confirmation email if we just added an email
+      if (customer_email) {
+        try {
+          const { sendAppointmentConfirmation } = await getEmailService();
+          await sendAppointmentConfirmation(customer_email, appointment.attendeeName || customer_name || "Customer", {
+            title: appointment.title,
+            scheduledAt: appointment.scheduledAt,
+            duration: appointment.duration,
+            meetingType: appointment.meetingType,
+            meetingLink: appointment.meetingLink,
+            location: appointment.location,
+            phoneNumber: appointment.phoneNumber,
+          });
+        } catch (error) {
+          console.error("[Vapi Tool] Failed to send confirmation email:", error);
+        }
+      }
+
+      const dateStr = appointment.scheduledAt.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      });
+      const timeStr = formatTimeForDisplay(
+        `${appointment.scheduledAt.getHours().toString().padStart(2, "0")}:${appointment.scheduledAt.getMinutes().toString().padStart(2, "0")}`
+      );
+
+      let response = `I've updated your appointment for ${dateStr} at ${timeStr}.`;
+      if (customer_email) {
+        response += ` A confirmation email has been sent to ${customer_email}.`;
+      }
+      response += " Is there anything else I can help you with?";
+
+      return response;
+    }
+
     case "cancel_appointment": {
       const { customer_email, customer_phone, reason } = args;
 

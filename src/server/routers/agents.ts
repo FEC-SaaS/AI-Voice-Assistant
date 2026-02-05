@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { createAssistant, updateAssistant, deleteAssistant, createCall } from "@/lib/vapi";
+import { createAssistant, updateAssistant, deleteAssistant, createCall, getAssistant } from "@/lib/vapi";
 import { getAgentTools, getAppointmentSystemPromptAddition } from "@/lib/vapi-tools";
 import { enforceAgentLimit } from "../trpc/middleware";
 
@@ -64,6 +64,68 @@ export const agentsRouter = router({
       }
 
       return agent;
+    }),
+
+  // Check if agent is synced with voice system (Vapi)
+  // Returns sync status without exposing "Vapi" name to UI
+  checkSyncStatus: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const agent = await ctx.db.agent.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!agent) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Agent not found",
+        });
+      }
+
+      // No voice system ID - not connected
+      if (!agent.vapiAssistantId) {
+        return {
+          synced: false,
+          connected: false,
+          reason: "Agent is not connected to voice system",
+          action: "Click 'Create New' or 'Link Existing' to connect",
+        };
+      }
+
+      // Try to fetch the assistant from Vapi to verify it exists
+      try {
+        await getAssistant(agent.vapiAssistantId);
+        return {
+          synced: true,
+          connected: true,
+          reason: null,
+          action: null,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        console.log(`[Agent Sync] Agent ${agent.id} has stale voice system ID:`, errorMessage);
+
+        // Check if it's a 404 error (assistant deleted in Vapi)
+        if (errorMessage.includes("404") || errorMessage.includes("not found")) {
+          return {
+            synced: false,
+            connected: false,
+            reason: "Voice assistant was deleted externally",
+            action: "Click 'Create New' to recreate the voice assistant",
+          };
+        }
+
+        // Other errors (API issues, etc.)
+        return {
+          synced: false,
+          connected: true, // ID exists but couldn't verify
+          reason: "Could not verify voice system connection",
+          action: "Try again later or click 'Sync' to refresh",
+        };
+      }
     }),
 
   // Create a new agent
