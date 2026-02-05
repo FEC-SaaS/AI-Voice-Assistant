@@ -1,13 +1,60 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mail, Building, Palette, Image, Loader2, Save, Info } from "lucide-react";
+import {
+  Mail,
+  Building,
+  Palette,
+  Image,
+  Loader2,
+  Save,
+  Info,
+  Globe,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Copy,
+  RefreshCw,
+  Trash2,
+  ExternalLink,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+// Domain status badge component
+function DomainStatusBadge({ status }: { status: string }) {
+  const statusConfig = {
+    verified: { icon: CheckCircle2, color: "text-green-600 bg-green-50", label: "Verified" },
+    pending: { icon: Clock, color: "text-yellow-600 bg-yellow-50", label: "Pending Verification" },
+    not_started: { icon: AlertCircle, color: "text-gray-600 bg-gray-50", label: "Not Started" },
+    failed: { icon: AlertCircle, color: "text-red-600 bg-red-50", label: "Verification Failed" },
+  };
+
+  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started;
+  const Icon = config.icon;
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <Icon className="h-3.5 w-3.5" />
+      {config.label}
+    </span>
+  );
+}
 
 export default function EmailSettingsPage() {
   const [formData, setFormData] = useState({
@@ -18,12 +65,53 @@ export default function EmailSettingsPage() {
     emailLogoUrl: "",
   });
   const [hasChanges, setHasChanges] = useState(false);
+  const [newDomain, setNewDomain] = useState("");
+  const [useCustomDomain, setUseCustomDomain] = useState(false);
+
+  const utils = trpc.useUtils();
 
   const { data: settings, isLoading } = trpc.organization.getEmailSettings.useQuery();
+  const { data: domainData, isLoading: domainLoading, refetch: refetchDomain } = trpc.organization.getCustomDomain.useQuery();
+
   const updateSettings = trpc.organization.updateEmailSettings.useMutation({
     onSuccess: () => {
       toast.success("Email settings saved successfully");
       setHasChanges(false);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const addDomain = trpc.organization.addCustomDomain.useMutation({
+    onSuccess: () => {
+      toast.success("Domain added! Please configure the DNS records shown below.");
+      setNewDomain("");
+      utils.organization.getCustomDomain.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const verifyDomain = trpc.organization.verifyCustomDomain.useMutation({
+    onSuccess: (data) => {
+      if (data.status === "verified") {
+        toast.success("Domain verified successfully! You can now send emails from this domain.");
+      } else {
+        toast.info("Verification in progress. DNS changes may take up to 48 hours to propagate.");
+      }
+      utils.organization.getCustomDomain.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const removeDomain = trpc.organization.removeCustomDomain.useMutation({
+    onSuccess: () => {
+      toast.success("Custom domain removed");
+      utils.organization.getCustomDomain.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -42,6 +130,26 @@ export default function EmailSettingsPage() {
       });
     }
   }, [settings]);
+
+  // Set custom domain preference based on existing domain
+  useEffect(() => {
+    if (domainData?.hasCustomDomain) {
+      setUseCustomDomain(true);
+    }
+  }, [domainData]);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  };
+
+  const handleAddDomain = () => {
+    if (!newDomain.trim()) {
+      toast.error("Please enter a domain name");
+      return;
+    }
+    addDomain.mutate({ domain: newDomain.trim() });
+  };
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -114,6 +222,280 @@ export default function EmailSettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Email Domain Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Email Sending Domain
+          </CardTitle>
+          <CardDescription>
+            Choose how emails are sent to your customers. Either use our shared domain or set up your own custom domain.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Domain Option Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Option A: Shared Domain */}
+            <div
+              className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                !useCustomDomain
+                  ? "border-primary bg-primary/5"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+              onClick={() => setUseCustomDomain(false)}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`rounded-full p-2 ${!useCustomDomain ? "bg-primary/10" : "bg-gray-100"}`}>
+                  <Mail className={`h-5 w-5 ${!useCustomDomain ? "text-primary" : "text-gray-500"}`} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">Shared Domain</h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Emails sent from our verified domain on your behalf. Quick setup, no DNS changes needed.
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Sent from: noreply@voxforge.ai
+                  </p>
+                </div>
+              </div>
+              {!useCustomDomain && (
+                <CheckCircle2 className="absolute top-4 right-4 h-5 w-5 text-primary" />
+              )}
+            </div>
+
+            {/* Option B: Custom Domain */}
+            <div
+              className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                useCustomDomain
+                  ? "border-primary bg-primary/5"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+              onClick={() => setUseCustomDomain(true)}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`rounded-full p-2 ${useCustomDomain ? "bg-primary/10" : "bg-gray-100"}`}>
+                  <Globe className={`h-5 w-5 ${useCustomDomain ? "text-primary" : "text-gray-500"}`} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">Custom Domain</h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Send emails from your own domain for full brand control. Requires DNS verification.
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Example: mail.yourbusiness.com
+                  </p>
+                </div>
+              </div>
+              {useCustomDomain && (
+                <CheckCircle2 className="absolute top-4 right-4 h-5 w-5 text-primary" />
+              )}
+            </div>
+          </div>
+
+          {/* Custom Domain Setup Section */}
+          {useCustomDomain && (
+            <div className="border-t pt-6 space-y-4">
+              {domainLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                </div>
+              ) : domainData?.hasCustomDomain && domainData.domain ? (
+                // Show existing domain configuration
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-5 w-5 text-gray-400" />
+                      <div>
+                        <p className="font-medium text-gray-900">{domainData.domain.name}</p>
+                        <p className="text-xs text-gray-500">Added domain</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DomainStatusBadge status={domainData.domain.status} />
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove Custom Domain</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to remove this custom domain? Emails will be sent from
+                              our shared domain instead. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => removeDomain.mutate()}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              {removeDomain.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                "Remove Domain"
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+
+                  {/* DNS Records */}
+                  {domainData.domain.status !== "verified" && domainData.domain.records.length > 0 && (
+                    <div className="rounded-lg border bg-gray-50 p-4 space-y-4">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm">
+                          <p className="font-medium text-gray-900">Configure DNS Records</p>
+                          <p className="text-gray-600 mt-1">
+                            Add the following DNS records to your domain provider. DNS changes may take up to 48 hours to propagate.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-2 px-2 font-medium text-gray-600">Type</th>
+                              <th className="text-left py-2 px-2 font-medium text-gray-600">Name</th>
+                              <th className="text-left py-2 px-2 font-medium text-gray-600">Value</th>
+                              <th className="text-left py-2 px-2 font-medium text-gray-600">Status</th>
+                              <th className="py-2 px-2"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {domainData.domain.records.map((record, index) => (
+                              <tr key={index} className="border-b last:border-0">
+                                <td className="py-2 px-2">
+                                  <span className="font-mono text-xs bg-gray-200 px-1.5 py-0.5 rounded">
+                                    {record.type}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-2">
+                                  <code className="text-xs break-all">{record.name}</code>
+                                </td>
+                                <td className="py-2 px-2 max-w-[200px]">
+                                  <code className="text-xs break-all block">{record.value}</code>
+                                </td>
+                                <td className="py-2 px-2">
+                                  <span className={`text-xs ${
+                                    record.status === "verified" ? "text-green-600" : "text-yellow-600"
+                                  }`}>
+                                    {record.status === "verified" ? "Verified" : "Pending"}
+                                  </span>
+                                </td>
+                                <td className="py-2 px-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => copyToClipboard(record.value)}
+                                    className="h-7 w-7 p-0"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2">
+                        <Button
+                          onClick={() => verifyDomain.mutate()}
+                          disabled={verifyDomain.isPending}
+                          size="sm"
+                        >
+                          {verifyDomain.isPending ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                          )}
+                          Verify DNS Records
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => refetchDomain()}
+                        >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Refresh Status
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Verified domain success message */}
+                  {domainData.domain.status === "verified" && (
+                    <div className="rounded-lg bg-green-50 border border-green-200 p-4 flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-green-800">Domain Verified</p>
+                        <p className="text-green-700 mt-1">
+                          Your domain is verified and ready to use. Emails will be sent from{" "}
+                          <strong>noreply@{domainData.domain.name}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Add new domain form
+                <div className="space-y-4">
+                  <div className="rounded-lg bg-blue-50 p-4 flex items-start gap-3">
+                    <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      <p className="font-medium">Setting Up a Custom Domain</p>
+                      <p className="mt-1">
+                        We recommend using a subdomain like <strong>mail.yourbusiness.com</strong> or{" "}
+                        <strong>notify.yourbusiness.com</strong>. After adding the domain, you&apos;ll
+                        need to configure DNS records with your domain provider.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label htmlFor="newDomain" className="sr-only">Domain Name</Label>
+                      <Input
+                        id="newDomain"
+                        placeholder="mail.yourbusiness.com"
+                        value={newDomain}
+                        onChange={(e) => setNewDomain(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddDomain()}
+                      />
+                    </div>
+                    <Button onClick={handleAddDomain} disabled={addDomain.isPending}>
+                      {addDomain.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Add Domain"
+                      )}
+                    </Button>
+                  </div>
+
+                  <a
+                    href="https://resend.com/docs/dashboard/domains/introduction"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                  >
+                    Learn more about domain verification
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Email Addresses */}
       <Card>
         <CardHeader>
@@ -122,36 +504,10 @@ export default function EmailSettingsPage() {
             Email Addresses
           </CardTitle>
           <CardDescription>
-            Configure the sender and reply-to email addresses for your appointment emails.
+            Configure reply-to addresses for your appointment emails.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg bg-blue-50 p-4 flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-800">
-              <p className="font-medium">About Email Domains</p>
-              <p className="mt-1">
-                By default, emails are sent from our verified domain on your behalf. For a fully
-                branded experience with your own domain, contact our support team to set up a custom
-                sending domain.
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="emailFromAddress">Custom From Email (Optional)</Label>
-            <Input
-              id="emailFromAddress"
-              type="email"
-              placeholder="noreply@yourbusiness.com"
-              value={formData.emailFromAddress}
-              onChange={(e) => handleChange("emailFromAddress", e.target.value)}
-            />
-            <p className="text-sm text-gray-500">
-              Requires domain verification. Leave empty to use our default sender.
-            </p>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="emailReplyTo">Reply-To Email</Label>
             <Input

@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import {
+  addDomain,
+  getDomain,
+  verifyDomain,
+  removeDomain,
+} from "@/lib/resend-domains";
 
 // Email settings schema
 const emailSettingsSchema = z.object({
@@ -129,4 +135,209 @@ export const organizationRouter = router({
 
       return { success: true };
     }),
+
+  // ============ Custom Email Domain Management ============
+
+  // Get custom domain status
+  getCustomDomain: protectedProcedure.query(async ({ ctx }) => {
+    const org = await ctx.db.organization.findUnique({
+      where: { id: ctx.orgId },
+      select: { settings: true },
+    });
+
+    const settings = org?.settings as Record<string, unknown> | null;
+    const domainId = settings?.customDomainId as string | null;
+    const domainName = settings?.customDomainName as string | null;
+
+    if (!domainId) {
+      return {
+        hasCustomDomain: false,
+        domain: null,
+      };
+    }
+
+    // Get latest status from Resend
+    const result = await getDomain(domainId);
+
+    if (!result.success || !result.domain) {
+      return {
+        hasCustomDomain: true,
+        domain: {
+          id: domainId,
+          name: domainName || "Unknown",
+          status: "failed" as const,
+          records: [],
+        },
+        error: result.error,
+      };
+    }
+
+    return {
+      hasCustomDomain: true,
+      domain: result.domain,
+    };
+  }),
+
+  // Add a custom domain
+  addCustomDomain: adminProcedure
+    .input(
+      z.object({
+        domain: z.string().min(3).max(255),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Validate domain format (basic validation)
+      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/;
+      if (!domainRegex.test(input.domain)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid domain format. Example: mail.yourbusiness.com",
+        });
+      }
+
+      // Check if org already has a domain
+      const org = await ctx.db.organization.findUnique({
+        where: { id: ctx.orgId },
+        select: { settings: true },
+      });
+
+      const settings = org?.settings as Record<string, unknown> | null;
+      if (settings?.customDomainId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "A custom domain is already configured. Remove it first before adding a new one.",
+        });
+      }
+
+      // Add domain to Resend
+      const result = await addDomain(input.domain);
+
+      if (!result.success || !result.domain) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: result.error || "Failed to add domain to email provider",
+        });
+      }
+
+      // Save domain info to organization settings
+      const currentSettings = (org?.settings as Record<string, unknown>) || {};
+      await ctx.db.organization.update({
+        where: { id: ctx.orgId },
+        data: {
+          settings: {
+            ...currentSettings,
+            customDomainId: result.domain.id,
+            customDomainName: result.domain.name,
+            customDomainStatus: result.domain.status,
+          } as object,
+        },
+      });
+
+      return {
+        success: true,
+        domain: result.domain,
+      };
+    }),
+
+  // Verify custom domain DNS records
+  verifyCustomDomain: adminProcedure.mutation(async ({ ctx }) => {
+    const org = await ctx.db.organization.findUnique({
+      where: { id: ctx.orgId },
+      select: { settings: true },
+    });
+
+    const settings = org?.settings as Record<string, unknown> | null;
+    const domainId = settings?.customDomainId as string | null;
+
+    if (!domainId) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "No custom domain configured",
+      });
+    }
+
+    // Trigger verification in Resend
+    const result = await verifyDomain(domainId);
+
+    if (!result.success) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: result.error || "Failed to verify domain",
+      });
+    }
+
+    // Get updated domain info
+    const domainResult = await getDomain(domainId);
+
+    // Update status in settings
+    if (domainResult.success && domainResult.domain) {
+      const currentSettings = (org?.settings as Record<string, unknown>) || {};
+      await ctx.db.organization.update({
+        where: { id: ctx.orgId },
+        data: {
+          settings: {
+            ...currentSettings,
+            customDomainStatus: domainResult.domain.status,
+            // Auto-set from address if verified
+            ...(domainResult.domain.status === "verified" && {
+              emailFromAddress: `noreply@${domainResult.domain.name}`,
+            }),
+          } as object,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      status: result.status,
+      domain: domainResult.domain,
+    };
+  }),
+
+  // Remove custom domain
+  removeCustomDomain: adminProcedure.mutation(async ({ ctx }) => {
+    const org = await ctx.db.organization.findUnique({
+      where: { id: ctx.orgId },
+      select: { settings: true },
+    });
+
+    const settings = org?.settings as Record<string, unknown> | null;
+    const domainId = settings?.customDomainId as string | null;
+
+    if (!domainId) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "No custom domain configured",
+      });
+    }
+
+    // Remove from Resend
+    const result = await removeDomain(domainId);
+
+    if (!result.success) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: result.error || "Failed to remove domain",
+      });
+    }
+
+    // Remove from organization settings
+    const currentSettings = (org?.settings as Record<string, unknown>) || {};
+    const {
+      customDomainId: _id,
+      customDomainName: _name,
+      customDomainStatus: _status,
+      emailFromAddress: _from,
+      ...restSettings
+    } = currentSettings;
+
+    await ctx.db.organization.update({
+      where: { id: ctx.orgId },
+      data: {
+        settings: restSettings as object,
+      },
+    });
+
+    return { success: true };
+  }),
 });

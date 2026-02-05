@@ -321,6 +321,9 @@ export const appointmentsRouter = router({
       // Send confirmation email if requested and email available
       if (input.sendConfirmation && attendeeInfo.attendeeEmail) {
         try {
+          // Get organization branding for the email
+          const branding = await getOrganizationBranding(ctx.db, ctx.orgId);
+
           await sendAppointmentConfirmation(
             attendeeInfo.attendeeEmail,
             attendeeInfo.attendeeName || "there",
@@ -332,7 +335,9 @@ export const appointmentsRouter = router({
               meetingLink: appointment.meetingLink,
               location: appointment.location,
               phoneNumber: appointment.phoneNumber,
-            }
+              appointmentId: appointment.id, // Include for action links
+            },
+            branding
           );
         } catch (error) {
           console.error("Failed to send confirmation email:", error);
