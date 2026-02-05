@@ -230,6 +230,7 @@ export const appointmentsRouter = router({
         attendeeName: z.string().optional(),
         attendeeEmail: z.string().email().optional(),
         attendeePhone: z.string().optional(),
+        notificationPreference: z.enum(["email", "sms", "both", "none"]).optional(),
         notes: z.string().optional(),
         sendConfirmation: z.boolean().default(true),
       })
@@ -267,7 +268,7 @@ export const appointmentsRouter = router({
         });
       }
 
-      // Get contact info if contactId provided
+      // Get contact info and notification preference if contactId provided
       let attendeeInfo: {
         attendeeName: string | null | undefined;
         attendeeEmail: string | null | undefined;
@@ -277,6 +278,10 @@ export const appointmentsRouter = router({
         attendeeEmail: input.attendeeEmail,
         attendeePhone: input.attendeePhone,
       };
+
+      // Notification preference: input override > contact default > "both"
+      type NotificationPref = "email" | "sms" | "both" | "none";
+      let notificationPreference: NotificationPref = input.notificationPreference || "both";
 
       if (input.contactId) {
         const contact = await ctx.db.contact.findFirst({
@@ -288,6 +293,10 @@ export const appointmentsRouter = router({
             attendeeEmail: attendeeInfo.attendeeEmail || contact.email || undefined,
             attendeePhone: attendeeInfo.attendeePhone || contact.phoneNumber || undefined,
           };
+          // Use contact's preference if no override provided
+          if (!input.notificationPreference) {
+            notificationPreference = contact.notificationPreference as NotificationPref;
+          }
         }
       }
 
@@ -310,6 +319,7 @@ export const appointmentsRouter = router({
           attendeeName: attendeeInfo.attendeeName,
           attendeeEmail: attendeeInfo.attendeeEmail,
           attendeePhone: attendeeInfo.attendeePhone,
+          notificationPreference: input.notificationPreference, // Store per-appointment override if provided
           notes: input.notes,
           status: "scheduled",
         },
@@ -319,8 +329,12 @@ export const appointmentsRouter = router({
         },
       });
 
-      // Send confirmation email if requested and email available
-      if (input.sendConfirmation && attendeeInfo.attendeeEmail) {
+      // Determine if we should send email/SMS based on preference
+      const shouldSendEmail = notificationPreference === "email" || notificationPreference === "both";
+      const shouldSendSms = notificationPreference === "sms" || notificationPreference === "both";
+
+      // Send confirmation email if requested, preference allows, and email available
+      if (input.sendConfirmation && shouldSendEmail && attendeeInfo.attendeeEmail) {
         try {
           // Get organization branding for the email
           const branding = await getOrganizationBranding(ctx.db, ctx.orgId);
@@ -346,8 +360,8 @@ export const appointmentsRouter = router({
         }
       }
 
-      // Send confirmation SMS if requested and phone available
-      if (input.sendConfirmation && attendeeInfo.attendeePhone) {
+      // Send confirmation SMS if requested, preference allows, and phone available
+      if (input.sendConfirmation && shouldSendSms && attendeeInfo.attendeePhone) {
         try {
           await sendAppointmentSms({
             appointmentId: appointment.id,
@@ -384,6 +398,7 @@ export const appointmentsRouter = router({
         attendeeName: z.string().optional().nullable(),
         attendeeEmail: z.string().email().optional().nullable(),
         attendeePhone: z.string().optional().nullable(),
+        notificationPreference: z.enum(["email", "sms", "both", "none"]).optional().nullable(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -391,6 +406,11 @@ export const appointmentsRouter = router({
         where: {
           id: input.id,
           organizationId: ctx.orgId,
+        },
+        include: {
+          contact: {
+            select: { notificationPreference: true },
+          },
         },
       });
 
@@ -415,6 +435,7 @@ export const appointmentsRouter = router({
       if (input.attendeeName !== undefined) updateData.attendeeName = input.attendeeName;
       if (input.attendeeEmail !== undefined) updateData.attendeeEmail = input.attendeeEmail;
       if (input.attendeePhone !== undefined) updateData.attendeePhone = input.attendeePhone;
+      if (input.notificationPreference !== undefined) updateData.notificationPreference = input.notificationPreference;
 
       // Handle rescheduling
       if (input.scheduledAt || input.duration) {
@@ -480,34 +501,52 @@ export const appointmentsRouter = router({
         },
       });
 
-      // Send rescheduled email if the time was changed and notification is enabled
-      if (
-        updateData.status === "rescheduled" &&
-        existing.attendeeEmail &&
-        input.scheduledAt &&
-        input.notifyAttendee
-      ) {
-        try {
-          const branding = await getOrganizationBranding(ctx.db, ctx.orgId);
-          await sendAppointmentRescheduled(
-            existing.attendeeEmail,
-            existing.attendeeName || "there",
-            {
-              title: appointment.title,
-              scheduledAt: appointment.scheduledAt,
-              duration: appointment.duration,
-              meetingType: appointment.meetingType,
-              meetingLink: appointment.meetingLink,
-              location: appointment.location,
-              phoneNumber: appointment.phoneNumber,
-              appointmentId: appointment.id, // Include for action links
-            },
-            existing.scheduledAt, // Previous date
-            branding
-          );
-        } catch (error) {
-          console.error("Failed to send rescheduled email:", error);
-          // Don't fail the update
+      // Send rescheduled notifications if the time was changed
+      if (updateData.status === "rescheduled" && input.scheduledAt && input.notifyAttendee) {
+        // Determine notification preference: input > appointment > contact > "both"
+        const notificationPreference = input.notificationPreference
+          || existing.notificationPreference
+          || existing.contact?.notificationPreference
+          || "both";
+        const shouldSendEmail = notificationPreference === "email" || notificationPreference === "both";
+        const shouldSendSms = notificationPreference === "sms" || notificationPreference === "both";
+
+        // Send rescheduled email
+        if (shouldSendEmail && existing.attendeeEmail) {
+          try {
+            const branding = await getOrganizationBranding(ctx.db, ctx.orgId);
+            await sendAppointmentRescheduled(
+              existing.attendeeEmail,
+              existing.attendeeName || "there",
+              {
+                title: appointment.title,
+                scheduledAt: appointment.scheduledAt,
+                duration: appointment.duration,
+                meetingType: appointment.meetingType,
+                meetingLink: appointment.meetingLink,
+                location: appointment.location,
+                phoneNumber: appointment.phoneNumber,
+                appointmentId: appointment.id, // Include for action links
+              },
+              existing.scheduledAt, // Previous date
+              branding
+            );
+          } catch (error) {
+            console.error("Failed to send rescheduled email:", error);
+          }
+        }
+
+        // Send rescheduled SMS
+        if (shouldSendSms && existing.attendeePhone) {
+          try {
+            await sendAppointmentSms({
+              appointmentId: appointment.id,
+              type: "rescheduled",
+              previousDate: existing.scheduledAt,
+            });
+          } catch (error) {
+            console.error("Failed to send rescheduled SMS:", error);
+          }
         }
       }
 
@@ -528,6 +567,11 @@ export const appointmentsRouter = router({
         where: {
           id: input.id,
           organizationId: ctx.orgId,
+        },
+        include: {
+          contact: {
+            select: { notificationPreference: true },
+          },
         },
       });
 
@@ -554,8 +598,15 @@ export const appointmentsRouter = router({
         },
       });
 
+      // Determine notification preference: appointment override > contact default > "both"
+      const notificationPreference = appointment.notificationPreference
+        || appointment.contact?.notificationPreference
+        || "both";
+      const shouldSendEmail = notificationPreference === "email" || notificationPreference === "both";
+      const shouldSendSms = notificationPreference === "sms" || notificationPreference === "both";
+
       // Send cancellation email
-      if (input.notifyAttendee && appointment.attendeeEmail) {
+      if (input.notifyAttendee && shouldSendEmail && appointment.attendeeEmail) {
         try {
           const branding = await getOrganizationBranding(ctx.db, ctx.orgId);
           await sendAppointmentCancellation(
@@ -570,6 +621,18 @@ export const appointmentsRouter = router({
           );
         } catch (error) {
           console.error("Failed to send cancellation email:", error);
+        }
+      }
+
+      // Send cancellation SMS
+      if (input.notifyAttendee && shouldSendSms && appointment.attendeePhone) {
+        try {
+          await sendAppointmentSms({
+            appointmentId: appointment.id,
+            type: "cancelled",
+          });
+        } catch (error) {
+          console.error("Failed to send cancellation SMS:", error);
         }
       }
 

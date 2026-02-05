@@ -61,12 +61,15 @@ export async function POST(request: NextRequest) {
 
     for (const appointment of appointments) {
       try {
-        // Get full appointment details for email
+        // Get full appointment details including contact preference
         const fullAppointment = await db.appointment.findUnique({
           where: { id: appointment.id },
           include: {
             organization: {
               select: { name: true, settings: true },
+            },
+            contact: {
+              select: { notificationPreference: true },
             },
           },
         });
@@ -82,8 +85,16 @@ export async function POST(request: NextRequest) {
           logoUrl: settings?.emailLogoUrl as string | undefined,
         };
 
-        // Send email reminder if attendee has email
-        if (fullAppointment.attendeeEmail) {
+        // Determine notification preference: appointment override > contact default > "both"
+        const notificationPreference = fullAppointment.notificationPreference
+          || fullAppointment.contact?.notificationPreference
+          || "both";
+
+        const shouldSendEmail = notificationPreference === "email" || notificationPreference === "both";
+        const shouldSendSms = notificationPreference === "sms" || notificationPreference === "both";
+
+        // Send email reminder if preference allows and attendee has email
+        if (shouldSendEmail && fullAppointment.attendeeEmail && !fullAppointment.reminderSentAt) {
           try {
             await sendAppointmentReminder(
               fullAppointment.attendeeEmail,
@@ -103,6 +114,11 @@ export async function POST(request: NextRequest) {
             );
             results.emailsSent++;
             console.log(`[Reminder Cron] Email sent for appointment ${appointment.id}`);
+            // Mark email reminder as sent
+            await db.appointment.update({
+              where: { id: appointment.id },
+              data: { reminderSentAt: new Date() },
+            });
           } catch (error) {
             const errorMsg = `Email failed for ${appointment.id}: ${error instanceof Error ? error.message : "Unknown"}`;
             results.errors.push(errorMsg);
@@ -110,10 +126,8 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Send SMS reminder if attendee has phone number (default reminder method)
-        const smsReminderEnabled = settings?.smsRemindersEnabled !== false;
-
-        if (appointment.attendeePhone && smsReminderEnabled && !fullAppointment.smsReminderSentAt) {
+        // Send SMS reminder if preference allows and attendee has phone number
+        if (shouldSendSms && appointment.attendeePhone && !fullAppointment.smsReminderSentAt) {
           try {
             const smsResult = await sendAppointmentSms({
               appointmentId: appointment.id,
@@ -140,10 +154,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Optionally initiate phone reminder for high-value appointments
-        // Only if phone reminders are explicitly enabled and SMS wasn't sent
+        // Only if phone reminders are explicitly enabled in org settings
         const phoneReminderEnabled = settings?.phoneRemindersEnabled === true; // Disabled by default
 
-        if (appointment.attendeePhone && phoneReminderEnabled && !results.smsSent) {
+        if (shouldSendSms && appointment.attendeePhone && phoneReminderEnabled) {
           try {
             const callResult = await initiateReminderCall(appointment.id);
             if (callResult.success) {
@@ -159,14 +173,6 @@ export async function POST(request: NextRequest) {
             results.errors.push(errorMsg);
             console.error(`[Reminder Cron] ${errorMsg}`);
           }
-        }
-
-        // Mark email reminder as sent
-        if (fullAppointment.attendeeEmail) {
-          await db.appointment.update({
-            where: { id: appointment.id },
-            data: { reminderSentAt: new Date() },
-          });
         }
       } catch (error) {
         const errorMsg = `Failed to process appointment ${appointment.id}: ${error instanceof Error ? error.message : "Unknown"}`;

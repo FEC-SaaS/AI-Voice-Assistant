@@ -153,6 +153,7 @@ model Contact {
   company        String?
   customData     Json      @default("{}")
   status         String    @default("pending") // pending, called, completed, failed, dnc
+  notificationPreference String @default("both") // email, sms, both, none
   lastCalledAt   DateTime?
   callAttempts   Int       @default(0)
   createdAt      DateTime  @default(now())
@@ -316,6 +317,7 @@ model Appointment {
   attendeeName   String?
   attendeeEmail  String?
   attendeePhone  String?
+  notificationPreference String? // email, sms, both, none - overrides contact preference if set
 
   // Status tracking
   status         String       @default("scheduled") // scheduled, confirmed, completed, cancelled, no_show, rescheduled

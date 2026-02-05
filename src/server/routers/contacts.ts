@@ -59,6 +59,7 @@ const contactSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   company: z.string().optional(),
   customData: z.record(z.any()).optional(),
+  notificationPreference: z.enum(["email", "sms", "both", "none"]).default("both"),
 });
 
 const bulkContactSchema = z.object({
@@ -219,6 +220,7 @@ export const contactsRouter = router({
           email: input.email || null,
           company: input.company,
           customData: input.customData || {},
+          notificationPreference: input.notificationPreference,
         },
       });
 
@@ -295,6 +297,7 @@ export const contactsRouter = router({
           email: contact.email || null,
           company: contact.company,
           customData: contact.customData || {},
+          notificationPreference: contact.notificationPreference || "both",
         });
 
         existingPhones.add(normalizedPhone);
