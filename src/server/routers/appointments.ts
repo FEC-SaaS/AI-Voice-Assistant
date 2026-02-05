@@ -1,7 +1,38 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { sendAppointmentConfirmation, sendAppointmentReminder, sendAppointmentCancellation, sendAppointmentRescheduled } from "@/lib/email";
+import {
+  sendAppointmentConfirmation,
+  sendAppointmentReminder,
+  sendAppointmentCancellation,
+  sendAppointmentRescheduled,
+  type EmailBrandingConfig,
+} from "@/lib/email";
+
+// Helper to get organization branding settings
+async function getOrganizationBranding(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: { organization: { findUnique: (args: { where: { id: string }; select: { settings: true; name: true } }) => Promise<{ settings: unknown; name: string } | null> } },
+  organizationId: string
+): Promise<EmailBrandingConfig | undefined> {
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { settings: true, name: true },
+  });
+
+  if (!org) return undefined;
+
+  const settings = org.settings as Record<string, unknown> | null;
+  if (!settings) return { businessName: org.name };
+
+  return {
+    businessName: (settings.emailBusinessName as string) || org.name,
+    fromEmail: settings.emailFromAddress as string | undefined,
+    replyToEmail: settings.emailReplyTo as string | undefined,
+    primaryColor: settings.emailPrimaryColor as string | undefined,
+    logoUrl: settings.emailLogoUrl as string | undefined,
+  };
+}
 
 // Helper to generate time slots
 function generateTimeSlots(
@@ -438,6 +469,7 @@ export const appointmentsRouter = router({
         input.notifyAttendee
       ) {
         try {
+          const branding = await getOrganizationBranding(ctx.db, ctx.orgId);
           await sendAppointmentRescheduled(
             existing.attendeeEmail,
             existing.attendeeName || "there",
@@ -449,8 +481,10 @@ export const appointmentsRouter = router({
               meetingLink: appointment.meetingLink,
               location: appointment.location,
               phoneNumber: appointment.phoneNumber,
+              appointmentId: appointment.id, // Include for action links
             },
-            existing.scheduledAt // Previous date
+            existing.scheduledAt, // Previous date
+            branding
           );
         } catch (error) {
           console.error("Failed to send rescheduled email:", error);
@@ -504,6 +538,7 @@ export const appointmentsRouter = router({
       // Send cancellation email
       if (input.notifyAttendee && appointment.attendeeEmail) {
         try {
+          const branding = await getOrganizationBranding(ctx.db, ctx.orgId);
           await sendAppointmentCancellation(
             appointment.attendeeEmail,
             appointment.attendeeName || "there",
@@ -511,7 +546,8 @@ export const appointmentsRouter = router({
               title: appointment.title,
               scheduledAt: appointment.scheduledAt,
               reason: input.reason,
-            }
+            },
+            branding
           );
         } catch (error) {
           console.error("Failed to send cancellation email:", error);
@@ -554,6 +590,9 @@ export const appointmentsRouter = router({
       }
 
       try {
+        // Get organization branding
+        const branding = await getOrganizationBranding(ctx.db, ctx.orgId);
+
         await sendAppointmentConfirmation(
           appointment.attendeeEmail,
           appointment.attendeeName || "there",
@@ -565,7 +604,9 @@ export const appointmentsRouter = router({
             meetingLink: appointment.meetingLink,
             location: appointment.location,
             phoneNumber: appointment.phoneNumber,
-          }
+            appointmentId: appointment.id, // Include for action links
+          },
+          branding
         );
 
         return { success: true, message: `Confirmation email sent to ${appointment.attendeeEmail}` };

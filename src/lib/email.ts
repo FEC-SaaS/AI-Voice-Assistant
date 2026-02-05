@@ -1,21 +1,30 @@
 import { Resend } from "resend";
+import { generateActionUrls } from "./appointment-tokens";
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Use custom FROM_EMAIL if set, otherwise use Resend's test domain (for development)
-// For production, set EMAIL_FROM_ADDRESS to your verified domain email
-// Format: "Name <email@domain.com>"
-const FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || "VoxForge AI <onboarding@resend.dev>";
+// Default FROM_EMAIL - this is overridden by organization settings when available
+const DEFAULT_FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || "VoxForge AI <onboarding@resend.dev>";
+
+// Email branding configuration from organization settings
+export interface EmailBrandingConfig {
+  businessName?: string;
+  fromEmail?: string;
+  replyToEmail?: string;
+  primaryColor?: string;
+  logoUrl?: string;
+}
 
 interface SendEmailOptions {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
+  branding?: EmailBrandingConfig;
 }
 
 export async function sendEmail(options: SendEmailOptions) {
-  const { to, subject, html, text } = options;
+  const { to, subject, html, text, branding } = options;
 
   // Check if API key is configured
   if (!process.env.RESEND_API_KEY) {
@@ -23,16 +32,27 @@ export async function sendEmail(options: SendEmailOptions) {
     return { success: false, error: "Email service not configured" };
   }
 
+  // Determine FROM_EMAIL based on branding config
+  let fromEmail = DEFAULT_FROM_EMAIL;
+  if (branding?.fromEmail && branding?.businessName) {
+    fromEmail = `${branding.businessName} <${branding.fromEmail}>`;
+  } else if (branding?.businessName) {
+    // Use business name with default email domain
+    const defaultDomain = DEFAULT_FROM_EMAIL.match(/<(.+)>/)?.[1] || "onboarding@resend.dev";
+    fromEmail = `${branding.businessName} <${defaultDomain}>`;
+  }
+
   console.log(`[Email] Sending email to ${to} with subject: ${subject}`);
-  console.log(`[Email] From: ${FROM_EMAIL}`);
+  console.log(`[Email] From: ${fromEmail}`);
 
   try {
     const result = await resend.emails.send({
-      from: FROM_EMAIL,
+      from: fromEmail,
       to,
       subject,
       html,
       text,
+      ...(branding?.replyToEmail && { replyTo: branding.replyToEmail }),
     });
 
     if (result.error) {
@@ -186,6 +206,7 @@ interface AppointmentDetails {
   meetingLink?: string | null;
   location?: string | null;
   phoneNumber?: string | null;
+  appointmentId?: string; // For generating action links
 }
 
 function formatAppointmentDate(date: Date): string {
@@ -266,18 +287,53 @@ function getMeetingDetails(details: AppointmentDetails): string {
 export async function sendAppointmentConfirmation(
   email: string,
   name: string,
-  details: AppointmentDetails
+  details: AppointmentDetails,
+  branding?: EmailBrandingConfig
 ) {
   const meetingIcon = getMeetingTypeIcon(details.meetingType);
   const meetingLabel = getMeetingTypeLabel(details.meetingType);
   const meetingDetails = getMeetingDetails(details);
+  const primaryColor = branding?.primaryColor || "#22c55e";
+  const businessName = branding?.businessName || "VoxForge AI";
+
+  // Generate action URLs if appointmentId is provided
+  let actionButtonsHtml = "";
+  if (details.appointmentId) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voxforge.ai";
+    const { confirmUrl, rescheduleUrl, cancelUrl } = generateActionUrls(
+      details.appointmentId,
+      email,
+      baseUrl
+    );
+
+    actionButtonsHtml = `
+      <div style="margin: 30px 0; text-align: center;">
+        <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Manage your appointment:</p>
+        <div style="display: inline-block;">
+          <a href="${confirmUrl}"
+             style="background: #22c55e; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 5px; font-weight: 500;">
+            ✓ Confirm Attendance
+          </a>
+          <a href="${rescheduleUrl}"
+             style="background: #3b82f6; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 5px; font-weight: 500;">
+            📅 Reschedule
+          </a>
+          <a href="${cancelUrl}"
+             style="background: #ef4444; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 5px; font-weight: 500;">
+            ✕ Cancel
+          </a>
+        </div>
+      </div>
+    `;
+  }
 
   return sendEmail({
     to: email,
     subject: `Appointment Confirmed: ${details.title}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #22c55e; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+        <div style="background: ${primaryColor}; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          ${branding?.logoUrl ? `<img src="${branding.logoUrl}" alt="${businessName}" style="max-height: 40px; margin-bottom: 10px;" />` : ""}
           <h1 style="margin: 0; font-size: 24px;">✓ Appointment Confirmed</h1>
         </div>
 
@@ -309,14 +365,17 @@ export async function sendAppointmentConfirmation(
 
           ${meetingDetails}
 
+          ${actionButtonsHtml}
+
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 
-          <p style="color: #666; font-size: 14px;">
-            Need to reschedule or cancel? Reply to this email and we'll help you out.
+          <p style="color: #666; font-size: 14px; text-align: center;">
+            From ${businessName}
           </p>
         </div>
       </div>
     `,
+    branding,
   });
 }
 
@@ -324,15 +383,48 @@ export async function sendAppointmentReminder(
   email: string,
   name: string,
   details: AppointmentDetails,
-  hoursUntil: number
+  hoursUntil: number,
+  branding?: EmailBrandingConfig
 ) {
   const meetingIcon = getMeetingTypeIcon(details.meetingType);
   const meetingLabel = getMeetingTypeLabel(details.meetingType);
   const meetingDetails = getMeetingDetails(details);
+  const businessName = branding?.businessName || "VoxForge AI";
 
   const reminderText = hoursUntil >= 24
     ? `in ${Math.floor(hoursUntil / 24)} day${Math.floor(hoursUntil / 24) > 1 ? "s" : ""}`
     : `in ${hoursUntil} hour${hoursUntil > 1 ? "s" : ""}`;
+
+  // Generate action URLs if appointmentId is provided
+  let actionButtonsHtml = "";
+  if (details.appointmentId) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voxforge.ai";
+    const { confirmUrl, rescheduleUrl, cancelUrl } = generateActionUrls(
+      details.appointmentId,
+      email,
+      baseUrl
+    );
+
+    actionButtonsHtml = `
+      <div style="margin: 30px 0; text-align: center;">
+        <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Manage your appointment:</p>
+        <div style="display: inline-block;">
+          <a href="${confirmUrl}"
+             style="background: #22c55e; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 5px; font-weight: 500;">
+            ✓ Confirm Attendance
+          </a>
+          <a href="${rescheduleUrl}"
+             style="background: #3b82f6; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 5px; font-weight: 500;">
+            📅 Reschedule
+          </a>
+          <a href="${cancelUrl}"
+             style="background: #ef4444; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 5px; font-weight: 500;">
+            ✕ Cancel
+          </a>
+        </div>
+      </div>
+    `;
+  }
 
   return sendEmail({
     to: email,
@@ -340,6 +432,7 @@ export async function sendAppointmentReminder(
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #f59e0b; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          ${branding?.logoUrl ? `<img src="${branding.logoUrl}" alt="${businessName}" style="max-height: 40px; margin-bottom: 10px;" />` : ""}
           <h1 style="margin: 0; font-size: 24px;">⏰ Appointment Reminder</h1>
         </div>
 
@@ -371,14 +464,17 @@ export async function sendAppointmentReminder(
 
           ${meetingDetails}
 
+          ${actionButtonsHtml}
+
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 
-          <p style="color: #666; font-size: 14px;">
-            Can't make it? Reply to this email as soon as possible so we can reschedule.
+          <p style="color: #666; font-size: 14px; text-align: center;">
+            From ${businessName}
           </p>
         </div>
       </div>
     `,
+    branding,
   });
 }
 
@@ -389,14 +485,18 @@ export async function sendAppointmentCancellation(
     title: string;
     scheduledAt: Date;
     reason?: string;
-  }
+  },
+  branding?: EmailBrandingConfig
 ) {
+  const businessName = branding?.businessName || "VoxForge AI";
+
   return sendEmail({
     to: email,
     subject: `Appointment Cancelled: ${details.title}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #ef4444; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          ${branding?.logoUrl ? `<img src="${branding.logoUrl}" alt="${businessName}" style="max-height: 40px; margin-bottom: 10px;" />` : ""}
           <h1 style="margin: 0; font-size: 24px;">Appointment Cancelled</h1>
         </div>
 
@@ -412,16 +512,17 @@ export async function sendAppointmentCancellation(
             ${details.reason ? `<p style="margin: 15px 0 0 0;"><strong>Reason:</strong> ${details.reason}</p>` : ""}
           </div>
 
-          <p>Would you like to reschedule? Reply to this email and we'll find a new time that works for you.</p>
+          <p>Would you like to reschedule? Please contact us and we'll find a new time that works for you.</p>
 
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 
-          <p style="color: #666; font-size: 14px;">
-            If you have any questions, feel free to reach out.
+          <p style="color: #666; font-size: 14px; text-align: center;">
+            From ${businessName}
           </p>
         </div>
       </div>
     `,
+    branding,
   });
 }
 
@@ -429,11 +530,44 @@ export async function sendAppointmentRescheduled(
   email: string,
   name: string,
   details: AppointmentDetails,
-  previousDate: Date
+  previousDate: Date,
+  branding?: EmailBrandingConfig
 ) {
   const meetingIcon = getMeetingTypeIcon(details.meetingType);
   const meetingLabel = getMeetingTypeLabel(details.meetingType);
   const meetingDetails = getMeetingDetails(details);
+  const businessName = branding?.businessName || "VoxForge AI";
+
+  // Generate action URLs if appointmentId is provided
+  let actionButtonsHtml = "";
+  if (details.appointmentId) {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voxforge.ai";
+    const { confirmUrl, rescheduleUrl, cancelUrl } = generateActionUrls(
+      details.appointmentId,
+      email,
+      baseUrl
+    );
+
+    actionButtonsHtml = `
+      <div style="margin: 30px 0; text-align: center;">
+        <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Manage your appointment:</p>
+        <div style="display: inline-block;">
+          <a href="${confirmUrl}"
+             style="background: #22c55e; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 5px; font-weight: 500;">
+            ✓ Confirm Attendance
+          </a>
+          <a href="${rescheduleUrl}"
+             style="background: #3b82f6; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 5px; font-weight: 500;">
+            📅 Reschedule Again
+          </a>
+          <a href="${cancelUrl}"
+             style="background: #ef4444; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 5px; font-weight: 500;">
+            ✕ Cancel
+          </a>
+        </div>
+      </div>
+    `;
+  }
 
   return sendEmail({
     to: email,
@@ -441,6 +575,7 @@ export async function sendAppointmentRescheduled(
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #3b82f6; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          ${branding?.logoUrl ? `<img src="${branding.logoUrl}" alt="${businessName}" style="max-height: 40px; margin-bottom: 10px;" />` : ""}
           <h1 style="margin: 0; font-size: 24px;">📅 Appointment Rescheduled</h1>
         </div>
 
@@ -478,13 +613,16 @@ export async function sendAppointmentRescheduled(
 
           ${meetingDetails}
 
+          ${actionButtonsHtml}
+
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 
-          <p style="color: #666; font-size: 14px;">
-            If this new time doesn't work for you, please reply to this email.
+          <p style="color: #666; font-size: 14px; text-align: center;">
+            From ${businessName}
           </p>
         </div>
       </div>
     `,
+    branding,
   });
 }

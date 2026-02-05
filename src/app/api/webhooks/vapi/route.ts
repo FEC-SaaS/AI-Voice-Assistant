@@ -17,6 +17,30 @@ const getEmailService = async () => {
   return { sendAppointmentConfirmation };
 };
 
+// Helper to get organization branding settings
+async function getOrganizationBranding(
+  db: Awaited<ReturnType<typeof getDb>>,
+  organizationId: string
+) {
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { settings: true, name: true },
+  });
+
+  if (!org) return undefined;
+
+  const settings = org.settings as Record<string, unknown> | null;
+  if (!settings) return { businessName: org.name };
+
+  return {
+    businessName: (settings.emailBusinessName as string) || org.name,
+    fromEmail: settings.emailFromAddress as string | undefined,
+    replyToEmail: settings.emailReplyTo as string | undefined,
+    primaryColor: settings.emailPrimaryColor as string | undefined,
+    logoUrl: settings.emailLogoUrl as string | undefined,
+  };
+}
+
 // Vapi webhook event types
 interface VapiWebhookEvent {
   type: string;
@@ -298,6 +322,7 @@ async function processToolCall(
       if (customer_email) {
         try {
           const { sendAppointmentConfirmation } = await getEmailService();
+          const branding = await getOrganizationBranding(db, organizationId);
           await sendAppointmentConfirmation(customer_email, customer_name, {
             title: appointment.title,
             scheduledAt: appointment.scheduledAt,
@@ -306,7 +331,8 @@ async function processToolCall(
             meetingLink: appointment.meetingLink,
             location: appointment.location,
             phoneNumber: appointment.phoneNumber,
-          });
+            appointmentId: appointment.id, // Include ID for action links
+          }, branding);
         } catch (error) {
           console.error("[Vapi Tool] Failed to send confirmation email:", error);
         }
@@ -383,6 +409,7 @@ async function processToolCall(
       if (customer_email) {
         try {
           const { sendAppointmentConfirmation } = await getEmailService();
+          const branding = await getOrganizationBranding(db, organizationId);
           await sendAppointmentConfirmation(customer_email, appointment.attendeeName || customer_name || "Customer", {
             title: appointment.title,
             scheduledAt: appointment.scheduledAt,
@@ -391,7 +418,8 @@ async function processToolCall(
             meetingLink: appointment.meetingLink,
             location: appointment.location,
             phoneNumber: appointment.phoneNumber,
-          });
+            appointmentId: appointment.id, // Include ID for action links
+          }, branding);
         } catch (error) {
           console.error("[Vapi Tool] Failed to send confirmation email:", error);
         }

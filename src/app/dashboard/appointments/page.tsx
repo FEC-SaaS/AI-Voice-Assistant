@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Calendar, Clock, Plus, Phone, Video, MapPin, Loader2,
   CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight,
   User, Building, Filter, MoreVertical, Search, Mail, Edit, Trash2, Send,
+  List,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,296 @@ interface AppointmentData {
     lastName?: string | null;
     company?: string | null;
   } | null;
+}
+
+// Calendar View Component
+interface CalendarViewProps {
+  appointments: AppointmentData[];
+  selectedDate: Date;
+  setSelectedDate: (date: Date) => void;
+  isLoading: boolean;
+  onAppointmentClick: (appointment: AppointmentData) => void;
+  onCreateClick: () => void;
+}
+
+function CalendarView({
+  appointments,
+  selectedDate,
+  setSelectedDate,
+  isLoading,
+  onAppointmentClick,
+  onCreateClick,
+}: CalendarViewProps) {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  // Get days in month
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDay = firstDay.getDay();
+
+    const days: (Date | null)[] = [];
+
+    // Add empty slots for days before the first day of the month
+    for (let i = 0; i < startingDay; i++) {
+      days.push(null);
+    }
+
+    // Add all days in the month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push(new Date(year, month, i));
+    }
+
+    return days;
+  };
+
+  const days = getDaysInMonth(currentMonth);
+
+  // Get appointments for a specific day
+  const getAppointmentsForDay = (day: Date) => {
+    return appointments.filter((apt) => {
+      const aptDate = new Date(apt.scheduledAt);
+      return (
+        aptDate.getFullYear() === day.getFullYear() &&
+        aptDate.getMonth() === day.getMonth() &&
+        aptDate.getDate() === day.getDate()
+      );
+    });
+  };
+
+  // Navigate months
+  const prevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  const goToToday = () => {
+    setCurrentMonth(new Date());
+    setSelectedDate(new Date());
+  };
+
+  // Check if a day is today
+  const isToday = (day: Date) => {
+    const today = new Date();
+    return (
+      day.getFullYear() === today.getFullYear() &&
+      day.getMonth() === today.getMonth() &&
+      day.getDate() === today.getDate()
+    );
+  };
+
+  // Check if a day is selected
+  const isSelected = (day: Date) => {
+    return (
+      day.getFullYear() === selectedDate.getFullYear() &&
+      day.getMonth() === selectedDate.getMonth() &&
+      day.getDate() === selectedDate.getDate()
+    );
+  };
+
+  // Format time
+  const formatTime = (date: Date | string) => {
+    return new Date(date).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  // Get appointments for selected date
+  const selectedDayAppointments = getAppointmentsForDay(selectedDate);
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-3">
+      {/* Calendar */}
+      <Card className="lg:col-span-2">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={prevMonth}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="text-lg font-semibold">
+              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+            </h2>
+            <Button variant="outline" size="icon" onClick={nextMonth}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button variant="outline" size="sm" onClick={goToToday}>
+            Today
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <>
+              {/* Day headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {dayNames.map((day) => (
+                  <div
+                    key={day}
+                    className="text-center text-sm font-medium text-gray-500 py-2"
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar days */}
+              <div className="grid grid-cols-7 gap-1">
+                {days.map((day, index) => {
+                  if (!day) {
+                    return <div key={`empty-${index}`} className="p-2 min-h-[80px]" />;
+                  }
+
+                  const dayAppointments = getAppointmentsForDay(day);
+                  const hasAppointments = dayAppointments.length > 0;
+
+                  return (
+                    <button
+                      key={day.toISOString()}
+                      onClick={() => setSelectedDate(day)}
+                      className={`p-2 min-h-[80px] text-left rounded-lg border transition-colors ${
+                        isSelected(day)
+                          ? "border-primary bg-primary/5"
+                          : isToday(day)
+                          ? "border-blue-300 bg-blue-50"
+                          : "border-transparent hover:bg-gray-50"
+                      }`}
+                    >
+                      <div
+                        className={`text-sm font-medium ${
+                          isToday(day) ? "text-blue-600" : "text-gray-900"
+                        }`}
+                      >
+                        {day.getDate()}
+                      </div>
+                      {hasAppointments && (
+                        <div className="mt-1 space-y-1">
+                          {dayAppointments.slice(0, 2).map((apt) => {
+                            const statusConfig = STATUS_CONFIG[apt.status];
+                            return (
+                              <div
+                                key={apt.id}
+                                className={`text-xs px-1 py-0.5 rounded truncate ${
+                                  statusConfig?.color || "bg-blue-100 text-blue-700"
+                                }`}
+                              >
+                                {formatTime(apt.scheduledAt)}
+                              </div>
+                            );
+                          })}
+                          {dayAppointments.length > 2 && (
+                            <div className="text-xs text-gray-500 px-1">
+                              +{dayAppointments.length - 2} more
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Selected Day Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            {selectedDate.toLocaleDateString("en-US", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
+          </CardTitle>
+          <CardDescription>
+            {selectedDayAppointments.length} appointment
+            {selectedDayAppointments.length !== 1 ? "s" : ""}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {selectedDayAppointments.length === 0 ? (
+            <div className="text-center py-8">
+              <Calendar className="mx-auto h-10 w-10 text-gray-300" />
+              <p className="mt-2 text-sm text-gray-500">No appointments</p>
+              <Button size="sm" className="mt-4" onClick={onCreateClick}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Appointment
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {selectedDayAppointments
+                .sort(
+                  (a, b) =>
+                    new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+                )
+                .map((apt) => {
+                  const statusConfig = STATUS_CONFIG[apt.status] || {
+                    label: "Scheduled",
+                    color: "bg-blue-100 text-blue-700",
+                  };
+                  const meetingConfig = MEETING_TYPE_CONFIG[apt.meetingType] || {
+                    icon: Phone,
+                    label: "Phone",
+                  };
+                  const MeetingIcon = meetingConfig.icon;
+
+                  return (
+                    <button
+                      key={apt.id}
+                      onClick={() => onAppointmentClick(apt)}
+                      className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-md bg-primary/10 p-1.5">
+                          <MeetingIcon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {apt.title}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {formatTime(apt.scheduledAt)} - {apt.duration} min
+                          </p>
+                          {apt.attendeeName && (
+                            <p className="text-sm text-gray-500 truncate">
+                              {apt.attendeeName}
+                            </p>
+                          )}
+                          <Badge className={`mt-1 ${statusConfig.color}`}>
+                            {statusConfig.label}
+                          </Badge>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export default function AppointmentsPage() {
@@ -397,6 +688,7 @@ export default function AppointmentsPage() {
                 size="sm"
                 onClick={() => setViewMode("list")}
               >
+                <List className="mr-2 h-4 w-4" />
                 List
               </Button>
               <Button
@@ -404,6 +696,7 @@ export default function AppointmentsPage() {
                 size="sm"
                 onClick={() => setViewMode("calendar")}
               >
+                <Calendar className="mr-2 h-4 w-4" />
                 Calendar
               </Button>
             </div>
@@ -411,7 +704,17 @@ export default function AppointmentsPage() {
         </CardContent>
       </Card>
 
-      {/* Appointments List */}
+      {/* Appointments List or Calendar */}
+      {viewMode === "calendar" ? (
+        <CalendarView
+          appointments={filteredAppointments}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          isLoading={isLoading}
+          onAppointmentClick={openEditDialog}
+          onCreateClick={() => setCreateOpen(true)}
+        />
+      ) : (
       <Card>
         <CardHeader>
           <CardTitle>All Appointments</CardTitle>
@@ -579,6 +882,7 @@ export default function AppointmentsPage() {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Create Appointment Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
