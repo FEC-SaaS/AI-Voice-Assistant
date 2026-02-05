@@ -8,6 +8,7 @@ import {
   sendAppointmentRescheduled,
   type EmailBrandingConfig,
 } from "@/lib/email";
+import { sendAppointmentSms } from "@/lib/sms";
 
 // Helper to get organization branding settings
 async function getOrganizationBranding(
@@ -341,6 +342,19 @@ export const appointmentsRouter = router({
           );
         } catch (error) {
           console.error("Failed to send confirmation email:", error);
+          // Don't fail the appointment creation
+        }
+      }
+
+      // Send confirmation SMS if requested and phone available
+      if (input.sendConfirmation && attendeeInfo.attendeePhone) {
+        try {
+          await sendAppointmentSms({
+            appointmentId: appointment.id,
+            type: "confirmation",
+          });
+        } catch (error) {
+          console.error("Failed to send confirmation SMS:", error);
           // Don't fail the appointment creation
         }
       }

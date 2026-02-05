@@ -15,23 +15,70 @@ import { processInboundEmail, logEmailActivity } from "@/lib/email-reply-process
 import { sendEmail } from "@/lib/email";
 import { db } from "@/lib/db";
 
-// Verify Resend webhook signature
+/**
+ * Verify Resend/Svix webhook signature
+ * Resend uses Svix for webhook delivery which has a specific signature format
+ */
 function verifyWebhookSignature(
   payload: string,
-  signature: string | null,
+  headers: {
+    svixId: string | null;
+    svixTimestamp: string | null;
+    svixSignature: string | null;
+  },
   secret: string
 ): boolean {
-  if (!signature) return false;
+  const { svixId, svixTimestamp, svixSignature } = headers;
 
+  // All headers are required
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    console.log("[Email Webhook] Missing Svix headers");
+    return false;
+  }
+
+  // Check timestamp is not too old (5 minutes tolerance)
+  const timestamp = parseInt(svixTimestamp, 10);
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - timestamp) > 300) {
+    console.log("[Email Webhook] Timestamp too old");
+    return false;
+  }
+
+  // Remove the "whsec_" prefix from the secret
+  const secretBytes = Buffer.from(secret.replace("whsec_", ""), "base64");
+
+  // Create the signed payload
+  const signedPayload = `${svixId}.${svixTimestamp}.${payload}`;
+
+  // Compute the expected signature
   const expectedSignature = crypto
-    .createHmac("sha256", secret)
-    .update(payload)
-    .digest("hex");
+    .createHmac("sha256", secretBytes)
+    .update(signedPayload)
+    .digest("base64");
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  // Svix signature header contains multiple signatures separated by space
+  // Format: "v1,<signature1> v1,<signature2>"
+  const signatures = svixSignature.split(" ");
+
+  for (const sig of signatures) {
+    const [version, signature] = sig.split(",");
+    if (version === "v1" && signature) {
+      try {
+        if (crypto.timingSafeEqual(
+          Buffer.from(signature),
+          Buffer.from(expectedSignature)
+        )) {
+          return true;
+        }
+      } catch {
+        // Buffer lengths might not match, continue to next signature
+        continue;
+      }
+    }
+  }
+
+  console.log("[Email Webhook] Signature mismatch");
+  return false;
 }
 
 // Resend webhook event types
@@ -54,13 +101,27 @@ interface ResendEmailEvent {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const signature = request.headers.get("resend-signature");
     const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
 
+    // Get Svix headers for signature verification
+    const svixHeaders = {
+      svixId: request.headers.get("svix-id"),
+      svixTimestamp: request.headers.get("svix-timestamp"),
+      svixSignature: request.headers.get("svix-signature"),
+    };
+
     // Verify signature if secret is configured
-    if (webhookSecret && !verifyWebhookSignature(body, signature, webhookSecret)) {
-      console.error("[Email Webhook] Invalid signature");
-      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    if (webhookSecret) {
+      const isValid = verifyWebhookSignature(body, svixHeaders, webhookSecret);
+      if (!isValid) {
+        console.error("[Email Webhook] Invalid signature");
+        console.log("[Email Webhook] Headers:", {
+          svixId: svixHeaders.svixId,
+          svixTimestamp: svixHeaders.svixTimestamp,
+          svixSignature: svixHeaders.svixSignature ? "present" : "missing",
+        });
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+      }
     }
 
     const event: ResendEmailEvent = JSON.parse(body);

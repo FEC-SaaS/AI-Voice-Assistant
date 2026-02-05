@@ -19,6 +19,7 @@ import {
   initiateReminderCall,
 } from "@/lib/reminder-calls";
 import { sendAppointmentReminder } from "@/lib/email";
+import { sendAppointmentSms } from "@/lib/sms";
 import { db } from "@/lib/db";
 
 // Verify cron authorization
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
   const results = {
     callsInitiated: 0,
     emailsSent: 0,
+    smsSent: 0,
     errors: [] as string[],
   };
 
@@ -108,11 +110,40 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Initiate phone reminder if attendee has phone number
-        // Check if organization has phone reminder enabled
-        const phoneReminderEnabled = settings?.phoneRemindersEnabled !== false;
+        // Send SMS reminder if attendee has phone number (default reminder method)
+        const smsReminderEnabled = settings?.smsRemindersEnabled !== false;
 
-        if (appointment.attendeePhone && phoneReminderEnabled) {
+        if (appointment.attendeePhone && smsReminderEnabled && !fullAppointment.smsReminderSentAt) {
+          try {
+            const smsResult = await sendAppointmentSms({
+              appointmentId: appointment.id,
+              type: "reminder",
+            });
+            if (smsResult.success) {
+              results.smsSent++;
+              console.log(`[Reminder Cron] SMS sent for appointment ${appointment.id}`);
+              // Mark SMS reminder as sent
+              await db.appointment.update({
+                where: { id: appointment.id },
+                data: { smsReminderSentAt: new Date() },
+              });
+            } else {
+              const errorMsg = `SMS failed for ${appointment.id}: ${smsResult.error}`;
+              results.errors.push(errorMsg);
+              console.error(`[Reminder Cron] ${errorMsg}`);
+            }
+          } catch (error) {
+            const errorMsg = `SMS error for ${appointment.id}: ${error instanceof Error ? error.message : "Unknown"}`;
+            results.errors.push(errorMsg);
+            console.error(`[Reminder Cron] ${errorMsg}`);
+          }
+        }
+
+        // Optionally initiate phone reminder for high-value appointments
+        // Only if phone reminders are explicitly enabled and SMS wasn't sent
+        const phoneReminderEnabled = settings?.phoneRemindersEnabled === true; // Disabled by default
+
+        if (appointment.attendeePhone && phoneReminderEnabled && !results.smsSent) {
           try {
             const callResult = await initiateReminderCall(appointment.id);
             if (callResult.success) {
@@ -130,8 +161,8 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Mark reminder as sent (even if phone call failed, email went through)
-        if (fullAppointment.attendeeEmail || !appointment.attendeePhone) {
+        // Mark email reminder as sent
+        if (fullAppointment.attendeeEmail) {
           await db.appointment.update({
             where: { id: appointment.id },
             data: { reminderSentAt: new Date() },

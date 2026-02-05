@@ -6,9 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL") // Direct connection for migrations
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Organization {
@@ -326,7 +325,8 @@ model Appointment {
   completedAt    DateTime?
 
   // Reminders
-  reminderSentAt DateTime?
+  reminderSentAt DateTime?    // Phone/email reminder sent
+  smsReminderSentAt DateTime? // SMS reminder sent
 
   // External calendar sync
   externalCalendarId String?  // ID in external calendar (Google, Outlook)

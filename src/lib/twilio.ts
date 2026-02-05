@@ -379,3 +379,130 @@ export function getNumberPrice(countryCode: string, type: "local" | "toll-free" 
   if (type === "mobile") return pricing.mobile;
   return 0;
 }
+
+// ============================================
+// SMS Messaging
+// ============================================
+
+export interface SmsMessage {
+  sid: string;
+  from: string;
+  to: string;
+  body: string;
+  status: "queued" | "sending" | "sent" | "delivered" | "failed" | "undelivered";
+  date_created: string;
+  date_sent: string | null;
+  error_code: number | null;
+  error_message: string | null;
+}
+
+export interface SendSmsOptions {
+  to: string; // E.164 format
+  from: string; // E.164 format - must be a Twilio number
+  body: string; // Max 1600 characters
+  statusCallback?: string; // URL to receive delivery status updates
+  // For subaccount
+  accountSid?: string;
+  authToken?: string;
+}
+
+export interface SendSmsResult {
+  success: boolean;
+  message?: SmsMessage;
+  error?: string;
+}
+
+/**
+ * Send an SMS message
+ */
+export async function sendSms(options: SendSmsOptions): Promise<SendSmsResult> {
+  const { to, from, body, statusCallback, accountSid, authToken } = options;
+
+  // Validate phone numbers
+  if (!to.startsWith("+")) {
+    return { success: false, error: "To number must be in E.164 format (e.g., +1234567890)" };
+  }
+  if (!from.startsWith("+")) {
+    return { success: false, error: "From number must be in E.164 format (e.g., +1234567890)" };
+  }
+
+  // Validate message length
+  if (body.length > 1600) {
+    return { success: false, error: "Message body exceeds 1600 character limit" };
+  }
+
+  try {
+    const smsBody: Record<string, string> = {
+      To: to,
+      From: from,
+      Body: body,
+    };
+
+    if (statusCallback) {
+      smsBody.StatusCallback = statusCallback;
+    }
+
+    const message = await twilioRequest<SmsMessage>({
+      method: "POST",
+      path: "/Messages",
+      body: smsBody,
+      accountSid,
+      authToken,
+    });
+
+    console.log(`[Twilio SMS] Sent message ${message.sid} to ${to}`);
+    return { success: true, message };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error(`[Twilio SMS] Failed to send to ${to}:`, errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Get SMS message status
+ */
+export async function getSmsStatus(
+  messageSid: string,
+  accountSid?: string,
+  authToken?: string
+): Promise<SmsMessage> {
+  return twilioRequest<SmsMessage>({
+    method: "GET",
+    path: `/Messages/${messageSid}`,
+    accountSid,
+    authToken,
+  });
+}
+
+/**
+ * List SMS messages (recent)
+ */
+export async function listSmsMessages(
+  options?: {
+    to?: string;
+    from?: string;
+    dateSent?: string; // YYYY-MM-DD
+    pageSize?: number;
+    accountSid?: string;
+    authToken?: string;
+  }
+): Promise<SmsMessage[]> {
+  const params = new URLSearchParams();
+  if (options?.to) params.set("To", options.to);
+  if (options?.from) params.set("From", options.from);
+  if (options?.dateSent) params.set("DateSent", options.dateSent);
+  if (options?.pageSize) params.set("PageSize", options.pageSize.toString());
+
+  const queryString = params.toString();
+  const path = `/Messages${queryString ? `?${queryString}` : ""}`;
+
+  const response = await twilioRequest<{ messages: SmsMessage[] }>({
+    method: "GET",
+    path,
+    accountSid: options?.accountSid,
+    authToken: options?.authToken,
+  });
+
+  return response.messages || [];
+}
