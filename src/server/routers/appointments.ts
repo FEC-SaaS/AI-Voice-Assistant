@@ -330,6 +330,10 @@ export const appointmentsRouter = router({
         notes: z.string().optional(),
         cancelReason: z.string().optional(),
         notifyAttendee: z.boolean().default(true),
+        // Attendee info - for correcting AI transcription errors
+        attendeeName: z.string().optional().nullable(),
+        attendeeEmail: z.string().email().optional().nullable(),
+        attendeePhone: z.string().optional().nullable(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -357,6 +361,10 @@ export const appointmentsRouter = router({
       if (input.location !== undefined) updateData.location = input.location;
       if (input.phoneNumber !== undefined) updateData.phoneNumber = input.phoneNumber;
       if (input.notes !== undefined) updateData.notes = input.notes;
+      // Attendee info - useful for correcting AI transcription errors
+      if (input.attendeeName !== undefined) updateData.attendeeName = input.attendeeName;
+      if (input.attendeeEmail !== undefined) updateData.attendeeEmail = input.attendeeEmail;
+      if (input.attendeePhone !== undefined) updateData.attendeePhone = input.attendeePhone;
 
       // Handle rescheduling
       if (input.scheduledAt || input.duration) {
@@ -513,8 +521,65 @@ export const appointmentsRouter = router({
       return updated;
     }),
 
+  // Resend confirmation email
+  resendConfirmation: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const appointment = await ctx.db.appointment.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!appointment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Appointment not found",
+        });
+      }
+
+      if (!appointment.attendeeEmail) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No email address on file for this appointment",
+        });
+      }
+
+      if (appointment.status === "cancelled") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot send confirmation for cancelled appointment",
+        });
+      }
+
+      try {
+        await sendAppointmentConfirmation(
+          appointment.attendeeEmail,
+          appointment.attendeeName || "there",
+          {
+            title: appointment.title,
+            scheduledAt: appointment.scheduledAt,
+            duration: appointment.duration,
+            meetingType: appointment.meetingType,
+            meetingLink: appointment.meetingLink,
+            location: appointment.location,
+            phoneNumber: appointment.phoneNumber,
+          }
+        );
+
+        return { success: true, message: `Confirmation email sent to ${appointment.attendeeEmail}` };
+      } catch (error) {
+        console.error("Failed to send confirmation email:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to send confirmation email. Please try again.",
+        });
+      }
+    }),
+
   // Delete appointment
-  delete: adminProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const appointment = await ctx.db.appointment.findFirst({

@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   Calendar, Clock, Plus, Phone, Video, MapPin, Loader2,
   CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight,
-  User, Building, Filter, MoreVertical, Search,
+  User, Building, Filter, MoreVertical, Search, Mail, Edit, Trash2, Send,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,30 @@ const MEETING_TYPE_CONFIG: Record<string, { label: string; icon: typeof Phone }>
   in_person: { label: "In Person", icon: MapPin },
 };
 
+// Type for appointment from API
+interface AppointmentData {
+  id: string;
+  title: string;
+  description: string | null;
+  scheduledAt: Date | string;
+  endAt: Date | string;
+  duration: number;
+  meetingType: string;
+  meetingLink: string | null;
+  location: string | null;
+  phoneNumber: string | null;
+  status: string;
+  attendeeName: string | null;
+  attendeeEmail: string | null;
+  attendeePhone: string | null;
+  notes: string | null;
+  contact?: {
+    firstName?: string | null;
+    lastName?: string | null;
+    company?: string | null;
+  } | null;
+}
+
 export default function AppointmentsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -60,6 +84,16 @@ export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
+
+  // Edit dialog state
+  const [editAppointment, setEditAppointment] = useState<AppointmentData | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    title: "",
+    attendeeName: "",
+    attendeeEmail: "",
+    attendeePhone: "",
+    notes: "",
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -114,6 +148,37 @@ export default function AppointmentsPage() {
   const updateStatus = trpc.appointments.update.useMutation({
     onSuccess: () => {
       toast.success("Appointment updated");
+      utils.appointments.list.invalidate();
+      utils.appointments.getStats.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const updateAppointment = trpc.appointments.update.useMutation({
+    onSuccess: () => {
+      toast.success("Appointment updated successfully");
+      utils.appointments.list.invalidate();
+      setEditAppointment(null);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const resendConfirmation = trpc.appointments.resendConfirmation.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const deleteAppointment = trpc.appointments.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Appointment deleted");
       utils.appointments.list.invalidate();
       utils.appointments.getStats.invalidate();
     },
@@ -188,6 +253,29 @@ export default function AppointmentsPage() {
     cancelAppointment.mutate({
       id: cancelId,
       reason: cancelReason || undefined,
+    });
+  };
+
+  const openEditDialog = (appointment: AppointmentData) => {
+    setEditAppointment(appointment);
+    setEditFormData({
+      title: appointment.title,
+      attendeeName: appointment.attendeeName || "",
+      attendeeEmail: appointment.attendeeEmail || "",
+      attendeePhone: appointment.attendeePhone || "",
+      notes: appointment.notes || "",
+    });
+  };
+
+  const handleUpdate = () => {
+    if (!editAppointment) return;
+    updateAppointment.mutate({
+      id: editAppointment.id,
+      title: editFormData.title || undefined,
+      attendeeName: editFormData.attendeeName || null,
+      attendeeEmail: editFormData.attendeeEmail || null,
+      attendeePhone: editFormData.attendeePhone || null,
+      notes: editFormData.notes || undefined,
     });
   };
 
@@ -411,6 +499,26 @@ export default function AppointmentsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {/* View/Edit */}
+                          <DropdownMenuItem onClick={() => openEditDialog(appointment)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            View / Edit
+                          </DropdownMenuItem>
+
+                          {/* Resend Email */}
+                          {appointment.attendeeEmail && appointment.status !== "cancelled" && (
+                            <DropdownMenuItem
+                              onClick={() => resendConfirmation.mutate({ id: appointment.id })}
+                              disabled={resendConfirmation.isPending}
+                            >
+                              <Send className="mr-2 h-4 w-4" />
+                              Resend Confirmation
+                            </DropdownMenuItem>
+                          )}
+
+                          <DropdownMenuSeparator />
+
+                          {/* Status changes */}
                           {appointment.status === "scheduled" && (
                             <DropdownMenuItem
                               onClick={() => updateStatus.mutate({ id: appointment.id, status: "confirmed" })}
@@ -440,6 +548,24 @@ export default function AppointmentsPage() {
                               >
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Cancel
+                              </DropdownMenuItem>
+                            </>
+                          )}
+
+                          {/* Delete - only for cancelled/completed/no_show */}
+                          {(appointment.status === "cancelled" || appointment.status === "completed" || appointment.status === "no_show") && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => {
+                                  if (confirm("Are you sure you want to permanently delete this appointment?")) {
+                                    deleteAppointment.mutate({ id: appointment.id });
+                                  }
+                                }}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
                               </DropdownMenuItem>
                             </>
                           )}
@@ -685,6 +811,165 @@ export default function AppointmentsPage() {
               )}
               Cancel Appointment
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Appointment Dialog */}
+      <Dialog open={!!editAppointment} onOpenChange={() => setEditAppointment(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Appointment</DialogTitle>
+            <DialogDescription>
+              Review and update appointment details. Correct any errors from voice transcription.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editAppointment && (
+            <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+              {/* Appointment Summary */}
+              <div className="rounded-lg bg-gray-50 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">{formatDate(editAppointment.scheduledAt)}</span>
+                  <Clock className="h-4 w-4 text-gray-500 ml-2" />
+                  <span>{formatTime(editAppointment.scheduledAt)}</span>
+                  <span className="text-gray-500">({editAppointment.duration} min)</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  {editAppointment.meetingType === "phone" && <Phone className="h-4 w-4 text-gray-500" />}
+                  {editAppointment.meetingType === "video" && <Video className="h-4 w-4 text-gray-500" />}
+                  {editAppointment.meetingType === "in_person" && <MapPin className="h-4 w-4 text-gray-500" />}
+                  <span className="text-gray-600">
+                    {MEETING_TYPE_CONFIG[editAppointment.meetingType]?.label || "Meeting"}
+                  </span>
+                </div>
+                <Badge className={STATUS_CONFIG[editAppointment.status]?.color || "bg-gray-100"}>
+                  {STATUS_CONFIG[editAppointment.status]?.label || editAppointment.status}
+                </Badge>
+              </div>
+
+              {/* Editable Fields */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editTitle">Title</Label>
+                  <Input
+                    id="editTitle"
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                  />
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Attendee Information
+                    <span className="text-xs font-normal text-gray-500">(correct if AI got it wrong)</span>
+                  </h4>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="editAttendeeName">Name</Label>
+                      <Input
+                        id="editAttendeeName"
+                        placeholder="e.g., John Doe"
+                        value={editFormData.attendeeName}
+                        onChange={(e) => setEditFormData({ ...editFormData, attendeeName: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="editAttendeeEmail" className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Email
+                        {!editFormData.attendeeEmail && (
+                          <span className="text-xs text-orange-600">(required to send confirmation)</span>
+                        )}
+                      </Label>
+                      <Input
+                        id="editAttendeeEmail"
+                        type="email"
+                        placeholder="e.g., john@example.com"
+                        value={editFormData.attendeeEmail}
+                        onChange={(e) => setEditFormData({ ...editFormData, attendeeEmail: e.target.value })}
+                      />
+                      {editAppointment.attendeeEmail !== editFormData.attendeeEmail && editFormData.attendeeEmail && (
+                        <p className="text-xs text-blue-600">
+                          Email changed. Save changes, then use &quot;Resend Confirmation&quot; to send to the new email.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="editAttendeePhone">Phone</Label>
+                      <Input
+                        id="editAttendeePhone"
+                        placeholder="e.g., +1 555 123 4567"
+                        value={editFormData.attendeePhone}
+                        onChange={(e) => setEditFormData({ ...editFormData, attendeePhone: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="editNotes">Notes</Label>
+                  <Textarea
+                    id="editNotes"
+                    placeholder="Any additional notes..."
+                    value={editFormData.notes}
+                    onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <div className="flex gap-2 flex-1">
+              {editAppointment && editFormData.attendeeEmail && editAppointment.status !== "cancelled" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Save first, then resend
+                    if (editFormData.attendeeEmail !== editAppointment.attendeeEmail) {
+                      updateAppointment.mutate({
+                        id: editAppointment.id,
+                        attendeeEmail: editFormData.attendeeEmail,
+                      }, {
+                        onSuccess: () => {
+                          resendConfirmation.mutate({ id: editAppointment.id });
+                        }
+                      });
+                    } else {
+                      resendConfirmation.mutate({ id: editAppointment.id });
+                    }
+                  }}
+                  disabled={resendConfirmation.isPending || updateAppointment.isPending}
+                >
+                  {resendConfirmation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  Resend Email
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditAppointment(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdate} disabled={updateAppointment.isPending}>
+                {updateAppointment.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                )}
+                Save Changes
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
