@@ -86,6 +86,11 @@ export function getAppointmentTools(): VapiTool[] {
             description: "Type of meeting",
             enum: ["phone", "video", "in_person"],
           },
+          notification_preference: {
+            type: "string",
+            description: "How the customer prefers to receive appointment reminders and notifications. Ask the customer: 'Would you prefer to receive appointment reminders by email, text message, or both?'",
+            enum: ["email", "sms", "both", "none"],
+          },
           notes: {
             type: "string",
             description: "Any additional notes or reason for the appointment",
@@ -194,6 +199,11 @@ When checking availability:
 When scheduling:
 - Always collect the customer's name
 - Try to get their email for confirmation (optional but recommended)
+- Ask about their notification preference: "Would you prefer to receive appointment reminders by email, text message, or both?"
+  - "email" = email only
+  - "sms" = text message only
+  - "both" = both email and text (most common)
+  - "none" = no reminders
 - Confirm all details before finalizing the booking
 
 IMPORTANT - Updating vs Creating New Appointments:

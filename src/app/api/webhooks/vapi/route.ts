@@ -258,6 +258,7 @@ async function processToolCall(
         customer_email,
         customer_phone,
         meeting_type,
+        notification_preference,
         notes,
       } = args;
 
@@ -299,7 +300,13 @@ async function processToolCall(
         return "I'm sorry, that time slot is no longer available. Would you like me to check for other available times?";
       }
 
-      // Create the appointment
+      // Validate notification preference
+      const validPreferences = ["email", "sms", "both", "none"];
+      const notifPref = notification_preference && validPreferences.includes(notification_preference)
+        ? notification_preference
+        : "both"; // Default to both if not specified
+
+      // Create the appointment with notification preference
       const appointment = await db.appointment.create({
         data: {
           organizationId,
@@ -313,13 +320,18 @@ async function processToolCall(
           attendeeName: customer_name,
           attendeeEmail: customer_email,
           attendeePhone: customer_phone || customerPhone,
+          notificationPreference: notifPref,
           notes,
           status: "scheduled",
         },
       });
 
-      // Send confirmation email if we have an email
-      if (customer_email) {
+      // Determine what notifications to send based on preference
+      const shouldSendEmail = notifPref === "email" || notifPref === "both";
+      const shouldSendSms = notifPref === "sms" || notifPref === "both";
+
+      // Send confirmation email if preference allows and we have an email
+      if (shouldSendEmail && customer_email) {
         try {
           const { sendAppointmentConfirmation } = await getEmailService();
           const branding = await getOrganizationBranding(db, organizationId);
@@ -338,6 +350,20 @@ async function processToolCall(
         }
       }
 
+      // Send confirmation SMS if preference allows and we have a phone
+      const phoneForSms = customer_phone || customerPhone;
+      if (shouldSendSms && phoneForSms) {
+        try {
+          const { sendAppointmentSms } = await import("@/lib/sms");
+          await sendAppointmentSms({
+            appointmentId: appointment.id,
+            type: "confirmation",
+          });
+        } catch (error) {
+          console.error("[Vapi Tool] Failed to send confirmation SMS:", error);
+        }
+      }
+
       const dateStr = scheduledAt.toLocaleDateString("en-US", {
         weekday: "long",
         month: "long",
@@ -346,8 +372,11 @@ async function processToolCall(
       const timeStr = formatTimeForDisplay(time);
 
       let response = `I've scheduled your appointment for ${dateStr} at ${timeStr}.`;
-      if (customer_email) {
+      if (shouldSendEmail && customer_email) {
         response += ` A confirmation email has been sent to ${customer_email}.`;
+      }
+      if (shouldSendSms && phoneForSms) {
+        response += ` You'll also receive a text message confirmation.`;
       }
       response += " Is there anything else I can help you with?";
 
