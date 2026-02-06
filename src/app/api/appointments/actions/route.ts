@@ -95,6 +95,18 @@ export async function GET(request: NextRequest) {
       appointment.organization?.name ||
       "VoxForge AI";
 
+    // Build branding info for public pages
+    const brandLogoUrl =
+      (settings?.brandLogoUrl as string) ||
+      (settings?.emailLogoUrl as string) ||
+      null;
+    const brandPrimaryColor =
+      (settings?.brandPrimaryColor as string) ||
+      (settings?.emailPrimaryColor as string) ||
+      null;
+    const brandPoweredByHidden =
+      (settings?.poweredByHidden as boolean) || false;
+
     return NextResponse.json({
       appointment: {
         id: appointment.id,
@@ -111,6 +123,12 @@ export async function GET(request: NextRequest) {
       },
       action: payload.action,
       businessName,
+      branding: {
+        logoUrl: brandLogoUrl,
+        primaryColor: brandPrimaryColor,
+        brandName: businessName,
+        poweredByHidden: brandPoweredByHidden,
+      },
     });
   } catch (error) {
     console.error("[Appointment Action] GET error:", error);

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useCallback } from "react";
+import { useBranding } from "@/components/providers/branding-provider";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -56,6 +57,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
   const pathname = usePathname();
   const prevPathname = useRef(pathname);
   const onCloseRef = useRef(onClose);
+  const { brandName, brandLogoUrl, poweredByHidden } = useBranding();
 
   // Keep onClose ref updated
   useEffect(() => {
@@ -76,18 +78,28 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
       <div className="flex h-16 items-center justify-between border-b border-gray-100 px-4">
         {!collapsed && (
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-white shadow-md shadow-primary/20">
-              <Bot className="h-5 w-5" />
-            </div>
-            <span className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-              VoxForge
-            </span>
+            {brandLogoUrl ? (
+              <img src={brandLogoUrl} alt={brandName} className="h-9 max-w-[140px] object-contain" />
+            ) : (
+              <>
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-white shadow-md shadow-primary/20">
+                  <Bot className="h-5 w-5" />
+                </div>
+                <span className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                  {brandName}
+                </span>
+              </>
+            )}
           </Link>
         )}
         {collapsed && (
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-white shadow-md shadow-primary/20 mx-auto">
-            <Bot className="h-5 w-5" />
-          </div>
+          brandLogoUrl ? (
+            <img src={brandLogoUrl} alt={brandName} className="h-9 w-9 object-contain mx-auto" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-white shadow-md shadow-primary/20 mx-auto">
+              <Bot className="h-5 w-5" />
+            </div>
+          )
         )}
         {/* Desktop collapse button */}
         <button
@@ -157,6 +169,11 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
             </Link>
           );
         })}
+        {!poweredByHidden && !collapsed && (
+          <p className="mt-2 text-center text-[10px] text-gray-400">
+            Powered by VoxForge AI
+          </p>
+        )}
       </div>
     </>
   );

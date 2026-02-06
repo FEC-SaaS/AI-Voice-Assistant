@@ -7,6 +7,7 @@ import {
   verifyDomain,
   removeDomain,
 } from "@/lib/resend-domains";
+import { canHidePoweredBy } from "@/lib/plan-features";
 
 // Email settings schema
 const emailSettingsSchema = z.object({
@@ -17,7 +18,116 @@ const emailSettingsSchema = z.object({
   emailLogoUrl: z.string().url().optional().nullable(),
 });
 
+// Branding settings schema
+const brandingSettingsSchema = z.object({
+  brandName: z.string().min(1).max(100).optional(),
+  brandLogoUrl: z.string().url().optional().nullable(),
+  brandFaviconUrl: z.string().url().optional().nullable(),
+  brandPrimaryColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional()
+    .nullable(),
+  brandAccentColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional()
+    .nullable(),
+  poweredByHidden: z.boolean().optional(),
+});
+
 export const organizationRouter = router({
+  // Get branding settings
+  getBranding: protectedProcedure.query(async ({ ctx }) => {
+    const org = await ctx.db.organization.findUnique({
+      where: { id: ctx.orgId },
+      select: {
+        name: true,
+        planId: true,
+        settings: true,
+      },
+    });
+
+    if (!org) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Organization not found",
+      });
+    }
+
+    const settings = org.settings as Record<string, unknown> | null;
+
+    return {
+      brandName: (settings?.brandName as string) || org.name,
+      brandLogoUrl: (settings?.brandLogoUrl as string) || null,
+      brandFaviconUrl: (settings?.brandFaviconUrl as string) || null,
+      brandPrimaryColor: (settings?.brandPrimaryColor as string) || null,
+      brandAccentColor: (settings?.brandAccentColor as string) || null,
+      poweredByHidden: (settings?.poweredByHidden as boolean) || false,
+      planId: org.planId,
+    };
+  }),
+
+  // Update branding settings
+  updateBranding: adminProcedure
+    .input(brandingSettingsSchema)
+    .mutation(async ({ ctx, input }) => {
+      const org = await ctx.db.organization.findUnique({
+        where: { id: ctx.orgId },
+        select: { settings: true, planId: true },
+      });
+
+      if (!org) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Organization not found",
+        });
+      }
+
+      // Gate "powered by" hiding behind plan tier
+      if (input.poweredByHidden === true && !canHidePoweredBy(org.planId)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Hiding 'Powered by VoxForge AI' requires a Business plan or higher.",
+        });
+      }
+
+      const currentSettings = (org.settings as Record<string, unknown>) || {};
+
+      const updatedSettings: Record<string, unknown> = { ...currentSettings };
+
+      // Merge only provided fields
+      if (input.brandName !== undefined)
+        updatedSettings.brandName = input.brandName;
+      if (input.brandLogoUrl !== undefined)
+        updatedSettings.brandLogoUrl = input.brandLogoUrl;
+      if (input.brandFaviconUrl !== undefined)
+        updatedSettings.brandFaviconUrl = input.brandFaviconUrl;
+      if (input.brandPrimaryColor !== undefined)
+        updatedSettings.brandPrimaryColor = input.brandPrimaryColor;
+      if (input.brandAccentColor !== undefined)
+        updatedSettings.brandAccentColor = input.brandAccentColor;
+      if (input.poweredByHidden !== undefined)
+        updatedSettings.poweredByHidden = input.poweredByHidden;
+
+      // Remove null values
+      Object.keys(updatedSettings).forEach((key) => {
+        if (updatedSettings[key] === null) {
+          delete updatedSettings[key];
+        }
+      });
+
+      await ctx.db.organization.update({
+        where: { id: ctx.orgId },
+        data: {
+          settings: updatedSettings as object,
+        },
+      });
+
+      return { success: true };
+    }),
+
   // Get current organization details
   get: protectedProcedure.query(async ({ ctx }) => {
     const org = await ctx.db.organization.findUnique({

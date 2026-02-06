@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 const settingsNav = [
   { title: "General", href: "/dashboard/settings" },
+  { title: "Branding", href: "/dashboard/settings/branding" },
   { title: "Email Branding", href: "/dashboard/settings/email" },
   { title: "Calendar", href: "/dashboard/settings/calendar" },
   { title: "Team", href: "/dashboard/settings/team" },

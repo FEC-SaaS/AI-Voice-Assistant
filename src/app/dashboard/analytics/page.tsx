@@ -23,6 +23,7 @@ import { PerformanceTable } from "@/components/analytics/performance-table";
 import { TrendChart } from "@/components/analytics/trend-chart";
 import { HourlyChart } from "@/components/analytics/hourly-chart";
 import { ExportButton } from "@/components/analytics/export-button";
+import { PDFExportButton } from "@/components/analytics/pdf-export-button";
 
 const DATE_RANGES = [
   { value: "7", label: "Last 7 days" },
@@ -79,6 +80,7 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <PDFExportButton startDate={startDate} endDate={endDate} days={days} />
           <ExportButton startDate={startDate} endDate={endDate} />
           <Select value={dateRange} onValueChange={setDateRange}>
             <SelectTrigger className="w-[160px]">

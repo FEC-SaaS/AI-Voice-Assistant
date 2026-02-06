@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { BrandedAppointmentLayout, type AppointmentBranding } from "@/components/appointment/branded-layout";
 
 interface AppointmentData {
   id: string;
@@ -29,7 +30,7 @@ function CancelAppointmentContent() {
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appointment, setAppointment] = useState<AppointmentData | null>(null);
-  const [businessName, setBusinessName] = useState("VoxForge AI");
+  const [branding, setBranding] = useState<AppointmentBranding | null>(null);
   const [cancelled, setCancelled] = useState(false);
   const [reason, setReason] = useState("");
 
@@ -48,7 +49,9 @@ function CancelAppointmentContent() {
           setError(data.error);
         } else {
           setAppointment(data.appointment);
-          setBusinessName(data.businessName || "VoxForge AI");
+          if (data.branding) {
+            setBranding(data.branding);
+          }
           if (data.appointment.status === "cancelled") {
             setCancelled(true);
           }
@@ -127,7 +130,7 @@ function CancelAppointmentContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <BrandedAppointmentLayout branding={branding}>
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <XCircle className="h-12 w-12 text-red-500 mx-auto" />
@@ -135,13 +138,13 @@ function CancelAppointmentContent() {
             <p className="mt-2 text-gray-600">{error}</p>
           </CardContent>
         </Card>
-      </div>
+      </BrandedAppointmentLayout>
     );
   }
 
   if (cancelled) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <BrandedAppointmentLayout branding={branding}>
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <div className="rounded-full bg-red-100 p-3 w-fit mx-auto">
@@ -169,16 +172,14 @@ function CancelAppointmentContent() {
                 </div>
               </div>
             )}
-
-            <p className="mt-6 text-sm text-gray-500">From {businessName}</p>
           </CardContent>
         </Card>
-      </div>
+      </BrandedAppointmentLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <BrandedAppointmentLayout branding={branding}>
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
           <div className="rounded-full bg-red-100 p-3 w-fit mx-auto">
@@ -247,12 +248,10 @@ function CancelAppointmentContent() {
                 </>
               )}
             </Button>
-
-            <p className="text-center text-sm text-gray-500">From {businessName}</p>
           </CardContent>
         )}
       </Card>
-    </div>
+    </BrandedAppointmentLayout>
   );
 }
 

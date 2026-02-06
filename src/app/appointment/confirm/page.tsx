@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle, Calendar, Clock, Loader2, XCircle, Phone, Video, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BrandedAppointmentLayout, type AppointmentBranding } from "@/components/appointment/branded-layout";
 
 interface AppointmentData {
   id: string;
@@ -27,7 +28,7 @@ function ConfirmAppointmentContent() {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appointment, setAppointment] = useState<AppointmentData | null>(null);
-  const [businessName, setBusinessName] = useState("VoxForge AI");
+  const [branding, setBranding] = useState<AppointmentBranding | null>(null);
   const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
@@ -45,7 +46,9 @@ function ConfirmAppointmentContent() {
           setError(data.error);
         } else {
           setAppointment(data.appointment);
-          setBusinessName(data.businessName || "VoxForge AI");
+          if (data.branding) {
+            setBranding(data.branding);
+          }
           if (data.appointment.status === "confirmed") {
             setConfirmed(true);
           }
@@ -124,7 +127,7 @@ function ConfirmAppointmentContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <BrandedAppointmentLayout branding={branding}>
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <XCircle className="h-12 w-12 text-red-500 mx-auto" />
@@ -132,13 +135,13 @@ function ConfirmAppointmentContent() {
             <p className="mt-2 text-gray-600">{error}</p>
           </CardContent>
         </Card>
-      </div>
+      </BrandedAppointmentLayout>
     );
   }
 
   if (confirmed) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <BrandedAppointmentLayout branding={branding}>
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <div className="rounded-full bg-green-100 p-3 w-fit mx-auto">
@@ -166,16 +169,14 @@ function ConfirmAppointmentContent() {
                 </div>
               </div>
             )}
-
-            <p className="mt-6 text-sm text-gray-500">From {businessName}</p>
           </CardContent>
         </Card>
-      </div>
+      </BrandedAppointmentLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <BrandedAppointmentLayout branding={branding}>
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
           <div className="rounded-full bg-blue-100 p-3 w-fit mx-auto">
@@ -232,12 +233,10 @@ function ConfirmAppointmentContent() {
                 </>
               )}
             </Button>
-
-            <p className="text-center text-sm text-gray-500">From {businessName}</p>
           </CardContent>
         )}
       </Card>
-    </div>
+    </BrandedAppointmentLayout>
   );
 }
 
