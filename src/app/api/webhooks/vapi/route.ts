@@ -826,7 +826,8 @@ export async function POST(req: NextRequest) {
 
     switch (type) {
       case "call.started":
-      case "call-started": {
+      case "call-started":
+      case "call.ringing": {
         // Create or update call record when call starts
         await db.call.upsert({
           where: { vapiCallId: call.id },
@@ -862,7 +863,8 @@ export async function POST(req: NextRequest) {
       }
 
       case "call.ended":
-      case "call-ended": {
+      case "call-ended":
+      case "end-of-call-report": {
         // Calculate duration
         const startedAt = call.startedAt ? new Date(call.startedAt) : null;
         const endedAt = call.endedAt ? new Date(call.endedAt) : new Date();
@@ -874,7 +876,11 @@ export async function POST(req: NextRequest) {
         const costCents = calculateCostCents(durationSeconds);
 
         // Determine final status
+        // Vapi may send status as "ended" in end-of-call-report — normalize to "completed"
         let finalStatus = call.status || "completed";
+        if (finalStatus === "ended") {
+          finalStatus = "completed";
+        }
         if (durationSeconds === 0) {
           finalStatus = "no-answer";
         }
