@@ -4,36 +4,7 @@ import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="border-b bg-white">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Bot className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">VoxForge AI</span>
-          </Link>
-          <nav className="hidden gap-6 md:flex">
-            <Link href="/features" className="text-sm text-gray-600 hover:text-gray-900">
-              Features
-            </Link>
-            <Link href="/pricing" className="text-sm text-gray-600 hover:text-gray-900">
-              Pricing
-            </Link>
-            <Link href="/blog" className="text-sm text-gray-600 hover:text-gray-900">
-              Blog
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/sign-in">
-              <Button variant="ghost">Sign In</Button>
-            </Link>
-            <Link href="/sign-up">
-              <Button>Get Started</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Hero */}
       <section className="bg-gradient-to-b from-gray-50 to-white py-20">
         <div className="container mx-auto px-4 text-center">
@@ -64,8 +35,57 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Social Proof Stats */}
+      <section className="border-y bg-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid gap-8 text-center md:grid-cols-3">
+            <div>
+              <div className="text-4xl font-bold text-gray-900">500+</div>
+              <p className="mt-1 text-sm text-gray-500">Businesses Served</p>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-gray-900">1M+</div>
+              <p className="mt-1 text-sm text-gray-500">Calls Made</p>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-gray-900">98%</div>
+              <p className="mt-1 text-sm text-gray-500">Uptime Guarantee</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works */}
       <section className="py-20">
+        <div className="container mx-auto px-4">
+          <h2 className="text-center text-3xl font-bold text-gray-900">
+            How It Works
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-gray-600">
+            Get up and running in three simple steps.
+          </p>
+          <div className="mt-16 grid gap-8 md:grid-cols-3">
+            <StepCard
+              step={1}
+              title="Create Your Agent"
+              description="Use our visual builder to configure your AI agent's voice, personality, and conversation flow in minutes."
+            />
+            <StepCard
+              step={2}
+              title="Configure Campaign"
+              description="Upload your contact list, set calling hours, and define your campaign goals and compliance rules."
+            />
+            <StepCard
+              step={3}
+              title="Start Calling"
+              description="Launch your campaign and watch as your AI agent makes calls, schedules appointments, and qualifies leads automatically."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="bg-gray-50 py-20">
         <div className="container mx-auto px-4">
           <h2 className="text-center text-3xl font-bold text-gray-900">
             Everything You Need
@@ -108,6 +128,35 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <h2 className="text-center text-3xl font-bold text-gray-900">
+            Trusted by Growing Teams
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-gray-600">
+            See what business leaders are saying about VoxForge AI.
+          </p>
+          <div className="mt-16 grid gap-8 md:grid-cols-3">
+            <TestimonialCard
+              quote="VoxForge AI tripled our outbound call volume while maintaining a personal touch. Our pipeline has never been healthier."
+              name="Sarah Chen"
+              role="VP of Sales, TechCorp"
+            />
+            <TestimonialCard
+              quote="The AI receptionist handles 80% of our inbound calls now. Our team can focus on high-value conversations instead."
+              name="Marcus Johnson"
+              role="Operations Director, MedSchedule"
+            />
+            <TestimonialCard
+              quote="Setup was incredibly fast. We went from signing up to making our first campaign calls in under an hour."
+              name="Emily Rodriguez"
+              role="Founder, GrowthDialer"
+            />
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="bg-primary py-20 text-white">
         <div className="container mx-auto px-4 text-center">
@@ -123,21 +172,26 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+    </>
+  );
+}
 
-      {/* Footer */}
-      <footer className="border-t bg-gray-50 py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <div className="flex items-center gap-2">
-              <Bot className="h-6 w-6 text-primary" />
-              <span className="font-semibold">VoxForge AI</span>
-            </div>
-            <p className="text-sm text-gray-500">
-              © 2024 VoxForge AI. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+function StepCard({
+  step,
+  title,
+  description,
+}: {
+  step: number;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="relative rounded-lg border bg-white p-6 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-xl font-bold text-white">
+        {step}
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
+      <p className="mt-2 text-gray-600">{description}</p>
     </div>
   );
 }
@@ -158,6 +212,38 @@ function FeatureCard({
       </div>
       <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
       <p className="mt-2 text-gray-600">{description}</p>
+    </div>
+  );
+}
+
+function TestimonialCard({
+  quote,
+  name,
+  role,
+}: {
+  quote: string;
+  name: string;
+  role: string;
+}) {
+  return (
+    <div className="rounded-lg border bg-white p-6">
+      <div className="flex gap-1">
+        {[...Array(5)].map((_, i) => (
+          <svg
+            key={i}
+            className="h-5 w-5 text-yellow-400"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        ))}
+      </div>
+      <p className="mt-4 text-gray-600">&ldquo;{quote}&rdquo;</p>
+      <div className="mt-4 border-t pt-4">
+        <p className="font-semibold text-gray-900">{name}</p>
+        <p className="text-sm text-gray-500">{role}</p>
+      </div>
     </div>
   );
 }

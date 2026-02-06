@@ -13,13 +13,6 @@ export async function createContext(): Promise<Context> {
   const authData = await auth();
   const { userId, orgId: clerkOrgId } = authData;
 
-  // Debug logging - remove after fixing
-  console.log("🔐 tRPC Context Auth:", {
-    userId: userId ? `${userId.slice(0, 10)}...` : null,
-    clerkOrgId: clerkOrgId || null,
-    sessionId: authData.sessionId ? "present" : "missing",
-  });
-
   let userRole: string | null = null;
   let dbOrgId: string | null = null;
 
@@ -42,24 +35,12 @@ export async function createContext(): Promise<Context> {
       },
     });
 
-    // Debug: Log what we found
-    console.log("🔍 User lookup result:", {
-      found: !!user,
-      userRole: user?.role || null,
-      userOrgId: user?.organizationId || null,
-      orgClerkId: user?.organization?.clerkOrgId || null,
-      expectedClerkOrgId: clerkOrgId,
-      match: user?.organization?.clerkOrgId === clerkOrgId || user?.organizationId === clerkOrgId,
-    });
-
     // Only set role if the org matches
     if (user && (user.organization?.clerkOrgId === clerkOrgId || user.organizationId === clerkOrgId)) {
       userRole = user.role;
       dbOrgId = user.organizationId;
     } else if (user) {
-      // User exists but org doesn't match - this might be the issue
-      console.log("⚠️ User found but org mismatch. User's org:", user.organizationId, "Clerk org:", clerkOrgId);
-      // Still allow access if user exists (temporary fix)
+      // Fallback: allow access if user exists but org ID format differs
       userRole = user.role;
       dbOrgId = user.organizationId;
     }

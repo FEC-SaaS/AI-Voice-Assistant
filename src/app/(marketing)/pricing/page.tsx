@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PLANS } from "@/constants/plans";
 
@@ -7,36 +7,7 @@ export default function PricingPage() {
   const plans = Object.values(PLANS);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <header className="border-b bg-white">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Bot className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">VoxForge AI</span>
-          </Link>
-          <nav className="hidden gap-6 md:flex">
-            <Link href="/features" className="text-sm text-gray-600 hover:text-gray-900">
-              Features
-            </Link>
-            <Link href="/pricing" className="text-sm font-medium text-gray-900">
-              Pricing
-            </Link>
-            <Link href="/blog" className="text-sm text-gray-600 hover:text-gray-900">
-              Blog
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/sign-in">
-              <Button variant="ghost">Sign In</Button>
-            </Link>
-            <Link href="/sign-up">
-              <Button>Get Started</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <>
       {/* Hero */}
       <section className="bg-gradient-to-b from-gray-50 to-white py-16">
         <div className="container mx-auto px-4 text-center">
@@ -188,22 +159,7 @@ export default function PricingPage() {
           </Link>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t bg-gray-50 py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
-            <div className="flex items-center gap-2">
-              <Bot className="h-6 w-6 text-primary" />
-              <span className="font-semibold">VoxForge AI</span>
-            </div>
-            <p className="text-sm text-gray-500">
-              © 2024 VoxForge AI. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 }
 
