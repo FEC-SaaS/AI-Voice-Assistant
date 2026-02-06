@@ -5,6 +5,9 @@ import {
   getAssistant,
   VapiAssistant,
 } from "@/lib/vapi";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("VapiSync");
 
 /**
  * Sync all agents for an organization to Vapi
@@ -84,7 +87,7 @@ export async function syncAgentFromVapi(
 
     return true;
   } catch (error) {
-    console.error("[Vapi Sync] Failed to sync from Vapi:", error);
+    log.error("Failed to sync from Vapi:", error);
     return false;
   }
 }
@@ -133,7 +136,7 @@ export async function pushAgentToVapi(agentId: string): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error("[Vapi Sync] Failed to push to Vapi:", error);
+    log.error("Failed to push to Vapi:", error);
     return false;
   }
 }

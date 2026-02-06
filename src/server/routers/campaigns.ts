@@ -9,6 +9,9 @@ import {
   stopCampaign,
   getCampaignState,
 } from "../services/campaign-executor.service";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Campaign");
 
 const campaignSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -398,7 +401,7 @@ export const campaignsRouter = router({
       // Trigger campaign execution asynchronously
       // This runs in the background and processes contacts
       executeCampaignBatch(input.id, ctx.orgId, 10).catch((error) => {
-        console.error(`[Campaign] Failed to execute campaign ${input.id}:`, error);
+        log.error(`Failed to execute campaign ${input.id}:`, error);
       });
 
       return updated;
@@ -488,7 +491,7 @@ export const campaignsRouter = router({
 
       // Trigger campaign execution asynchronously
       executeCampaignBatch(input.id, ctx.orgId, 10).catch((error) => {
-        console.error(`[Campaign] Failed to resume campaign ${input.id}:`, error);
+        log.error(`Failed to resume campaign ${input.id}:`, error);
       });
 
       return updated;

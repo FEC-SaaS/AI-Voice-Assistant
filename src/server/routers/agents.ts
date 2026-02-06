@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Agents");
 import { createAssistant, updateAssistant, deleteAssistant, createCall, getAssistant } from "@/lib/vapi";
 import { getAgentTools, getAppointmentSystemPromptAddition } from "@/lib/vapi-tools";
 import { enforceAgentLimit } from "../trpc/middleware";
@@ -106,7 +109,7 @@ export const agentsRouter = router({
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        console.log(`[Agent Sync] Agent ${agent.id} has stale voice system ID:`, errorMessage);
+        log.info(`Agent ${agent.id} has stale voice system ID:`, errorMessage);
 
         // Check if it's a 404 error (assistant deleted in Vapi)
         if (errorMessage.includes("404") || errorMessage.includes("not found")) {
@@ -181,7 +184,7 @@ export const agentsRouter = router({
         });
         vapiAssistantId = vapiAssistant.id;
       } catch (error) {
-        console.error("Failed to create agent in voice system:", error);
+        log.error("Failed to create agent in voice system:", error);
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -292,7 +295,7 @@ export const agentsRouter = router({
             serverUrlSecret: tools.length > 0 ? process.env.VAPI_WEBHOOK_SECRET : undefined,
           });
         } catch (error) {
-          console.error("Failed to update Vapi assistant:", error);
+          log.error("Failed to update Vapi assistant:", error);
           // Continue with local update
         }
       }
@@ -363,7 +366,7 @@ export const agentsRouter = router({
         try {
           await deleteAssistant(agent.vapiAssistantId);
         } catch (error) {
-          console.error("Failed to delete Vapi assistant:", error);
+          log.error("Failed to delete Vapi assistant:", error);
         }
       }
 
@@ -583,7 +586,7 @@ export const agentsRouter = router({
           };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Unknown error";
-          console.error("Failed to create voice assistant:", error);
+          log.error("Failed to create voice assistant:", error);
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: `Failed to connect agent: ${errorMessage}`,
@@ -614,7 +617,7 @@ export const agentsRouter = router({
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        console.error("Failed to update voice assistant:", error);
+        log.error("Failed to update voice assistant:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update agent: ${errorMessage}`,

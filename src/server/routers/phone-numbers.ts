@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("PhoneNumbers");
 import { importTwilioPhoneNumber, releasePhoneNumber as releaseVapiPhoneNumber, updatePhoneNumber as updateVapiPhoneNumber } from "@/lib/vapi";
 import {
   createSubaccount,
@@ -107,7 +110,7 @@ export const phoneNumbersRouter = router({
           },
         };
       } catch (error) {
-        console.error("Failed to search available numbers:", error);
+        log.error("Failed to search available numbers:", error);
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         if (errorMessage.includes("20003") || errorMessage.includes("Authentication")) {
@@ -156,7 +159,7 @@ export const phoneNumbersRouter = router({
       // Create Twilio subaccount if it doesn't exist
       if (!org.twilioSubaccountSid) {
         try {
-          console.log(`[Twilio] Creating subaccount for org ${org.name}`);
+          log.info(`Creating subaccount for org ${org.name}`);
           const subaccount = await createSubaccount(`VoxForge - ${org.name}`);
 
           org = await ctx.db.organization.update({
@@ -167,9 +170,9 @@ export const phoneNumbersRouter = router({
             },
           });
 
-          console.log(`[Twilio] Created subaccount ${subaccount.sid}`);
+          log.info(`Created subaccount ${subaccount.sid}`);
         } catch (error) {
-          console.error("[Twilio] Failed to create subaccount:", error);
+          log.error("Failed to create subaccount:", error);
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "Failed to set up phone service. Please try again.",
@@ -187,9 +190,9 @@ export const phoneNumbersRouter = router({
           authToken: org.twilioAuthToken!,
         });
 
-        console.log(`[Twilio] Purchased number ${twilioNumber.phone_number}`);
+        log.info(`Purchased number ${twilioNumber.phone_number}`);
       } catch (error) {
-        console.error("[Twilio] Failed to buy number:", error);
+        log.error("Failed to buy number:", error);
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         if (errorMessage.includes("21422") || errorMessage.includes("not available")) {
@@ -222,9 +225,9 @@ export const phoneNumbersRouter = router({
           name: input.friendlyName || `${org.name} - ${input.type}`,
         });
 
-        console.log(`[Vapi] Imported number ${twilioNumber.phone_number} as ${vapiPhone.id}`);
+        log.info(`Imported number ${twilioNumber.phone_number} as ${vapiPhone.id}`);
       } catch (error) {
-        console.error("[Vapi] Failed to import number:", error);
+        log.error("Failed to import number:", error);
         // Number was purchased but Vapi import failed - still save it
         // Can retry Vapi import later
       }
@@ -273,7 +276,7 @@ export const phoneNumbersRouter = router({
           name: input.friendlyName,
         });
       } catch (error) {
-        console.error("Failed to import Twilio phone number:", error);
+        log.error("Failed to import Twilio phone number:", error);
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         if (errorMessage.includes("already exists")) {
@@ -364,7 +367,7 @@ export const phoneNumbersRouter = router({
 
         // Warn if agent is not connected to voice system
         if (!vapiAssistantId) {
-          console.warn(`[PhoneNumber] Agent ${input.agentId} is not connected to voice system`);
+          log.warn(`Agent ${input.agentId} is not connected to voice system`);
         }
       }
 
@@ -374,9 +377,9 @@ export const phoneNumbersRouter = router({
           await updateVapiPhoneNumber(phoneNumber.vapiPhoneId, {
             assistantId: vapiAssistantId, // null will unassign in Vapi
           });
-          console.log(`[Vapi] ${vapiAssistantId ? 'Assigned' : 'Unassigned'} phone number ${phoneNumber.vapiPhoneId} ${vapiAssistantId ? `to assistant ${vapiAssistantId}` : ''}`);
+          log.info(`${vapiAssistantId ? 'Assigned' : 'Unassigned'} phone number ${phoneNumber.vapiPhoneId} ${vapiAssistantId ? `to assistant ${vapiAssistantId}` : ''}`);
         } catch (error) {
-          console.error("[Vapi] Failed to sync phone number assignment:", error);
+          log.error("Failed to sync phone number assignment:", error);
           // Don't throw - save locally even if Vapi sync fails
           // User can retry or it will work on next assignment
         }
@@ -413,9 +416,9 @@ export const phoneNumbersRouter = router({
       if (phoneNumber.vapiPhoneId) {
         try {
           await releaseVapiPhoneNumber(phoneNumber.vapiPhoneId);
-          console.log(`[Vapi] Released phone number ${phoneNumber.vapiPhoneId}`);
+          log.info(`Released phone number ${phoneNumber.vapiPhoneId}`);
         } catch (error) {
-          console.error("Failed to release phone number from Vapi:", error);
+          log.error("Failed to release phone number from Vapi:", error);
           // Continue anyway - may have already been deleted
         }
       }
@@ -433,9 +436,9 @@ export const phoneNumbersRouter = router({
               org.twilioSubaccountSid,
               org.twilioAuthToken
             );
-            console.log(`[Twilio] Released phone number ${phoneNumber.twilioSid}`);
+            log.info(`Released phone number ${phoneNumber.twilioSid}`);
           } catch (error) {
-            console.error("Failed to release phone number from Twilio:", error);
+            log.error("Failed to release phone number from Twilio:", error);
             // Continue anyway - may have already been deleted
           }
         }
@@ -502,7 +505,7 @@ export const phoneNumbersRouter = router({
           name: phoneNumber.friendlyName || undefined,
         });
       } catch (error) {
-        console.error("Failed to sync phone number:", error);
+        log.error("Failed to sync phone number:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to sync phone number. Please try again.",

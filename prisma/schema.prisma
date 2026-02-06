@@ -39,6 +39,7 @@ model Organization {
   apiKeys            ApiKey[]
   appointments       Appointment[]
   calendarSettings   CalendarSettings?
+  auditLogs          AuditLog[]
 
   @@index([slug])
   @@index([clerkOrgId])
@@ -386,4 +387,21 @@ model CalendarSettings {
 
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  action         String
+  entityType     String
+  entityId       String?
+  userId         String?
+  details        Json         @default("{}")
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

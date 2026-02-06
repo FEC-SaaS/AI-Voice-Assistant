@@ -10,6 +10,7 @@ import {
   Trash2,
   UserX,
   Users,
+  Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -227,6 +228,7 @@ export function ContactList({ campaignId }: ContactListProps) {
                   <TableHead>Contact</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Company</TableHead>
+                  <TableHead>Lead Score</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Calls</TableHead>
                   <TableHead className="w-12"></TableHead>
@@ -272,6 +274,22 @@ export function ContactList({ campaignId }: ContactListProps) {
                         </div>
                       ) : (
                         <span className="text-gray-400">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {(contact as Record<string, unknown>).leadScore != null ? (
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                          (contact as Record<string, unknown>).leadScore as number >= 70
+                            ? "bg-green-100 text-green-700"
+                            : (contact as Record<string, unknown>).leadScore as number >= 40
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-red-100 text-red-700"
+                        }`}>
+                          <Target className="h-3 w-3" />
+                          {(contact as Record<string, unknown>).leadScore as number}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">—</span>
                       )}
                     </TableCell>
                     <TableCell>

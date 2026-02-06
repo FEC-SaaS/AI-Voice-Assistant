@@ -2,6 +2,9 @@ import { db } from "@/lib/db";
 import { stripe, createStripeCustomer, reportUsage } from "@/lib/stripe";
 import { getPlan, OVERAGE_RATE_CENTS } from "@/constants/plans";
 import { TRPCError } from "@trpc/server";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("BillingService");
 
 export interface UsageStats {
   agents: { used: number; limit: number; remaining: number };
@@ -239,7 +242,7 @@ export async function recordCallUsage(
           await reportUsage(meteredItem.id, overageMinutes);
         }
       } catch (error) {
-        console.error("[Billing] Failed to report usage to Stripe:", error);
+        log.error("Failed to report usage to Stripe:", error);
       }
     }
   }
@@ -300,7 +303,7 @@ export async function handleSubscriptionCreated(
   });
 
   if (!org) {
-    console.error("[Billing] Organization not found for customer:", customerId);
+    log.error("Organization not found for customer:", customerId);
     return;
   }
 
@@ -321,7 +324,7 @@ export async function handleSubscriptionCreated(
     },
   });
 
-  console.log(`[Billing] Organization ${org.id} upgraded to ${planId}`);
+  log.info(`Organization ${org.id} upgraded to ${planId}`);
 }
 
 /**
@@ -333,7 +336,7 @@ export async function handleSubscriptionCanceled(subscriptionId: string): Promis
   });
 
   if (!org) {
-    console.error("[Billing] Organization not found for subscription:", subscriptionId);
+    log.error("Organization not found for subscription:", subscriptionId);
     return;
   }
 
@@ -346,7 +349,7 @@ export async function handleSubscriptionCanceled(subscriptionId: string): Promis
     },
   });
 
-  console.log(`[Billing] Organization ${org.id} downgraded to free-trial`);
+  log.info(`Organization ${org.id} downgraded to free-trial`);
 }
 
 /**
@@ -361,7 +364,7 @@ export async function handleSubscriptionUpdated(
   });
 
   if (!org) {
-    console.error("[Billing] Organization not found for subscription:", subscriptionId);
+    log.error("Organization not found for subscription:", subscriptionId);
     return;
   }
 
@@ -379,7 +382,7 @@ export async function handleSubscriptionUpdated(
     data: { planId },
   });
 
-  console.log(`[Billing] Organization ${org.id} plan updated to ${planId}`);
+  log.info(`Organization ${org.id} plan updated to ${planId}`);
 }
 
 /**
@@ -412,7 +415,7 @@ export async function getBillingHistory(orgId: string) {
       hostedUrl: invoice.hosted_invoice_url,
     }));
   } catch (error) {
-    console.error("[Billing] Failed to fetch invoices:", error);
+    log.error("Failed to fetch invoices:", error);
     return [];
   }
 }

@@ -36,13 +36,20 @@ export async function createContext(): Promise<Context> {
     });
 
     // Only set role if the org matches
-    if (user && (user.organization?.clerkOrgId === clerkOrgId || user.organizationId === clerkOrgId)) {
+    if (user && user.organization?.clerkOrgId === clerkOrgId) {
       userRole = user.role;
       dbOrgId = user.organizationId;
     } else if (user) {
-      // Fallback: allow access if user exists but org ID format differs
-      userRole = user.role;
-      dbOrgId = user.organizationId;
+      // User exists but org doesn't match — look up the org by clerkOrgId
+      const org = await db.organization.findFirst({
+        where: { clerkOrgId },
+        select: { id: true },
+      });
+      if (org && org.id === user.organizationId) {
+        userRole = user.role;
+        dbOrgId = user.organizationId;
+      }
+      // If no match, dbOrgId stays null → protectedProcedure rejects
     }
   }
 

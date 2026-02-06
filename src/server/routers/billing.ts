@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Billing");
 import {
   createCheckoutSession,
   createBillingPortalSession,
@@ -39,7 +42,7 @@ export const billingRouter = router({
           cancelAtPeriodEnd: subscription.cancel_at_period_end,
         };
       } catch (error) {
-        console.error("Error fetching subscription:", error);
+        log.error("Error fetching subscription:", error);
       }
     }
 

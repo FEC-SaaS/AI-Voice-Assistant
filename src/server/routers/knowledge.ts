@@ -2,6 +2,9 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { updateAssistant } from "@/lib/vapi";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Knowledge");
 
 // Helper function to sync knowledge to agent's voice assistant
 async function syncKnowledgeToAgent(
@@ -42,9 +45,9 @@ async function syncKnowledgeToAgent(
     await updateAssistant(agent.vapiAssistantId, {
       systemPrompt: fullSystemPrompt,
     });
-    console.log(`[Knowledge] Auto-synced ${knowledgeDocs.length} documents to agent ${agentId}`);
+    log.info(`Auto-synced ${knowledgeDocs.length} documents to agent ${agentId}`);
   } catch (error) {
-    console.error("[Knowledge] Failed to auto-sync to voice assistant:", error);
+    log.error("Failed to auto-sync to voice assistant:", error);
     // Don't throw - knowledge is saved, sync just failed
   }
 }

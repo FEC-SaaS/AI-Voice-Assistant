@@ -3,6 +3,10 @@ import { middleware } from "./index";
 import { getPlan, canAddAgent, canAddCampaign, canAddPhoneNumber } from "@/constants/plans";
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/redis";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Rate Limit");
+const trpcLog = createLogger("tRPC");
 
 /**
  * Redis-based rate limiting middleware
@@ -27,11 +31,11 @@ export const rateLimit = (limit: number, windowSeconds: number) =>
       if (!redisUrl || !redisToken) {
         // Redis not configured, skip rate limiting in development
         if (process.env.NODE_ENV === "development") {
-          console.warn("[Rate Limit] Redis not configured, skipping rate limit check");
+          log.warn("Redis not configured, skipping rate limit check");
           return next();
         }
         // In production, allow but warn
-        console.warn("[Rate Limit] Redis not configured in production");
+        log.warn("Redis not configured in production");
         return next();
       }
 
@@ -56,7 +60,7 @@ export const rateLimit = (limit: number, windowSeconds: number) =>
       }
 
       // Log Redis errors but don't block the request
-      console.error("[Rate Limit] Redis error:", error);
+      log.error("Redis error:", error);
       return next();
     }
   });
@@ -97,7 +101,7 @@ export const orgRateLimit = (limit: number, windowSeconds: number) =>
       if (error instanceof TRPCError) {
         throw error;
       }
-      console.error("[Rate Limit] Redis error:", error);
+      log.error("Redis error:", error);
       return next();
     }
   });
@@ -138,7 +142,7 @@ export const actionRateLimit = (action: string, limit: number, windowSeconds: nu
       if (error instanceof TRPCError) {
         throw error;
       }
-      console.error("[Rate Limit] Redis error:", error);
+      log.error("Redis error:", error);
       return next();
     }
   });
@@ -299,7 +303,7 @@ export const logger = middleware(async ({ path, type, next }) => {
   const result = await next();
   const duration = Date.now() - start;
 
-  console.log(`[tRPC] ${type} ${path} - ${duration}ms`);
+  trpcLog.debug(`${type} ${path} - ${duration}ms`);
 
   return result;
 });

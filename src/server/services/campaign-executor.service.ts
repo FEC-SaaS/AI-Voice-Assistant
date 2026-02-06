@@ -2,6 +2,10 @@ import { db } from "@/lib/db";
 import { createCall } from "@/lib/vapi";
 import { checkDNC, checkCallingHours, normalizePhoneNumber } from "./dnc.service";
 import { getRemainingMinutes } from "@/constants/plans";
+import { createLogger } from "@/lib/logger";
+import { logAudit } from "./audit.service";
+
+const log = createLogger("Campaign Executor");
 
 // Campaign execution configuration
 export interface CampaignExecutionConfig {
@@ -195,6 +199,14 @@ async function processContact(
       data: { status: "dnc" },
     });
 
+    await logAudit({
+      organizationId: contact.organizationId,
+      action: "call.blocked",
+      entityType: "contact",
+      entityId: contact.id,
+      details: { reason: dncCheck.reason, phoneNumber },
+    });
+
     return {
       contactId: contact.id,
       success: false,
@@ -276,7 +288,7 @@ async function processContact(
       callId: call.id,
     };
   } catch (error) {
-    console.error(`[Campaign Executor] Failed to call contact ${contact.id}:`, error);
+    log.error(`Failed to call contact ${contact.id}:`, error);
 
     // Update contact status to failed
     await db.contact.update({
@@ -302,6 +314,13 @@ export async function executeCampaign(
 
   // Set campaign state to running
   campaignStates.set(campaignId, "running");
+
+  await logAudit({
+    organizationId,
+    action: "campaign.started",
+    entityType: "campaign",
+    entityId: campaignId,
+  });
 
   const result: CampaignExecutionResult = {
     campaignId,
@@ -358,14 +377,14 @@ export async function executeCampaign(
     for (let i = 0; i < contacts.length; i++) {
       // Check if campaign should continue
       if (!shouldContinue(campaignId)) {
-        console.log(`[Campaign Executor] Campaign ${campaignId} stopped or paused`);
+        log.info(`Campaign ${campaignId} stopped or paused`);
         break;
       }
 
       // Check usage limits
       const usageLimits = await checkUsageLimits(organizationId);
       if (!usageLimits.canCall) {
-        console.log(`[Campaign Executor] Usage limit reached: ${usageLimits.reason}`);
+        log.info(`Usage limit reached: ${usageLimits.reason}`);
         break;
       }
 
@@ -433,7 +452,7 @@ export async function executeCampaign(
     }
 
   } catch (error) {
-    console.error(`[Campaign Executor] Error executing campaign ${campaignId}:`, error);
+    log.error(`Error executing campaign ${campaignId}:`, error);
 
     // Update campaign status to paused on error
     await db.campaign.update({
@@ -503,19 +522,19 @@ export async function getScheduledCampaigns(): Promise<Array<{ id: string; organ
 export async function processScheduledCampaigns(): Promise<void> {
   const campaigns = await getScheduledCampaigns();
 
-  console.log(`[Campaign Executor] Processing ${campaigns.length} scheduled campaigns`);
+  log.info(`Processing ${campaigns.length} scheduled campaigns`);
 
   for (const campaign of campaigns) {
     try {
       // Check if campaign is already being executed
       if (getCampaignState(campaign.id)) {
-        console.log(`[Campaign Executor] Campaign ${campaign.id} is already running`);
+        log.info(`Campaign ${campaign.id} is already running`);
         continue;
       }
 
       await executeCampaignBatch(campaign.id, campaign.organizationId, 10);
     } catch (error) {
-      console.error(`[Campaign Executor] Failed to process campaign ${campaign.id}:`, error);
+      log.error(`Failed to process campaign ${campaign.id}:`, error);
     }
   }
 }

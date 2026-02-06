@@ -120,13 +120,35 @@ export const contactsRouter = router({
             _count: {
               select: { calls: true },
             },
+            calls: {
+              where: { sentiment: { not: null } },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: {
+                leadScore: true,
+                sentiment: true,
+                analysis: true,
+              },
+            },
           },
         }),
         ctx.db.contact.count({ where }),
       ]);
 
+      const contactsWithScores = contacts.map((c) => {
+        const latestCall = c.calls[0];
+        const analysis = latestCall?.analysis as Record<string, unknown> | null;
+        return {
+          ...c,
+          calls: undefined,
+          leadScore: latestCall?.leadScore ?? null,
+          sentiment: latestCall?.sentiment ?? null,
+          nextBestAction: (analysis?.nextBestAction as string) ?? null,
+        };
+      });
+
       return {
-        contacts,
+        contacts: contactsWithScores,
         pagination: {
           page,
           limit,
@@ -505,6 +527,42 @@ export const contactsRouter = router({
 
       return { updated: result.count };
     }),
+
+  // Get lead pipeline overview with scoring buckets
+  getLeadPipeline: protectedProcedure.query(async ({ ctx }) => {
+    const contacts = await ctx.db.contact.findMany({
+      where: { organizationId: ctx.orgId },
+      select: {
+        id: true,
+        calls: {
+          where: { sentiment: { not: null } },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { leadScore: true },
+        },
+      },
+    });
+
+    const buckets = { hot: 0, warm: 0, cold: 0, unscored: 0 };
+
+    for (const contact of contacts) {
+      const score = contact.calls[0]?.leadScore;
+      if (score == null) {
+        buckets.unscored++;
+      } else if (score >= 70) {
+        buckets.hot++;
+      } else if (score >= 40) {
+        buckets.warm++;
+      } else {
+        buckets.cold++;
+      }
+    }
+
+    return {
+      total: contacts.length,
+      ...buckets,
+    };
+  }),
 
   // Get contact stats for a campaign
   getCampaignStats: protectedProcedure

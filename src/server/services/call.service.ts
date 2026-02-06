@@ -2,6 +2,9 @@ import { db } from "@/lib/db";
 import { createCall, getCall as getVapiCall } from "@/lib/vapi";
 import { checkMinutesLimit, recordCallUsage } from "./billing.service";
 import { TRPCError } from "@trpc/server";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("CallService");
 
 export interface InitiateCallInput {
   organizationId: string;
@@ -129,7 +132,7 @@ export async function handleCallWebhook(data: CallWebhookData) {
   });
 
   if (!call) {
-    console.warn("[Call Service] Call not found for webhook:", data.callId);
+    log.warn("Call not found for webhook:", data.callId);
     return null;
   }
 
@@ -267,7 +270,7 @@ export async function syncCallFromVapi(callId: string): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error("[Call Service] Failed to sync from Vapi:", error);
+    log.error("Failed to sync from Vapi:", error);
     return false;
   }
 }

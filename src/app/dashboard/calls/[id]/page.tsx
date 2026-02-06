@@ -5,6 +5,7 @@ import {
   ArrowLeft, Loader2, Phone, PhoneIncoming, PhoneOutgoing,
   Clock, CheckCircle, XCircle, AlertCircle, Bot, User, Play, Pause,
   Sparkles, TrendingUp, ThumbsUp, ThumbsDown, Target, ListChecks, AlertTriangle,
+  Brain, MessageSquare, Users, Lightbulb,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -71,6 +72,15 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
     actionItems?: string[];
     analyzedAt?: string;
     optOutDetected?: boolean;
+    competitorMentions?: string[];
+    coachingRecommendations?: string[];
+    closeProbability?: number;
+    nextBestAction?: string;
+    objectionCategories?: Array<{
+      category: string;
+      objection: string;
+      suggestedResponse: string;
+    }>;
   } | null;
 
   if (isLoading) {
@@ -384,6 +394,101 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
                         <CheckCircle className="h-3.5 w-3.5" />
                       </span>
                       {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Close Probability & Next Best Action */}
+            {(analysisData?.closeProbability != null || analysisData?.nextBestAction) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {analysisData?.closeProbability != null && (
+                  <div className="rounded-lg bg-gray-50 p-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Target className="h-4 w-4" />
+                      Close Probability
+                    </div>
+                    <p className={`mt-1 text-lg font-semibold ${
+                      analysisData.closeProbability >= 60 ? "text-green-600" :
+                      analysisData.closeProbability >= 30 ? "text-yellow-600" : "text-red-600"
+                    }`}>
+                      {analysisData.closeProbability}%
+                    </p>
+                  </div>
+                )}
+                {analysisData?.nextBestAction && (
+                  <div className="rounded-lg bg-blue-50 p-4">
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <Lightbulb className="h-4 w-4" />
+                      Next Best Action
+                    </div>
+                    <p className="mt-1 text-sm text-blue-800 font-medium">
+                      {analysisData.nextBestAction}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Competitor Mentions */}
+            {analysisData?.competitorMentions && analysisData.competitorMentions.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                  <Users className="h-4 w-4 text-purple-500" />
+                  Competitor Mentions
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {analysisData.competitorMentions.map((comp, i) => (
+                    <span key={i} className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700">
+                      {comp}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Objection Categories with Suggested Responses */}
+            {analysisData?.objectionCategories && analysisData.objectionCategories.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-amber-500" />
+                  Objection Analysis
+                </h3>
+                <div className="space-y-3">
+                  {analysisData.objectionCategories.map((oc, i) => (
+                    <div key={i} className="rounded-lg border p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          {oc.category}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700">{oc.objection}</p>
+                      <div className="mt-2 rounded bg-green-50 p-2">
+                        <p className="text-xs text-green-700">
+                          <span className="font-medium">Suggested response:</span> {oc.suggestedResponse}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Coaching Recommendations */}
+            {analysisData?.coachingRecommendations && analysisData.coachingRecommendations.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-indigo-500" />
+                  Coaching Recommendations
+                </h3>
+                <ul className="space-y-1">
+                  {analysisData.coachingRecommendations.map((rec, i) => (
+                    <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                      <span className="text-indigo-500 mt-0.5">
+                        <Lightbulb className="h-3.5 w-3.5" />
+                      </span>
+                      {rec}
                     </li>
                   ))}
                 </ul>

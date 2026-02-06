@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { logAudit } from "./audit.service";
 
 // US State calling hours restrictions
 const STATE_CALLING_HOURS: Record<string, { start: number; end: number }> = {
@@ -160,6 +161,13 @@ export async function addToDNC(
       addedAt: new Date(),
     },
   });
+
+  await logAudit({
+    organizationId,
+    action: "dnc.add",
+    entityType: "dnc",
+    details: { phoneNumber: normalized, source, reason },
+  });
 }
 
 /**
@@ -180,6 +188,14 @@ export async function removeFromDNC(
         },
       },
     });
+
+    await logAudit({
+      organizationId,
+      action: "dnc.remove",
+      entityType: "dnc",
+      details: { phoneNumber: normalized },
+    });
+
     return true;
   } catch {
     return false;
@@ -293,6 +309,13 @@ export async function recordConsent(
       expiresAt,
     },
   });
+
+  await logAudit({
+    organizationId,
+    action: "consent.record",
+    entityType: "consent",
+    details: { phoneNumber: normalized, consentType, consentMethod },
+  });
 }
 
 /**
@@ -313,6 +336,13 @@ export async function revokeConsent(
     data: {
       revokedAt: new Date(),
     },
+  });
+
+  await logAudit({
+    organizationId,
+    action: "consent.revoke",
+    entityType: "consent",
+    details: { phoneNumber: normalized },
   });
 }
 
@@ -348,6 +378,14 @@ export async function handleOptOutRequest(
     data: {
       status: "dnc",
     },
+  });
+
+  await logAudit({
+    organizationId,
+    action: "opt_out.detected",
+    entityType: "contact",
+    entityId: _callId,
+    details: { phoneNumber: normalizePhoneNumber(phoneNumber) },
   });
 }
 

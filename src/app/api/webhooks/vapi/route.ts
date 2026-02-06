@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Vapi Webhook");
+const toolLog = createLogger("Vapi Tool");
 
 // Dynamic imports to avoid build-time database connection
 const getDb = async () => {
@@ -148,7 +152,7 @@ async function processToolCall(
   agentId: string | undefined,
   customerPhone: string | undefined
 ): Promise<string> {
-  console.log("[Vapi Tool] Processing tool call:", {
+  toolLog.debug("Processing tool call:", {
     toolName,
     args,
     organizationId,
@@ -315,7 +319,10 @@ async function processToolCall(
           scheduledAt,
           endAt,
           duration,
-          timeZone: "America/New_York",
+          timeZone: (await (async () => {
+            const { getOrgTimezone } = await import("@/lib/timezone");
+            return getOrgTimezone(organizationId);
+          })()),
           meetingType: meeting_type || "phone",
           attendeeName: customer_name,
           attendeeEmail: customer_email,
@@ -346,7 +353,7 @@ async function processToolCall(
             appointmentId: appointment.id, // Include ID for action links
           }, branding);
         } catch (error) {
-          console.error("[Vapi Tool] Failed to send confirmation email:", error);
+          toolLog.error("Failed to send confirmation email:", error);
         }
       }
 
@@ -360,7 +367,7 @@ async function processToolCall(
             type: "confirmation",
           });
         } catch (error) {
-          console.error("[Vapi Tool] Failed to send confirmation SMS:", error);
+          toolLog.error("Failed to send confirmation SMS:", error);
         }
       }
 
@@ -450,7 +457,7 @@ async function processToolCall(
             appointmentId: appointment.id, // Include ID for action links
           }, branding);
         } catch (error) {
-          console.error("[Vapi Tool] Failed to send confirmation email:", error);
+          toolLog.error("Failed to send confirmation email:", error);
         }
       }
 
@@ -519,11 +526,11 @@ async function processToolCall(
     }
 
     default:
-      console.log("[Vapi Tool] Unknown tool:", toolName);
+      toolLog.warn("Unknown tool:", toolName);
       return `I'm not sure how to handle that request. Is there something else I can help you with?`;
     }
   } catch (error) {
-    console.error("[Vapi Tool] Error processing tool call:", error);
+    toolLog.error("Error processing tool call:", error);
     return "I'm having trouble processing your request right now. Please try again.";
   }
 }
@@ -538,12 +545,12 @@ async function verifySignature(req: NextRequest, _body: string): Promise<boolean
 
   // If no secret configured, skip verification (not recommended for production)
   if (!secret) {
-    console.warn("[Vapi Webhook] VAPI_WEBHOOK_SECRET not configured - skipping signature verification");
+    log.warn("VAPI_WEBHOOK_SECRET not configured - skipping signature verification");
     return true;
   }
 
   if (!vapiSecret) {
-    console.error("[Vapi Webhook] Missing x-vapi-secret header");
+    log.error("Missing x-vapi-secret header");
     return false;
   }
 
@@ -554,17 +561,17 @@ async function verifySignature(req: NextRequest, _body: string): Promise<boolean
     const vapiSecretBuffer = Buffer.from(vapiSecret);
 
     if (secretBuffer.length !== vapiSecretBuffer.length) {
-      console.error("[Vapi Webhook] Secret length mismatch");
+      log.error("Secret length mismatch");
       return false;
     }
 
     const isValid = crypto.timingSafeEqual(secretBuffer, vapiSecretBuffer);
     if (!isValid) {
-      console.error("[Vapi Webhook] Secret mismatch - received:", vapiSecret.substring(0, 10) + "...", "expected:", secret.substring(0, 10) + "...");
+      log.error("Secret mismatch");
     }
     return isValid;
   } catch (error) {
-    console.error("[Vapi Webhook] Secret verification error:", error);
+    log.error("Secret verification error:", error);
     return false;
   }
 }
@@ -583,26 +590,19 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
 
-    console.log("[Vapi Webhook] ========== INCOMING REQUEST ==========");
-    console.log("[Vapi Webhook] Headers:", Object.fromEntries(req.headers.entries()));
-    console.log("[Vapi Webhook] Full body:", rawBody);
-
     // Verify webhook signature
     const isValid = await verifySignature(req, rawBody);
     if (!isValid) {
-      console.error("[Vapi Webhook] Invalid signature");
+      log.error("Invalid signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     const body = JSON.parse(rawBody) as VapiWebhookEvent;
     const { type, call, message } = body;
 
-    console.log(`[Vapi Webhook] Received event: ${type}`, {
+    log.debug(`Received event: ${type}`, {
       callId: call?.id,
       messageType: message?.type,
-      assistantId: call?.assistantId,
-      hasToolCalls: !!(message?.toolCalls || message?.toolCallList),
-      toolCallCount: (message?.toolCalls || message?.toolCallList)?.length || 0,
     });
 
     // Handle tool/function calls (Vapi sends these as assistant-request or tool-calls)
@@ -619,7 +619,6 @@ export async function POST(req: NextRequest) {
 
         // Try to get from call.assistantId
         if (!organizationId && call?.assistantId) {
-          console.log("[Vapi Webhook] Looking up agent by assistantId:", call.assistantId);
           const agent = await db.agent.findFirst({
             where: { vapiAssistantId: call.assistantId },
             select: { id: true, organizationId: true },
@@ -627,14 +626,12 @@ export async function POST(req: NextRequest) {
           if (agent) {
             organizationId = agent.organizationId;
             agentId = agent.id;
-            console.log("[Vapi Webhook] Found agent:", { agentId, organizationId });
           }
         }
 
         // Try to get from x-call-id header by looking up call record
         if (!organizationId) {
           const xCallId = req.headers.get("x-call-id");
-          console.log("[Vapi Webhook] Looking up call by x-call-id header:", xCallId);
           if (xCallId) {
             const callRecord = await db.call.findFirst({
               where: { vapiCallId: xCallId },
@@ -643,14 +640,12 @@ export async function POST(req: NextRequest) {
             if (callRecord) {
               organizationId = callRecord.organizationId;
               agentId = callRecord.agentId || undefined;
-              console.log("[Vapi Webhook] Found call record:", { organizationId, agentId });
             }
           }
         }
 
         // Try to get from call.id if different from x-call-id
         if (!organizationId && call?.id) {
-          console.log("[Vapi Webhook] Looking up call by call.id:", call.id);
           const callRecord = await db.call.findFirst({
             where: { vapiCallId: call.id },
             select: { organizationId: true, agentId: true },
@@ -658,57 +653,24 @@ export async function POST(req: NextRequest) {
           if (callRecord) {
             organizationId = callRecord.organizationId;
             agentId = callRecord.agentId || undefined;
-            console.log("[Vapi Webhook] Found call record by call.id:", { organizationId, agentId });
           }
         }
 
         // Fallback: For inbound calls, find organization from phone number with an assigned agent
         if (!organizationId) {
-          console.log("[Vapi Webhook] Trying fallback: looking up from phone number with assigned agent");
-
-          // First, log what phone numbers exist to help debug
-          const allPhonesWithAgents = await db.phoneNumber.findMany({
-            where: {
-              agentId: { not: null },
-            },
+          const phoneWithAgent = await db.phoneNumber.findFirst({
+            where: { agentId: { not: null } },
             include: {
               agent: {
-                select: {
-                  id: true,
-                  name: true,
-                  organizationId: true,
-                  vapiAssistantId: true,
-                  settings: true,
-                },
+                select: { id: true, organizationId: true },
               },
             },
           });
 
-          console.log("[Vapi Webhook] Phone numbers with assigned agents:",
-            allPhonesWithAgents.map(p => ({
-              phoneId: p.id,
-              number: p.number,
-              agentId: p.agentId,
-              agentName: p.agent?.name,
-              organizationId: p.agent?.organizationId,
-              vapiAssistantId: p.agent?.vapiAssistantId,
-            }))
-          );
-
-          // Try to find a phone that matches - use any phone with an agent assigned
-          const phoneWithAgent = allPhonesWithAgents[0]; // Get the first one for now
-
           if (phoneWithAgent?.agent) {
             organizationId = phoneWithAgent.agent.organizationId;
             agentId = phoneWithAgent.agent.id;
-            console.log("[Vapi Webhook] Found agent via phone number fallback:", {
-              organizationId,
-              agentId,
-              agentName: phoneWithAgent.agent.name,
-              phoneNumber: phoneWithAgent.number,
-            });
 
-            // Also create/update the call record for future lookups
             const xCallId = req.headers.get("x-call-id");
             if (xCallId) {
               await db.call.upsert({
@@ -726,23 +688,15 @@ export async function POST(req: NextRequest) {
                   agentId,
                 },
               });
-              console.log("[Vapi Webhook] Created/updated call record for future lookups");
             }
-          } else {
-            console.log("[Vapi Webhook] No phone numbers with assigned agents found in database");
           }
         }
 
-        // Final fallback: If still no org, try to find from any agent that matches assistantId from full webhook body
+        // Final fallback: assistantId from full webhook body
         if (!organizationId) {
-          // Parse the full body to check for assistantId at different levels
           const fullBody = JSON.parse(rawBody);
-          console.log("[Vapi Webhook] Full webhook body keys:", Object.keys(fullBody));
-
-          // Check for assistantId at root level or in different structures
           const possibleAssistantId = fullBody.assistantId || fullBody.assistant?.id;
           if (possibleAssistantId) {
-            console.log("[Vapi Webhook] Found assistantId in body:", possibleAssistantId);
             const agentByAssistant = await db.agent.findFirst({
               where: { vapiAssistantId: possibleAssistantId },
               select: { id: true, organizationId: true },
@@ -750,17 +704,14 @@ export async function POST(req: NextRequest) {
             if (agentByAssistant) {
               organizationId = agentByAssistant.organizationId;
               agentId = agentByAssistant.id;
-              console.log("[Vapi Webhook] Found agent via assistantId fallback:", { organizationId, agentId });
             }
           }
         }
 
         if (!organizationId) {
-          console.error("[Vapi Webhook] Could not determine organization for tool call. Available data:", {
+          log.error("Could not determine organization for tool call", {
             callId: call?.id,
             assistantId: call?.assistantId,
-            xCallId: req.headers.get("x-call-id"),
-            metadata: call?.metadata,
           });
           return NextResponse.json({
             results: toolCalls.map((tc) => ({
@@ -780,7 +731,7 @@ export async function POST(req: NextRequest) {
           } else {
             args = (toolCall.function.arguments as Record<string, string>) || {};
           }
-          console.log(`[Vapi Webhook] Processing tool: ${toolCall.function.name}`, args);
+          toolLog.debug(`Processing tool: ${toolCall.function.name}`, args);
 
           const result = await processToolCall(
             toolCall.function.name,
@@ -796,7 +747,7 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        console.log("[Vapi Webhook] Tool call results:", results);
+        log.debug("Tool call results:", results);
         return NextResponse.json({ results });
       }
     }
@@ -821,7 +772,7 @@ export async function POST(req: NextRequest) {
     const organizationId = call.metadata?.organizationId || agent?.organizationId;
 
     if (!organizationId) {
-      console.warn("[Vapi Webhook] Could not determine organization for call", { callId: call.id });
+      log.warn("Could not determine organization for call", { callId: call.id });
     }
 
     switch (type) {
@@ -934,11 +885,25 @@ export async function POST(req: NextRequest) {
           // Fire and forget - analyze in background
           getAnalyzeCall().then((analyzeCall) => {
             analyzeCall(updatedCall.id).catch((error) => {
-              console.error("[Vapi Webhook] Call analysis failed:", error);
+              log.error("Call analysis failed:", error);
             });
           });
         }
 
+        break;
+      }
+
+      case "transcript":
+      case "transcript.partial": {
+        // Update transcript mid-call for live monitoring
+        if (call.transcript) {
+          await db.call.update({
+            where: { vapiCallId: call.id },
+            data: { transcript: call.transcript },
+          }).catch(() => {
+            // Call record may not exist yet
+          });
+        }
         break;
       }
 
@@ -955,7 +920,7 @@ export async function POST(req: NextRequest) {
           if (updatedCall.status === "completed") {
             getAnalyzeCall().then((analyzeCall) => {
               analyzeCall(updatedCall.id).catch((error) => {
-                console.error("[Vapi Webhook] Call analysis failed:", error);
+                log.error("Call analysis failed:", error);
               });
             });
           }
@@ -966,7 +931,7 @@ export async function POST(req: NextRequest) {
       case "function.called":
       case "function-called": {
         // Legacy function call handling (newer versions use tool-calls message type)
-        console.log("[Vapi Webhook] Function called (legacy):", call);
+        log.debug("Function called (legacy):", call.id);
         break;
       }
 
@@ -1008,12 +973,12 @@ export async function POST(req: NextRequest) {
       }
 
       default:
-        console.log(`[Vapi Webhook] Unhandled event type: ${type}`);
+        log.debug(`Unhandled event type: ${type}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("[Vapi Webhook] Error:", error);
+    log.error("Error:", error);
 
     // Return 200 to prevent Vapi from retrying (we logged the error)
     // Change to 500 if you want Vapi to retry

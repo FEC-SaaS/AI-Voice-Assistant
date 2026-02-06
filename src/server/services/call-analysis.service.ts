@@ -1,6 +1,9 @@
 import { db } from "@/lib/db";
 import { analyzeTranscript, TranscriptAnalysis } from "@/lib/openai";
 import { detectOptOut, handleOptOutRequest } from "./dnc.service";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Call Analysis");
 
 export interface CallAnalysisResult {
   callId: string;
@@ -51,7 +54,7 @@ export async function analyzeCall(callId: string): Promise<CallAnalysisResult> {
         call.transcript
       );
 
-      console.log(`[Call Analysis] Opt-out detected for call ${callId}`);
+      log.info(`Opt-out detected for call ${callId}`);
     }
 
     // Analyze transcript with OpenAI
@@ -69,6 +72,11 @@ export async function analyzeCall(callId: string): Promise<CallAnalysisResult> {
           objections: analysis.objections,
           buyingSignals: analysis.buyingSignals,
           actionItems: analysis.actionItems,
+          competitorMentions: analysis.competitorMentions || [],
+          coachingRecommendations: analysis.coachingRecommendations || [],
+          closeProbability: analysis.closeProbability ?? null,
+          nextBestAction: analysis.nextBestAction || null,
+          objectionCategories: analysis.objectionCategories || [],
           analyzedAt: new Date().toISOString(),
           optOutDetected,
         },
@@ -96,7 +104,7 @@ export async function analyzeCall(callId: string): Promise<CallAnalysisResult> {
       optOutDetected,
     };
   } catch (error) {
-    console.error(`[Call Analysis] Error analyzing call ${callId}:`, error);
+    log.error(`Error analyzing call ${callId}:`, error);
 
     return {
       callId,
@@ -155,14 +163,14 @@ export async function processUnanalyzedCalls(): Promise<{
     return { processed: 0, succeeded: 0, failed: 0 };
   }
 
-  console.log(`[Call Analysis] Processing ${callIds.length} unanalyzed calls`);
+  log.info(`Processing ${callIds.length} unanalyzed calls`);
 
   const results = await analyzeCallsBatch(callIds);
 
   const succeeded = results.filter((r) => r.success).length;
   const failed = results.filter((r) => !r.success).length;
 
-  console.log(`[Call Analysis] Completed: ${succeeded} succeeded, ${failed} failed`);
+  log.info(`Completed: ${succeeded} succeeded, ${failed} failed`);
 
   return {
     processed: callIds.length,

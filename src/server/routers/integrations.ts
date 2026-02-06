@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../trpc";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Integrations");
 
 // For now, this is a placeholder for future integrations
 // (HubSpot, Salesforce, Zapier, etc.)
@@ -62,7 +65,7 @@ export const integrationsRouter = router({
     )
     .mutation(async ({ input }) => {
       // TODO: Implement actual integration connection
-      console.log("Connecting integration:", input.integrationId);
+      log.info("Connecting integration:", input.integrationId);
       return {
         success: false,
         message: "Integration coming soon",
@@ -74,7 +77,7 @@ export const integrationsRouter = router({
     .input(z.object({ integrationId: z.string() }))
     .mutation(async ({ input }) => {
       // TODO: Implement actual disconnection
-      console.log("Disconnecting integration:", input.integrationId);
+      log.info("Disconnecting integration:", input.integrationId);
       return { success: true };
     }),
 });

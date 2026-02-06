@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Appointments");
 import {
   sendAppointmentConfirmation,
   sendAppointmentReminder,
@@ -355,7 +358,7 @@ export const appointmentsRouter = router({
             branding
           );
         } catch (error) {
-          console.error("Failed to send confirmation email:", error);
+          log.error("Failed to send confirmation email:", error);
           // Don't fail the appointment creation
         }
       }
@@ -368,7 +371,7 @@ export const appointmentsRouter = router({
             type: "confirmation",
           });
         } catch (error) {
-          console.error("Failed to send confirmation SMS:", error);
+          log.error("Failed to send confirmation SMS:", error);
           // Don't fail the appointment creation
         }
       }
@@ -532,7 +535,7 @@ export const appointmentsRouter = router({
               branding
             );
           } catch (error) {
-            console.error("Failed to send rescheduled email:", error);
+            log.error("Failed to send rescheduled email:", error);
           }
         }
 
@@ -545,7 +548,7 @@ export const appointmentsRouter = router({
               previousDate: existing.scheduledAt,
             });
           } catch (error) {
-            console.error("Failed to send rescheduled SMS:", error);
+            log.error("Failed to send rescheduled SMS:", error);
           }
         }
       }
@@ -620,7 +623,7 @@ export const appointmentsRouter = router({
             branding
           );
         } catch (error) {
-          console.error("Failed to send cancellation email:", error);
+          log.error("Failed to send cancellation email:", error);
         }
       }
 
@@ -632,7 +635,7 @@ export const appointmentsRouter = router({
             type: "cancelled",
           });
         } catch (error) {
-          console.error("Failed to send cancellation SMS:", error);
+          log.error("Failed to send cancellation SMS:", error);
         }
       }
 
@@ -693,7 +696,7 @@ export const appointmentsRouter = router({
 
         return { success: true, message: `Confirmation email sent to ${appointment.attendeeEmail}` };
       } catch (error) {
-        console.error("Failed to send confirmation email:", error);
+        log.error("Failed to send confirmation email:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to send confirmation email. Please try again.",

@@ -16,6 +16,10 @@ import {
   Users,
   Calendar,
   X,
+  Radio,
+  Brain,
+  Target,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useCallback } from "react";
@@ -26,8 +30,12 @@ const navItems = [
   { title: "Campaigns", href: "/dashboard/campaigns", icon: Megaphone },
   { title: "Contacts", href: "/dashboard/contacts", icon: Users },
   { title: "Calls", href: "/dashboard/calls", icon: Phone },
+  { title: "Live Calls", href: "/dashboard/live", icon: Radio },
   { title: "Appointments", href: "/dashboard/appointments", icon: Calendar },
+  { title: "Leads", href: "/dashboard/leads", icon: Target },
+  { title: "Intelligence", href: "/dashboard/intelligence", icon: Brain },
   { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { title: "Compliance", href: "/dashboard/compliance", icon: Shield },
   { title: "Knowledge Base", href: "/dashboard/knowledge", icon: BookOpen },
   { title: "Phone Numbers", href: "/dashboard/phone-numbers", icon: Hash },
   { title: "Integrations", href: "/dashboard/integrations", icon: Plug },

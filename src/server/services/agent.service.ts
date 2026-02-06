@@ -7,6 +7,9 @@ import {
 } from "@/lib/vapi";
 import { checkAgentLimit } from "./billing.service";
 import { TRPCError } from "@trpc/server";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("AgentService");
 
 export interface CreateAgentInput {
   organizationId: string;
@@ -62,7 +65,7 @@ export async function createAgent(input: CreateAgentInput) {
     const vapiAssistant = await createAssistant(vapiConfig);
     vapiAssistantId = vapiAssistant.id;
   } catch (error) {
-    console.error("[Agent Service] Failed to create Vapi assistant:", error);
+    log.error("Failed to create Vapi assistant:", error);
     // Continue without Vapi - we can sync later
   }
 
@@ -118,7 +121,7 @@ export async function updateAgent(
         model: input.model,
       });
     } catch (error) {
-      console.error("[Agent Service] Failed to update Vapi assistant:", error);
+      log.error("Failed to update Vapi assistant:", error);
       // Continue with local update
     }
   }
@@ -163,7 +166,7 @@ export async function deleteAgent(agentId: string, organizationId: string) {
     try {
       await deleteAssistant(existingAgent.vapiAssistantId);
     } catch (error) {
-      console.error("[Agent Service] Failed to delete Vapi assistant:", error);
+      log.error("Failed to delete Vapi assistant:", error);
       // Continue with local deletion
     }
   }
@@ -214,7 +217,7 @@ export async function syncAgentToVapi(agentId: string, organizationId: string) {
       data: { vapiAssistantId: vapiAssistant.id },
     });
   } catch (error) {
-    console.error("[Agent Service] Failed to sync agent to voice system:", error);
+    log.error("Failed to sync agent to voice system:", error);
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: "Failed to sync agent to voice system",

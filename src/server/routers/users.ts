@@ -3,6 +3,9 @@ import { Prisma } from "@prisma/client";
 import { clerkClient } from "@clerk/nextjs/server";
 import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("Users");
 
 export const usersRouter = router({
   // Get current user
@@ -203,7 +206,7 @@ export const usersRouter = router({
 
         return { success: true, invitationId: invitation.id };
       } catch (error) {
-        console.error("Failed to create invitation:", error);
+        log.error("Failed to create invitation:", error);
 
         // Handle specific Clerk errors
         if (error instanceof Error) {
@@ -279,7 +282,7 @@ export const usersRouter = router({
           }
         }
       } catch (error) {
-        console.error("Failed to revoke Clerk invitation:", error);
+        log.error("Failed to revoke Clerk invitation:", error);
         // Continue to mark as revoked in our DB even if Clerk fails
       }
 

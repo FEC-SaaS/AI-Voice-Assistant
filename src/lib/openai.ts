@@ -13,6 +13,15 @@ export interface TranscriptAnalysis {
   buyingSignals: string[];
   actionItems: string[];
   leadScore: number;
+  competitorMentions: string[];
+  coachingRecommendations: string[];
+  closeProbability: number;
+  nextBestAction: string;
+  objectionCategories: Array<{
+    category: string;
+    objection: string;
+    suggestedResponse: string;
+  }>;
 }
 
 // Analyze transcript
@@ -30,6 +39,11 @@ export async function analyzeTranscript(transcript: string): Promise<TranscriptA
 5. Buying signals detected
 6. Action items or next steps
 7. Lead score (1-100 based on likelihood to convert)
+8. Competitor mentions (any competitor names or products mentioned)
+9. Coaching recommendations (specific advice for the sales rep to improve)
+10. Close probability (0-100, likelihood this deal closes)
+11. Next best action (single most important follow-up action)
+12. Objection categories (categorize each objection with a category name, the specific objection, and a suggested response)
 
 Return your analysis as a JSON object with these exact fields:
 - sentiment: "positive" | "neutral" | "negative"
@@ -38,7 +52,12 @@ Return your analysis as a JSON object with these exact fields:
 - objections: string[]
 - buyingSignals: string[]
 - actionItems: string[]
-- leadScore: number`,
+- leadScore: number
+- competitorMentions: string[]
+- coachingRecommendations: string[]
+- closeProbability: number
+- nextBestAction: string
+- objectionCategories: Array<{ category: string, objection: string, suggestedResponse: string }>`,
       },
       { role: "user", content: transcript },
     ],
