@@ -120,11 +120,27 @@ export const phoneNumbersRouter = router({
           });
         }
 
-        // Trial account limitation
-        if (errorMessage.includes("400") || errorMessage.includes("Bad Request")) {
+        // Trial account limitation (error code 20008 = upgrade required)
+        if (errorMessage.includes("20008") || errorMessage.includes("upgrade")) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Phone number search requires an upgraded Twilio account. Please use 'Import from Twilio' with your existing Twilio number instead.",
+            message: "Phone number search requires an upgraded Twilio account. Please upgrade at twilio.com or use 'Import from Twilio' instead.",
+          });
+        }
+
+        // No numbers found for the search criteria
+        if (errorMessage.includes("21452") || errorMessage.includes("no phone numbers found")) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "No phone numbers available matching your criteria. Try a different area code, country, or number type.",
+          });
+        }
+
+        // Country/type not available
+        if (errorMessage.includes("21601") || errorMessage.includes("not available")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Phone numbers of this type are not available in the selected country. Try a different number type.",
           });
         }
 

@@ -21,7 +21,9 @@ async function twilioRequest<T>(options: TwilioRequestOptions): Promise<T> {
   const { method, path, body, accountSid, authToken } = options;
   const sid = accountSid || process.env.TWILIO_ACCOUNT_SID!;
 
-  const url = `${TWILIO_API_URL}/Accounts/${sid}${path}.json`;
+  // Separate path from query string so .json goes before query params
+  const [basePath, queryString] = path.split("?");
+  const url = `${TWILIO_API_URL}/Accounts/${sid}${basePath}.json${queryString ? `?${queryString}` : ""}`;
 
   const response = await fetch(url, {
     method,
@@ -34,7 +36,8 @@ async function twilioRequest<T>(options: TwilioRequestOptions): Promise<T> {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: response.statusText }));
-    throw new Error(`Twilio API error: ${response.status} - ${error.message || JSON.stringify(error)}`);
+    const errorCode = error.code ? ` (${error.code})` : "";
+    throw new Error(`Twilio API error: ${response.status}${errorCode} - ${error.message || JSON.stringify(error)}`);
   }
 
   return response.json();
