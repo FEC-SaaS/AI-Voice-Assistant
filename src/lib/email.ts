@@ -33,13 +33,30 @@ export async function sendEmail(options: SendEmailOptions) {
   }
 
   // Determine FROM_EMAIL based on branding config
+  // DEFAULT_FROM_EMAIL can be: "Name <email>", "email@domain", or just "domain.com"
   let fromEmail = DEFAULT_FROM_EMAIL;
+
+  // Extract the raw email address from DEFAULT_FROM_EMAIL (handles all formats)
+  const extractEmail = (val: string): string => {
+    const angleMatch = val.match(/<(.+)>/);
+    if (angleMatch) return angleMatch[1]!;
+    // If it contains @, it's already an email
+    if (val.includes("@")) return val.trim();
+    // If it looks like a domain, prepend noreply@
+    if (val.includes(".")) return `noreply@${val.trim()}`;
+    return "onboarding@resend.dev";
+  };
+
   if (branding?.fromEmail && branding?.businessName) {
     fromEmail = `${branding.businessName} <${branding.fromEmail}>`;
   } else if (branding?.businessName) {
-    // Use business name with default email domain
-    const defaultDomain = DEFAULT_FROM_EMAIL.match(/<(.+)>/)?.[1] || "onboarding@resend.dev";
-    fromEmail = `${branding.businessName} <${defaultDomain}>`;
+    // Use business name with default email address
+    const defaultEmail = extractEmail(DEFAULT_FROM_EMAIL);
+    fromEmail = `${branding.businessName} <${defaultEmail}>`;
+  } else if (!DEFAULT_FROM_EMAIL.includes("<")) {
+    // Env var is a plain email or domain — wrap it with a display name
+    const defaultEmail = extractEmail(DEFAULT_FROM_EMAIL);
+    fromEmail = `CallTone AI <${defaultEmail}>`;
   }
 
   console.log(`[Email] Sending email to ${to} with subject: ${subject}`);
