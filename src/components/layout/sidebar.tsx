@@ -20,6 +20,7 @@ import {
   Brain,
   Target,
   Shield,
+  PhoneForwarded,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useCallback } from "react";
@@ -33,6 +34,7 @@ const navItems = [
   { title: "Calls", href: "/dashboard/calls", icon: Phone },
   { title: "Live Calls", href: "/dashboard/live", icon: Radio },
   { title: "Appointments", href: "/dashboard/appointments", icon: Calendar },
+  { title: "Receptionist", href: "/dashboard/receptionist", icon: PhoneForwarded },
   { title: "Leads", href: "/dashboard/leads", icon: Target },
   { title: "Intelligence", href: "/dashboard/intelligence", icon: Brain },
   { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },

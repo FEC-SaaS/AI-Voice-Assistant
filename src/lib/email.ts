@@ -526,6 +526,92 @@ export async function sendAppointmentCancellation(
   });
 }
 
+// ==========================================
+// Receptionist Message Notification
+// ==========================================
+
+interface ReceptionistMessageNotificationData {
+  callerName: string;
+  callerPhone?: string;
+  callerCompany?: string;
+  body: string;
+  urgency: string;
+  departmentName?: string;
+  staffName?: string;
+  messageId: string;
+}
+
+export async function sendReceptionistMessageNotification(
+  email: string,
+  data: ReceptionistMessageNotificationData,
+  branding?: EmailBrandingConfig
+) {
+  const primaryColor = branding?.primaryColor || "#3b82f6";
+  const businessName = branding?.businessName || "VoxForge AI";
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://voxforge.ai"}/dashboard/receptionist/messages`;
+
+  const urgencyColors: Record<string, string> = {
+    low: "#6b7280",
+    normal: "#3b82f6",
+    high: "#f59e0b",
+    urgent: "#ef4444",
+  };
+  const urgencyColor = urgencyColors[data.urgency] || urgencyColors.normal;
+
+  return sendEmail({
+    to: email,
+    subject: `New message from ${data.callerName}${data.urgency === "urgent" ? " [URGENT]" : data.urgency === "high" ? " [HIGH]" : ""}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: ${primaryColor}; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
+          ${branding?.logoUrl ? `<img src="${branding.logoUrl}" alt="${businessName}" style="max-height: 40px; margin-bottom: 10px;" />` : ""}
+          <h1 style="margin: 0; font-size: 24px;">New Message</h1>
+        </div>
+
+        <div style="border: 1px solid #e5e5e5; border-top: none; padding: 30px; border-radius: 0 0 8px 8px;">
+          <div style="display: inline-block; padding: 4px 12px; border-radius: 20px; background: ${urgencyColor}; color: white; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px;">
+            ${data.urgency} Priority
+          </div>
+
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 15px 0;">
+            <table style="width: 100%;">
+              <tr>
+                <td style="padding: 6px 0; color: #666; width: 120px;">From:</td>
+                <td style="padding: 6px 0; font-weight: bold;">${data.callerName}</td>
+              </tr>
+              ${data.callerPhone ? `<tr><td style="padding: 6px 0; color: #666;">Phone:</td><td style="padding: 6px 0;">${data.callerPhone}</td></tr>` : ""}
+              ${data.callerCompany ? `<tr><td style="padding: 6px 0; color: #666;">Company:</td><td style="padding: 6px 0;">${data.callerCompany}</td></tr>` : ""}
+              ${data.departmentName ? `<tr><td style="padding: 6px 0; color: #666;">Department:</td><td style="padding: 6px 0;">${data.departmentName}</td></tr>` : ""}
+              ${data.staffName ? `<tr><td style="padding: 6px 0; color: #666;">For:</td><td style="padding: 6px 0;">${data.staffName}</td></tr>` : ""}
+            </table>
+          </div>
+
+          <div style="margin: 20px 0;">
+            <h3 style="margin: 0 0 10px 0; color: #1a1a1a;">Message:</h3>
+            <p style="margin: 0; padding: 15px; background: #fafafa; border-left: 4px solid ${urgencyColor}; border-radius: 4px; color: #333; line-height: 1.5;">
+              ${data.body}
+            </p>
+          </div>
+
+          <div style="margin: 25px 0; text-align: center;">
+            <a href="${dashboardUrl}"
+               style="background: ${primaryColor}; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 500;">
+              View in Dashboard
+            </a>
+          </div>
+
+          <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
+
+          <p style="color: #666; font-size: 12px; text-align: center;">
+            This message was taken by your AI receptionist at ${businessName}
+          </p>
+        </div>
+      </div>
+    `,
+    branding,
+  });
+}
+
 export async function sendAppointmentRescheduled(
   email: string,
   name: string,

@@ -40,6 +40,9 @@ model Organization {
   appointments       Appointment[]
   calendarSettings   CalendarSettings?
   auditLogs          AuditLog[]
+  departments        Department[]
+  staffMembers       StaffMember[]
+  receptionistMessages ReceptionistMessage[]
 
   @@index([slug])
   @@index([clerkOrgId])
@@ -86,6 +89,7 @@ model Agent {
   campaigns    Campaign[]
   phoneNumbers PhoneNumber[]
   appointments Appointment[]
+  receptionistMessages ReceptionistMessage[]
 
   @@index([organizationId])
   @@index([vapiAssistantId])
@@ -403,5 +407,83 @@ model AuditLog {
   @@index([organizationId])
   @@index([action])
   @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model Department {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  phoneNumber    String?
+  extension      String?
+  email          String?
+  isActive       Boolean      @default(true)
+  businessHours  Json         @default("{}") // Per-day start/end + timezone
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  staffMembers StaffMember[]
+  messages     ReceptionistMessage[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model StaffMember {
+  id                   String       @id @default(cuid())
+  organizationId       String
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  departmentId         String
+  department           Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  name                 String
+  role                 String?
+  phoneNumber          String?
+  email                String?
+  isAvailable          Boolean      @default(true)
+  availabilitySchedule Json         @default("{}") // Per-day hours
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  messages ReceptionistMessage[]
+
+  @@index([organizationId])
+  @@index([departmentId])
+}
+
+model ReceptionistMessage {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agentId        String?
+  agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  callId         String?
+  departmentId   String?
+  department     Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  staffMemberId  String?
+  staffMember    StaffMember? @relation(fields: [staffMemberId], references: [id], onDelete: SetNull)
+
+  callerName    String?
+  callerPhone   String?
+  callerEmail   String?
+  callerCompany String?
+  subject       String?
+  body          String       @db.Text
+  urgency       String       @default("normal") // low, normal, high, urgent
+  status        String       @default("new")    // new, read, forwarded, resolved
+  forwardedAt   DateTime?
+  forwardedVia  String?      // email, sms
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  notes         String?      @db.Text
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([urgency])
+  @@index([departmentId])
+  @@index([staffMemberId])
   @@index([createdAt])
 }

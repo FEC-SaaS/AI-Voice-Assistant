@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,9 @@ export default function NewAgentPage() {
     },
   });
 
+  const [showReceptionistConfig, setShowReceptionistConfig] = useState(false);
   const selectedProvider = watch("voiceProvider");
+  const watchReceptionist = watch("enableReceptionist");
   const filteredVoices = VOICES.filter((v) => v.provider === selectedProvider);
 
   const onSubmit = (data: CreateAgentInput) => {
@@ -166,6 +169,93 @@ export default function NewAgentPage() {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
+
+          <hr className="border-gray-100" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="enableReceptionist" className="text-base">Enable Receptionist Mode</Label>
+              <p className="text-sm text-gray-500">
+                AI receptionist that greets callers, looks up departments, transfers calls, and takes messages
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="enableReceptionist"
+                className="sr-only peer"
+                {...register("enableReceptionist")}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+
+          {watchReceptionist && (
+            <div className="ml-4 space-y-4 border-l-2 border-primary/20 pl-4">
+              <button
+                type="button"
+                onClick={() => setShowReceptionistConfig(!showReceptionistConfig)}
+                className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+              >
+                {showReceptionistConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                Receptionist Configuration
+              </button>
+              {showReceptionistConfig && (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="receptionistConfig.duringHoursGreeting">During-Hours Greeting</Label>
+                    <textarea
+                      id="receptionistConfig.duringHoursGreeting"
+                      className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      placeholder="Thank you for calling [Company]. How may I direct your call?"
+                      {...register("receptionistConfig.duringHoursGreeting")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="receptionistConfig.afterHoursGreeting">After-Hours Greeting</Label>
+                    <textarea
+                      id="receptionistConfig.afterHoursGreeting"
+                      className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      placeholder="Thank you for calling [Company]. Our office is currently closed..."
+                      {...register("receptionistConfig.afterHoursGreeting")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="receptionistConfig.afterHoursAction">After-Hours Action</Label>
+                    <select
+                      id="receptionistConfig.afterHoursAction"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      {...register("receptionistConfig.afterHoursAction")}
+                    >
+                      <option value="take_message">Take a message</option>
+                      <option value="info_only">Provide information only</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="receptionistConfig.enableCallScreening" className="text-sm">Enable Call Screening</Label>
+                      <p className="text-xs text-gray-500">Ask callers for their name and purpose before transferring</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        id="receptionistConfig.enableCallScreening"
+                        className="sr-only peer"
+                        {...register("receptionistConfig.enableCallScreening")}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Set up departments and staff at{" "}
+                    <Link href="/dashboard/receptionist/departments" className="text-primary hover:underline">
+                      Receptionist &rarr; Departments
+                    </Link>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-4">

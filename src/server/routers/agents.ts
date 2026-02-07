@@ -5,7 +5,7 @@ import { createLogger } from "@/lib/logger";
 
 const log = createLogger("Agents");
 import { createAssistant, updateAssistant, deleteAssistant, createCall, getAssistant } from "@/lib/vapi";
-import { getAgentTools, getAppointmentSystemPromptAddition } from "@/lib/vapi-tools";
+import { getAgentTools, getAppointmentSystemPromptAddition, getReceptionistSystemPromptAddition, type ReceptionistConfig } from "@/lib/vapi-tools";
 import { enforceAgentLimit } from "../trpc/middleware";
 
 // Get the webhook URL for Vapi tool calls
@@ -13,6 +13,49 @@ function getVapiWebhookUrl(): string {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   return `${baseUrl}/api/webhooks/vapi`;
 }
+
+// Fetch transfer destinations for receptionist agents from department/staff phone numbers
+async function getTransferDestinations(db: any, orgId: string) {
+  const departments = await db.department.findMany({
+    where: { organizationId: orgId, isActive: true },
+    include: {
+      staffMembers: {
+        where: { isAvailable: true, phoneNumber: { not: null } },
+        select: { name: true, role: true, phoneNumber: true },
+      },
+    },
+  });
+
+  const destinations: Array<{ number: string; description: string; message?: string }> = [];
+
+  for (const dept of departments) {
+    if (dept.phoneNumber) {
+      destinations.push({
+        number: dept.phoneNumber,
+        description: `${dept.name} department`,
+        message: `Transferring you to the ${dept.name} department now. Please hold.`,
+      });
+    }
+    for (const staff of dept.staffMembers) {
+      if (staff.phoneNumber) {
+        destinations.push({
+          number: staff.phoneNumber,
+          description: `${staff.name}${staff.role ? ` (${staff.role})` : ""} in ${dept.name}`,
+          message: `Transferring you to ${staff.name} now. Please hold.`,
+        });
+      }
+    }
+  }
+
+  return destinations;
+}
+
+const receptionistConfigSchema = z.object({
+  duringHoursGreeting: z.string().optional(),
+  afterHoursGreeting: z.string().optional(),
+  afterHoursAction: z.enum(["take_message", "info_only"]).default("take_message"),
+  enableCallScreening: z.boolean().default(false),
+});
 
 const agentSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -25,6 +68,8 @@ const agentSchema = z.object({
   modelProvider: z.string().default("openai"),
   model: z.string().default("gpt-4o"),
   enableAppointments: z.boolean().default(false),
+  enableReceptionist: z.boolean().default(false),
+  receptionistConfig: receptionistConfigSchema.optional(),
 });
 
 export const agentsRouter = router({
@@ -163,8 +208,19 @@ export const agentsRouter = router({
         fullSystemPrompt += getAppointmentSystemPromptAddition();
       }
 
+      // Add receptionist instructions if enabled
+      let transferDestinations: Array<{ number: string; description: string; message?: string }> = [];
+      if (input.enableReceptionist) {
+        transferDestinations = await getTransferDestinations(ctx.db, ctx.orgId);
+        const receptionistPrompt = await getReceptionistSystemPromptAddition(
+          ctx.orgId,
+          input.receptionistConfig as ReceptionistConfig | undefined
+        );
+        fullSystemPrompt += receptionistPrompt;
+      }
+
       // Get tools for this agent
-      const tools = getAgentTools(input.enableAppointments);
+      const tools = getAgentTools(input.enableAppointments, input.enableReceptionist, transferDestinations);
 
       // Create assistant in voice system (Vapi) - this is required
       let vapiAssistantId: string;
@@ -193,7 +249,7 @@ export const agentsRouter = router({
       }
 
       // Create agent in database (store original prompt, not with knowledge)
-      // Store enableAppointments in settings JSON field
+      // Store enableAppointments and enableReceptionist in settings JSON field
       const agent = await ctx.db.agent.create({
         data: {
           organizationId: ctx.orgId,
@@ -209,6 +265,8 @@ export const agentsRouter = router({
           model: input.model,
           settings: {
             enableAppointments: input.enableAppointments,
+            enableReceptionist: input.enableReceptionist,
+            ...(input.receptionistConfig && { receptionistConfig: input.receptionistConfig }),
           },
         },
       });
@@ -267,11 +325,17 @@ export const agentsRouter = router({
           "\n--- END KNOWLEDGE BASE ---";
       }
 
-      // Determine enableAppointments - check if it's being updated or use existing
+      // Determine capabilities - check if being updated or use existing
       const existingSettings = (existingAgent.settings as Record<string, unknown>) || {};
       const enableAppointments = input.data.enableAppointments !== undefined
         ? input.data.enableAppointments
         : (existingSettings.enableAppointments as boolean) || false;
+      const enableReceptionist = input.data.enableReceptionist !== undefined
+        ? input.data.enableReceptionist
+        : (existingSettings.enableReceptionist as boolean) || false;
+      const receptionistConfig = input.data.receptionistConfig !== undefined
+        ? input.data.receptionistConfig
+        : (existingSettings.receptionistConfig as ReceptionistConfig | undefined);
 
       // Prepare the full system prompt for Vapi (with knowledge and appointment capabilities)
       const systemPrompt = input.data.systemPrompt || existingAgent.systemPrompt;
@@ -281,8 +345,16 @@ export const agentsRouter = router({
         fullSystemPrompt += getAppointmentSystemPromptAddition();
       }
 
+      // Add receptionist instructions if enabled
+      let transferDestinations: Array<{ number: string; description: string; message?: string }> = [];
+      if (enableReceptionist) {
+        transferDestinations = await getTransferDestinations(ctx.db, ctx.orgId);
+        const receptionistPrompt = await getReceptionistSystemPromptAddition(ctx.orgId, receptionistConfig);
+        fullSystemPrompt += receptionistPrompt;
+      }
+
       // Get tools for this agent
-      const tools = getAgentTools(enableAppointments);
+      const tools = getAgentTools(enableAppointments, enableReceptionist, transferDestinations);
 
       // Update in Vapi if we have an assistant ID
       if (existingAgent.vapiAssistantId) {
@@ -300,14 +372,18 @@ export const agentsRouter = router({
         }
       }
 
-      // Prepare update data, including settings if enableAppointments changed
+      // Prepare update data, including settings if capabilities changed
       const updateData: Record<string, unknown> = { ...input.data };
-      delete updateData.enableAppointments; // Remove from direct data since it goes in settings
+      delete updateData.enableAppointments;
+      delete updateData.enableReceptionist;
+      delete updateData.receptionistConfig;
 
-      if (input.data.enableAppointments !== undefined) {
+      if (input.data.enableAppointments !== undefined || input.data.enableReceptionist !== undefined || input.data.receptionistConfig !== undefined) {
         updateData.settings = {
           ...existingSettings,
-          enableAppointments: input.data.enableAppointments,
+          ...(input.data.enableAppointments !== undefined && { enableAppointments: input.data.enableAppointments }),
+          ...(input.data.enableReceptionist !== undefined && { enableReceptionist: input.data.enableReceptionist }),
+          ...(input.data.receptionistConfig !== undefined && { receptionistConfig: input.data.receptionistConfig }),
         };
       }
 
@@ -480,9 +556,11 @@ export const agentsRouter = router({
         },
       });
 
-      // Get enableAppointments from agent settings
+      // Get capabilities from agent settings
       const agentSettings = (agent.settings as Record<string, unknown>) || {};
       const enableAppointments = (agentSettings.enableAppointments as boolean) || false;
+      const enableReceptionist = (agentSettings.enableReceptionist as boolean) || false;
+      const receptionistConfig = agentSettings.receptionistConfig as ReceptionistConfig | undefined;
 
       let knowledgeContent = "";
       if (knowledgeDocs.length > 0) {
@@ -496,8 +574,15 @@ export const agentsRouter = router({
         fullSystemPrompt += getAppointmentSystemPromptAddition();
       }
 
+      let transferDestinations: Array<{ number: string; description: string; message?: string }> = [];
+      if (enableReceptionist) {
+        transferDestinations = await getTransferDestinations(ctx.db, ctx.orgId);
+        const receptionistPrompt = await getReceptionistSystemPromptAddition(ctx.orgId, receptionistConfig);
+        fullSystemPrompt += receptionistPrompt;
+      }
+
       // Get tools
-      const tools = getAgentTools(enableAppointments);
+      const tools = getAgentTools(enableAppointments, enableReceptionist, transferDestinations);
 
       // Update Vapi
       await updateAssistant(agent.vapiAssistantId, {
@@ -528,9 +613,11 @@ export const agentsRouter = router({
         });
       }
 
-      // Get enableAppointments from agent settings
+      // Get capabilities from agent settings
       const agentSettings = (agent.settings as Record<string, unknown>) || {};
       const enableAppointments = (agentSettings.enableAppointments as boolean) || false;
+      const enableReceptionist = (agentSettings.enableReceptionist as boolean) || false;
+      const receptionistConfig = agentSettings.receptionistConfig as ReceptionistConfig | undefined;
 
       // Get knowledge content
       const knowledgeDocs = await ctx.db.knowledgeDocument.findMany({
@@ -553,8 +640,15 @@ export const agentsRouter = router({
         fullSystemPrompt += getAppointmentSystemPromptAddition();
       }
 
+      let transferDestinations: Array<{ number: string; description: string; message?: string }> = [];
+      if (enableReceptionist) {
+        transferDestinations = await getTransferDestinations(ctx.db, ctx.orgId);
+        const receptionistPrompt = await getReceptionistSystemPromptAddition(ctx.orgId, receptionistConfig);
+        fullSystemPrompt += receptionistPrompt;
+      }
+
       // Get tools
-      const tools = getAgentTools(enableAppointments);
+      const tools = getAgentTools(enableAppointments, enableReceptionist, transferDestinations);
 
       // If agent doesn't have a Vapi ID, create the assistant
       if (!agent.vapiAssistantId) {

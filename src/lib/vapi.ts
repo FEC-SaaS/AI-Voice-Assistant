@@ -29,8 +29,8 @@ async function vapiRequest<T>(options: VapiRequestOptions): Promise<T> {
   return response.json();
 }
 
-// Tool definition for Vapi
-export interface VapiTool {
+// Tool definition for Vapi (function tools)
+export interface VapiFunctionTool {
   type: "function";
   function: {
     name: string;
@@ -51,6 +51,20 @@ export interface VapiTool {
     secret?: string;
   };
 }
+
+// Vapi native transfer call tool
+export interface VapiTransferTool {
+  type: "transferCall";
+  destinations: Array<{
+    type: "number";
+    number: string;
+    message?: string;
+    description?: string;
+  }>;
+}
+
+// Union type for all Vapi tools
+export type VapiTool = VapiFunctionTool | VapiTransferTool;
 
 // Assistant types
 export interface AssistantConfig {

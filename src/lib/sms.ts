@@ -496,6 +496,55 @@ export async function processIncomingSms(
   };
 }
 
+// ============================================
+// Receptionist Message SMS Notification
+// ============================================
+
+interface ReceptionistSmsData {
+  callerName: string;
+  callerPhone?: string;
+  body: string;
+  urgency: string;
+}
+
+/**
+ * Send SMS notification for a new receptionist message
+ */
+export async function sendReceptionistMessageSms(
+  organizationId: string,
+  toPhone: string,
+  data: ReceptionistSmsData
+): Promise<SendSmsResult> {
+  try {
+    const orgSettings = await getOrganizationSettings(organizationId);
+
+    if (!orgSettings.smsEnabled) {
+      return { success: false, error: "SMS is disabled" };
+    }
+
+    const fromNumber = await getOrganizationSmsNumber(organizationId);
+    if (!fromNumber) {
+      return { success: false, error: "No SMS number configured" };
+    }
+
+    const urgencyLabel = data.urgency === "urgent" ? "[URGENT] " : data.urgency === "high" ? "[HIGH] " : "";
+    const truncatedBody = data.body.length > 100 ? data.body.substring(0, 97) + "..." : data.body;
+    const phoneInfo = data.callerPhone ? ` (${data.callerPhone})` : "";
+
+    const messageBody = `${orgSettings.businessName}: ${urgencyLabel}New msg from ${data.callerName}${phoneInfo}. "${truncatedBody}". View in dashboard.`;
+
+    return await sendSms({
+      to: toPhone,
+      from: fromNumber,
+      body: messageBody,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("[SMS] Receptionist message notification error:", errorMessage);
+    return { success: false, error: errorMessage };
+  }
+}
+
 /**
  * Get appointments needing SMS reminders
  */

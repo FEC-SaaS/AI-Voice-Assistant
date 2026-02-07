@@ -525,6 +525,311 @@ async function processToolCall(
       return `I've cancelled your appointment that was scheduled for ${dateStr}. Would you like to schedule a new appointment?`;
     }
 
+    // ==========================================
+    // Receptionist Tools
+    // ==========================================
+
+    case "lookup_directory": {
+      const { query } = args;
+      if (!query) {
+        return "I need to know who or what department you're looking for. Could you tell me more?";
+      }
+
+      const queryLower = query.toLowerCase();
+
+      // Search departments by name and description
+      const departments = await db.department.findMany({
+        where: {
+          organizationId,
+          isActive: true,
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { description: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        include: {
+          staffMembers: {
+            where: { isAvailable: true },
+            select: { name: true, role: true, phoneNumber: true, isAvailable: true },
+          },
+        },
+      });
+
+      // Also search staff by name
+      const staffMatches = await db.staffMember.findMany({
+        where: {
+          organizationId,
+          name: { contains: query, mode: "insensitive" },
+        },
+        include: {
+          department: { select: { name: true, phoneNumber: true, businessHours: true } },
+        },
+      });
+
+      if (departments.length === 0 && staffMatches.length === 0) {
+        // Broad search — get all departments for the user
+        const allDepts = await db.department.findMany({
+          where: { organizationId, isActive: true },
+          include: { staffMembers: { where: { isAvailable: true }, select: { name: true, role: true } } },
+        });
+
+        if (allDepts.length === 0) {
+          return "I don't have a directory set up yet. Let me take a message for you instead.";
+        }
+
+        const listing = allDepts.map((d) => {
+          const staff = d.staffMembers.map((s) => `${s.name}${s.role ? ` (${s.role})` : ""}`).join(", ");
+          return `${d.name}${d.description ? ` — ${d.description}` : ""}${staff ? `. Staff: ${staff}` : ""}`;
+        }).join("; ");
+
+        return `I couldn't find an exact match for "${query}". Here are our departments: ${listing}. Which one would you like?`;
+      }
+
+      // Build response
+      const parts: string[] = [];
+
+      if (departments.length > 0) {
+        for (const dept of departments) {
+          const { isWithinBusinessHours } = await import("@/lib/business-hours");
+          const hours = dept.businessHours as Record<string, unknown>;
+          const isOpen = hours ? isWithinBusinessHours(hours as any) : true;
+          const staff = dept.staffMembers.map((s) => `${s.name}${s.role ? ` (${s.role})` : ""}`).join(", ");
+          parts.push(
+            `${dept.name} department — ${isOpen ? "currently open" : "currently closed"}. ` +
+            `Phone: ${dept.phoneNumber || "no direct line"}. ` +
+            (staff ? `Available staff: ${staff}.` : "No staff currently available.")
+          );
+        }
+      }
+
+      if (staffMatches.length > 0) {
+        for (const staff of staffMatches) {
+          parts.push(
+            `${staff.name}${staff.role ? ` (${staff.role})` : ""} in ${staff.department.name} department. ` +
+            `${staff.isAvailable ? "Currently available" : "Currently unavailable"}.` +
+            (staff.phoneNumber ? ` Direct: ${staff.phoneNumber}.` : "")
+          );
+        }
+      }
+
+      return parts.join(" ");
+    }
+
+    case "check_staff_availability": {
+      const { department_name, staff_name } = args;
+
+      if (staff_name) {
+        const staff = await db.staffMember.findFirst({
+          where: {
+            organizationId,
+            name: { contains: staff_name, mode: "insensitive" },
+          },
+          include: { department: { select: { name: true, phoneNumber: true, businessHours: true } } },
+        });
+
+        if (!staff) {
+          return `I couldn't find anyone named ${staff_name} in our directory.`;
+        }
+
+        const { isWithinBusinessHours } = await import("@/lib/business-hours");
+        const deptHours = staff.department.businessHours as Record<string, unknown>;
+        const deptOpen = deptHours ? isWithinBusinessHours(deptHours as any) : true;
+
+        if (!staff.isAvailable) {
+          return `${staff.name} is currently marked as unavailable. Would you like me to take a message for them?`;
+        }
+        if (!deptOpen) {
+          return `The ${staff.department.name} department is currently closed. ${staff.name} would normally be available during business hours. Would you like me to take a message?`;
+        }
+
+        return `${staff.name} is available right now.${staff.phoneNumber ? ` Their number is ${staff.phoneNumber}.` : ""} Would you like me to transfer you?`;
+      }
+
+      if (department_name) {
+        const dept = await db.department.findFirst({
+          where: {
+            organizationId,
+            name: { contains: department_name, mode: "insensitive" },
+            isActive: true,
+          },
+          include: {
+            staffMembers: {
+              where: { isAvailable: true },
+              select: { name: true, role: true, phoneNumber: true },
+            },
+          },
+        });
+
+        if (!dept) {
+          return `I couldn't find a ${department_name} department.`;
+        }
+
+        const { isWithinBusinessHours } = await import("@/lib/business-hours");
+        const hours = dept.businessHours as Record<string, unknown>;
+        const isOpen = hours ? isWithinBusinessHours(hours as any) : true;
+
+        if (!isOpen) {
+          return `The ${dept.name} department is currently closed. Would you like me to take a message?`;
+        }
+
+        if (dept.staffMembers.length === 0) {
+          return `The ${dept.name} department is open but no staff members are currently available. Would you like me to take a message?`;
+        }
+
+        const available = dept.staffMembers.map((s) => s.name).join(", ");
+        return `The ${dept.name} department is open. Available staff: ${available}.${dept.phoneNumber ? ` Department phone: ${dept.phoneNumber}.` : ""} Would you like me to transfer you?`;
+      }
+
+      return "I need either a department name or a person's name to check availability. Who are you looking for?";
+    }
+
+    case "take_message": {
+      const {
+        caller_name,
+        caller_phone,
+        caller_email,
+        caller_company,
+        message_body,
+        department_name,
+        staff_name,
+        urgency,
+      } = args;
+
+      if (!caller_name || !message_body) {
+        return "I need at least your name and the message to leave. Could you provide those?";
+      }
+
+      // Resolve department
+      let departmentId: string | null = null;
+      let staffMemberId: string | null = null;
+
+      if (department_name) {
+        const dept = await db.department.findFirst({
+          where: { organizationId, name: { contains: department_name, mode: "insensitive" } },
+        });
+        if (dept) departmentId = dept.id;
+      }
+
+      if (staff_name) {
+        const staff = await db.staffMember.findFirst({
+          where: { organizationId, name: { contains: staff_name, mode: "insensitive" } },
+          include: { department: true },
+        });
+        if (staff) {
+          staffMemberId = staff.id;
+          if (!departmentId) departmentId = staff.departmentId;
+        }
+      }
+
+      // Create the message
+      const message = await db.receptionistMessage.create({
+        data: {
+          organizationId,
+          agentId: agentId || null,
+          callId: null, // We don't have direct call ID in tool context
+          departmentId,
+          staffMemberId,
+          callerName: caller_name,
+          callerPhone: caller_phone || customerPhone || null,
+          callerEmail: caller_email || null,
+          callerCompany: caller_company || null,
+          body: message_body,
+          urgency: urgency || "normal",
+          status: "new",
+        },
+      });
+
+      // Send notifications
+      // Try to find email for the target staff/department
+      let notifyEmail: string | null = null;
+      let notifyPhone: string | null = null;
+
+      if (staffMemberId) {
+        const staff = await db.staffMember.findUnique({
+          where: { id: staffMemberId },
+          select: { email: true, phoneNumber: true },
+        });
+        notifyEmail = staff?.email || null;
+        notifyPhone = staff?.phoneNumber || null;
+      }
+
+      if (!notifyEmail && departmentId) {
+        const dept = await db.department.findUnique({
+          where: { id: departmentId },
+          select: { email: true },
+        });
+        notifyEmail = dept?.email || null;
+      }
+
+      // Send email notification
+      if (notifyEmail) {
+        try {
+          const { sendReceptionistMessageNotification } = await import("@/lib/email");
+          await sendReceptionistMessageNotification(notifyEmail, {
+            callerName: caller_name,
+            callerPhone: caller_phone || customerPhone || undefined,
+            callerCompany: caller_company,
+            body: message_body,
+            urgency: urgency || "normal",
+            messageId: message.id,
+          });
+        } catch (error) {
+          toolLog.error("Failed to send message notification email:", error);
+        }
+      }
+
+      // Send SMS notification
+      if (notifyPhone) {
+        try {
+          const { sendReceptionistMessageSms } = await import("@/lib/sms");
+          await sendReceptionistMessageSms(organizationId, notifyPhone, {
+            callerName: caller_name,
+            callerPhone: caller_phone || customerPhone || undefined,
+            body: message_body,
+            urgency: urgency || "normal",
+          });
+        } catch (error) {
+          toolLog.error("Failed to send message notification SMS:", error);
+        }
+      }
+
+      // Audit log
+      try {
+        await db.auditLog.create({
+          data: {
+            organizationId,
+            action: "receptionist.message_taken",
+            entityType: "ReceptionistMessage",
+            entityId: message.id,
+            details: {
+              callerName: caller_name,
+              departmentId,
+              staffMemberId,
+              urgency: urgency || "normal",
+            },
+          },
+        });
+      } catch (error) {
+        toolLog.error("Failed to create audit log:", error);
+      }
+
+      let response = `I've taken your message, ${caller_name}. `;
+      if (staff_name) {
+        response += `${staff_name} will receive your message`;
+      } else if (department_name) {
+        response += `The ${department_name} department will receive your message`;
+      } else {
+        response += "Your message has been recorded";
+      }
+      response += " and someone will get back to you";
+      if (caller_phone || customerPhone) {
+        response += ` at ${caller_phone || customerPhone}`;
+      }
+      response += ". Is there anything else I can help you with?";
+
+      return response;
+    }
+
     default:
       toolLog.warn("Unknown tool:", toolName);
       return `I'm not sure how to handle that request. Is there something else I can help you with?`;
