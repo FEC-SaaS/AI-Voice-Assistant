@@ -4,7 +4,7 @@ import { generateActionUrls } from "./appointment-tokens";
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Default FROM_EMAIL - this is overridden by organization settings when available
-const DEFAULT_FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || "VoxForge AI <onboarding@resend.dev>";
+const DEFAULT_FROM_EMAIL = process.env.EMAIL_FROM_ADDRESS || "CallTone AI <onboarding@resend.dev>";
 
 // Email branding configuration from organization settings
 export interface EmailBrandingConfig {
@@ -72,11 +72,11 @@ export async function sendEmail(options: SendEmailOptions) {
 export async function sendWelcomeEmail(email: string, name: string) {
   return sendEmail({
     to: email,
-    subject: "Welcome to VoxForge AI",
+    subject: "Welcome to CallTone AI",
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #1a1a1a;">Welcome to VoxForge AI, ${name}!</h1>
-        <p>We're excited to have you on board. VoxForge AI helps you deploy AI-powered voice agents for your business.</p>
+        <h1 style="color: #1a1a1a;">Welcome to CallTone AI, ${name}!</h1>
+        <p>We're excited to have you on board. CallTone AI helps you deploy AI-powered voice agents for your business.</p>
         <p>Here's how to get started:</p>
         <ol>
           <li>Create your first AI agent</li>
@@ -176,11 +176,11 @@ export async function sendDailyReportEmail(
 export async function sendTrialEndingEmail(email: string, name: string, daysRemaining: number) {
   return sendEmail({
     to: email,
-    subject: `Your VoxForge AI trial ends in ${daysRemaining} days`,
+    subject: `Your CallTone AI trial ends in ${daysRemaining} days`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1a1a1a;">Hi ${name},</h2>
-        <p>Your free trial of VoxForge AI ends in <strong>${daysRemaining} days</strong>.</p>
+        <p>Your free trial of CallTone AI ends in <strong>${daysRemaining} days</strong>.</p>
         <p>To continue using your AI voice agents without interruption, upgrade to a paid plan today.</p>
         <p>
           <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing"
@@ -294,12 +294,12 @@ export async function sendAppointmentConfirmation(
   const meetingLabel = getMeetingTypeLabel(details.meetingType);
   const meetingDetails = getMeetingDetails(details);
   const primaryColor = branding?.primaryColor || "#22c55e";
-  const businessName = branding?.businessName || "VoxForge AI";
+  const businessName = branding?.businessName || "CallTone AI";
 
   // Generate action URLs if appointmentId is provided
   let actionButtonsHtml = "";
   if (details.appointmentId) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voxforge.ai";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai";
     const { confirmUrl, rescheduleUrl, cancelUrl } = generateActionUrls(
       details.appointmentId,
       email,
@@ -389,7 +389,7 @@ export async function sendAppointmentReminder(
   const meetingIcon = getMeetingTypeIcon(details.meetingType);
   const meetingLabel = getMeetingTypeLabel(details.meetingType);
   const meetingDetails = getMeetingDetails(details);
-  const businessName = branding?.businessName || "VoxForge AI";
+  const businessName = branding?.businessName || "CallTone AI";
 
   const reminderText = hoursUntil >= 24
     ? `in ${Math.floor(hoursUntil / 24)} day${Math.floor(hoursUntil / 24) > 1 ? "s" : ""}`
@@ -398,7 +398,7 @@ export async function sendAppointmentReminder(
   // Generate action URLs if appointmentId is provided
   let actionButtonsHtml = "";
   if (details.appointmentId) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voxforge.ai";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai";
     const { confirmUrl, rescheduleUrl, cancelUrl } = generateActionUrls(
       details.appointmentId,
       email,
@@ -488,7 +488,7 @@ export async function sendAppointmentCancellation(
   },
   branding?: EmailBrandingConfig
 ) {
-  const businessName = branding?.businessName || "VoxForge AI";
+  const businessName = branding?.businessName || "CallTone AI";
 
   return sendEmail({
     to: email,
@@ -547,8 +547,8 @@ export async function sendReceptionistMessageNotification(
   branding?: EmailBrandingConfig
 ) {
   const primaryColor = branding?.primaryColor || "#3b82f6";
-  const businessName = branding?.businessName || "VoxForge AI";
-  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://voxforge.ai"}/dashboard/receptionist/messages`;
+  const businessName = branding?.businessName || "CallTone AI";
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai"}/dashboard/receptionist/messages`;
 
   const urgencyColors: Record<string, string> = {
     low: "#6b7280",
@@ -622,12 +622,12 @@ export async function sendAppointmentRescheduled(
   const meetingIcon = getMeetingTypeIcon(details.meetingType);
   const meetingLabel = getMeetingTypeLabel(details.meetingType);
   const meetingDetails = getMeetingDetails(details);
-  const businessName = branding?.businessName || "VoxForge AI";
+  const businessName = branding?.businessName || "CallTone AI";
 
   // Generate action URLs if appointmentId is provided
   let actionButtonsHtml = "";
   if (details.appointmentId) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://voxforge.ai";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai";
     const { confirmUrl, rescheduleUrl, cancelUrl } = generateActionUrls(
       details.appointmentId,
       email,

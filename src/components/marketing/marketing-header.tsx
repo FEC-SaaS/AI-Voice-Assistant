@@ -19,7 +19,7 @@ export function MarketingHeader() {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
           <Bot className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold">VoxForge AI</span>
+          <span className="text-xl font-bold">CallTone AI</span>
         </Link>
         <nav className="hidden gap-6 md:flex">
           {NAV_LINKS.map((link) => (

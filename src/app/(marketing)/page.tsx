@@ -135,11 +135,11 @@ export default function HomePage() {
             Trusted by Growing Teams
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-gray-600">
-            See what business leaders are saying about VoxForge AI.
+            See what business leaders are saying about CallTone AI.
           </p>
           <div className="mt-16 grid gap-8 md:grid-cols-3">
             <TestimonialCard
-              quote="VoxForge AI tripled our outbound call volume while maintaining a personal touch. Our pipeline has never been healthier."
+              quote="CallTone AI tripled our outbound call volume while maintaining a personal touch. Our pipeline has never been healthier."
               name="Sarah Chen"
               role="VP of Sales, TechCorp"
             />
@@ -162,7 +162,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
           <p className="mx-auto mt-4 max-w-xl text-primary-foreground/80">
-            Join hundreds of businesses using VoxForge AI to automate their voice communications.
+            Join hundreds of businesses using CallTone AI to automate their voice communications.
           </p>
           <Link href="/sign-up">
             <Button size="lg" variant="secondary" className="mt-8">

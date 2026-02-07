@@ -749,7 +749,7 @@ export const agentsRouter = router({
   // Use this when the assistant was created externally
   importVapiId: protectedProcedure
     .input(z.object({
-      id: z.string(), // VoxForge agent ID
+      id: z.string(), // CallTone agent ID
       vapiAssistantId: z.string().min(1, "Voice System ID is required"),
     }))
     .mutation(async ({ ctx, input }) => {

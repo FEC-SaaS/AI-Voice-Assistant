@@ -264,7 +264,7 @@ export default function BillingPage() {
                       </Button>
                     ) : (
                       <Button variant="outline" className="w-full" asChild>
-                        <a href="mailto:sales@voxforge.ai">Contact Sales</a>
+                        <a href="mailto:sales@calltone.ai">Contact Sales</a>
                       </Button>
                     )}
                   </div>

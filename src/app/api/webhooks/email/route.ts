@@ -264,7 +264,7 @@ async function notifyBusinessOfEmailReply(
               ${email.text || "(No text content)"}
             </blockquote>
             <p style="color: #666; font-size: 12px;">
-              This notification was generated automatically by VoxForge AI.
+              This notification was generated automatically by CallTone AI.
             </p>
           </div>
         `,

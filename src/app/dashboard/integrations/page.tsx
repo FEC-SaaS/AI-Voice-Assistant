@@ -193,7 +193,7 @@ export default function IntegrationsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
-        <p className="text-gray-500">Connect VoxForge AI with your favorite tools and services</p>
+        <p className="text-gray-500">Connect CallTone AI with your favorite tools and services</p>
       </div>
 
       {/* Webhook Configuration */}
@@ -223,7 +223,7 @@ export default function IntegrationsPage() {
               <Label htmlFor="webhookUrl">Webhook Endpoint URL</Label>
               <Input
                 id="webhookUrl"
-                placeholder="https://your-server.com/api/webhooks/voxforge"
+                placeholder="https://your-server.com/api/webhooks/calltone"
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
               />

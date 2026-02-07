@@ -81,17 +81,17 @@ async function testVapiConnection() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        name: "VoxForge Test Agent",
+        name: "CallTone Test Agent",
         model: {
           provider: "openai",
           model: "gpt-4-turbo",
-          systemPrompt: "You are a helpful test assistant for VoxForge AI.",
+          systemPrompt: "You are a helpful test assistant for CallTone AI.",
         },
         voice: {
           provider: "11labs",
           voiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel voice
         },
-        firstMessage: "Hello! This is a test call from VoxForge AI.",
+        firstMessage: "Hello! This is a test call from CallTone AI.",
       }),
     });
 

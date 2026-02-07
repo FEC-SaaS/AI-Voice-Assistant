@@ -248,7 +248,7 @@ export async function initiateReminderCall(
     );
 
     // Webhook URL for tool calls
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.voxforge.ai";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.calltone.ai";
     const webhookUrl = `${baseUrl}/api/vapi/reminder-tools?appointmentId=${appointmentId}`;
 
     // Create a temporary assistant for this reminder call

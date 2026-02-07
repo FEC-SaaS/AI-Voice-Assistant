@@ -192,7 +192,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
             <div className="mt-4 pt-4 border-t border-yellow-200">
               <h4 className="font-medium text-yellow-800">Link Existing Voice Assistant</h4>
               <p className="mt-1 text-sm text-yellow-700">
-                If you have an existing voice assistant, paste its ID here to link it to this VoxForge agent.
+                If you have an existing voice assistant, paste its ID here to link it to this CallTone agent.
               </p>
               <div className="mt-3 flex gap-2">
                 <Input

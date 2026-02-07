@@ -48,7 +48,7 @@ export function BrandedAppointmentLayout({
       {branding && !branding.poweredByHidden && (
         <div className="pb-4 text-center">
           <p className="text-xs text-gray-400">
-            Powered by VoxForge AI
+            Powered by CallTone AI
           </p>
         </div>
       )}

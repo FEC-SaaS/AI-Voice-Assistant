@@ -255,7 +255,7 @@ export default function EmailSettingsPage() {
                     Emails sent from our verified domain on your behalf. Quick setup, no DNS changes needed.
                   </p>
                   <p className="text-xs text-gray-400 mt-2">
-                    Sent from: noreply@voxforge.ai
+                    Sent from: noreply@calltone.ai
                   </p>
                 </div>
               </div>

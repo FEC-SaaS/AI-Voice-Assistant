@@ -11,7 +11,7 @@ const s3Client = new S3Client({
   },
 });
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME || "voxforge";
+const BUCKET_NAME = process.env.R2_BUCKET_NAME || "calltone";
 
 export interface UploadResult {
   key: string;

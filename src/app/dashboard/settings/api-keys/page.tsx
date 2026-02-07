@@ -129,7 +129,7 @@ export default function ApiKeysPage() {
         <CardHeader>
           <CardTitle>Your API Keys</CardTitle>
           <CardDescription>
-            Use these keys to authenticate requests to the VoxForge API
+            Use these keys to authenticate requests to the CallTone API
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -223,7 +223,7 @@ export default function ApiKeysPage() {
           <div>
             <h4 className="font-medium text-gray-900">Base URL</h4>
             <code className="mt-1 block rounded bg-gray-100 p-3 text-sm">
-              {process.env.NEXT_PUBLIC_APP_URL || "https://app.voxforge.ai"}/api/v1
+              {process.env.NEXT_PUBLIC_APP_URL || "https://app.calltone.ai"}/api/v1
             </code>
           </div>
           <div>
@@ -239,7 +239,7 @@ export default function ApiKeysPage() {
             <h4 className="font-medium text-gray-900">Example Request</h4>
             <pre className="mt-2 rounded bg-gray-900 p-3 text-sm text-gray-100 overflow-x-auto">
 {`curl -X GET \\
-  ${process.env.NEXT_PUBLIC_APP_URL || "https://app.voxforge.ai"}/api/v1/agents \\
+  ${process.env.NEXT_PUBLIC_APP_URL || "https://app.calltone.ai"}/api/v1/agents \\
   -H "Authorization: Bearer vxf_your_api_key_here" \\
   -H "Content-Type: application/json"`}
             </pre>

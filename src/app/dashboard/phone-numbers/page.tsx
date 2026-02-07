@@ -262,7 +262,7 @@ export default function PhoneNumbersPage() {
                   <span className="font-medium">Import from Twilio</span>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  Use your existing Twilio phone number with VoxForge.
+                  Use your existing Twilio phone number with CallTone.
                 </p>
               </button>
             </div>

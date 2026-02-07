@@ -173,7 +173,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
         })}
         {!poweredByHidden && !collapsed && (
           <p className="mt-2 text-center text-[10px] text-gray-400">
-            Powered by VoxForge AI
+            Powered by CallTone AI
           </p>
         )}
       </div>

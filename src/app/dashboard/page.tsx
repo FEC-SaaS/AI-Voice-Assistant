@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Bot, Phone, Megaphone, BarChart3, ArrowRight, Sparkles } from "lucide-react";
+import { SetupGuideBanner } from "@/components/dashboard/setup-guide-banner";
 
 export default async function DashboardPage() {
 
@@ -12,6 +13,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 lg:space-y-8 max-w-7xl mx-auto">
+      {/* Setup Guide Banner — shown only for new accounts */}
+      <SetupGuideBanner />
+
       {/* Welcome Header */}
       <div className="rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-6 lg:p-8 text-white shadow-lg shadow-primary/20">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -14,7 +14,7 @@ function getPlanLevel(planId: string): number {
 }
 
 /**
- * Check if the plan allows hiding "Powered by VoxForge AI" branding.
+ * Check if the plan allows hiding "Powered by CallTone AI" branding.
  * Only business tier and above can hide powered-by.
  */
 export function canHidePoweredBy(planId: string): boolean {

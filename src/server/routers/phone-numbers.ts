@@ -160,7 +160,7 @@ export const phoneNumbersRouter = router({
       if (!org.twilioSubaccountSid) {
         try {
           log.info(`Creating subaccount for org ${org.name}`);
-          const subaccount = await createSubaccount(`VoxForge - ${org.name}`);
+          const subaccount = await createSubaccount(`CallTone - ${org.name}`);
 
           org = await ctx.db.organization.update({
             where: { id: ctx.orgId },

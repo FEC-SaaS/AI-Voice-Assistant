@@ -1,6 +1,6 @@
 Phase 1 Foundation Complete!         
                                             
-  I've built the initial phase of VoxForge  
+  I've built the initial phase of CallTone  
   AI - a B2B SaaS platform for AI voice     
   agents. Here's what was created:      
                                             
@@ -75,7 +75,7 @@ dependencies with legacy peer deps"
 completed (exit code 0)              
                          
 ● All package installations completed   
-  successfully. The VoxForge AI project     
+  successfully. The CallTone AI project     
   foundation is now fully set up with:                                                  
   - 637+ packages installed                   - svix (for Clerk webhook verification)     - openai (for conversation intelligence)
                                             

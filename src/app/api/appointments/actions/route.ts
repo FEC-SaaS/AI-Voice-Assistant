@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     const businessName =
       (settings?.emailBusinessName as string) ||
       appointment.organization?.name ||
-      "VoxForge AI";
+      "CallTone AI";
 
     // Build branding info for public pages
     const brandLogoUrl =

@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useOrganization } from "@clerk/nextjs";
 import {
   Bot, ArrowRight, ArrowLeft, Check, Phone, Mic,
-  MessageSquare, Loader2, Sparkles, Zap,
+  MessageSquare, Loader2, Sparkles, Zap, BookOpen,
+  Search, Globe, Hash, AlertCircle, CheckCircle,
+  ChevronRight, Shield, PhoneCall, SkipForward,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -13,21 +15,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
+// ─── Steps ──────────────────────────────────────────────────────
 const STEPS = [
-  { id: 1, title: "Welcome", description: "Get started with VoxForge AI" },
-  { id: 2, title: "Create Agent", description: "Build your first AI voice agent" },
-  { id: 3, title: "Test Call", description: "Make your first test call" },
-  { id: 4, title: "Complete", description: "You&apos;re all set!" },
+  { id: 1, title: "Welcome", description: "Overview of your setup" },
+  { id: 2, title: "Create Agent", description: "Build your AI voice agent" },
+  { id: 3, title: "Phone Number", description: "Give your agent a number" },
+  { id: 4, title: "Knowledge Base", description: "Teach your agent" },
+  { id: 5, title: "Test Call", description: "Hear your agent in action" },
+  { id: 6, title: "All Set", description: "You're ready to go!" },
 ];
 
+// ─── Agent Templates ────────────────────────────────────────────
 const AGENT_TEMPLATES = [
   {
     id: "receptionist",
     title: "Virtual Receptionist",
-    description: "Answer calls, take messages, and route inquiries",
+    description: "Answer calls, take messages, and route inquiries to the right department",
     icon: Phone,
+    color: "bg-blue-500",
     systemPrompt: `You are a professional virtual receptionist for {company_name}. Your role is to:
 - Greet callers warmly and professionally
 - Answer basic questions about the business
@@ -41,8 +56,9 @@ Always be polite, helpful, and maintain a professional tone. If you don't know t
   {
     id: "sales",
     title: "Sales Outreach",
-    description: "Cold calling and lead qualification",
+    description: "Cold calling, lead qualification, and appointment booking for your sales team",
     icon: Zap,
+    color: "bg-amber-500",
     systemPrompt: `You are a friendly sales representative for {company_name}. Your role is to:
 - Introduce yourself and the company
 - Qualify leads by asking relevant questions
@@ -56,8 +72,9 @@ Be personable and conversational, not pushy. Focus on understanding the prospect
   {
     id: "support",
     title: "Customer Support",
-    description: "Handle customer inquiries and issues",
+    description: "Handle customer inquiries, troubleshoot issues, and ensure satisfaction",
     icon: MessageSquare,
+    color: "bg-green-500",
     systemPrompt: `You are a helpful customer support agent for {company_name}. Your role is to:
 - Listen to customer concerns with empathy
 - Troubleshoot common issues
@@ -71,30 +88,64 @@ Always be patient and understanding. The customer's experience is your top prior
   {
     id: "custom",
     title: "Custom Agent",
-    description: "Start from scratch",
+    description: "Start from scratch and build an agent tailored to your unique needs",
     icon: Sparkles,
+    color: "bg-purple-500",
     systemPrompt: "",
     firstMessage: "",
   },
 ];
+
+// ─── Phone Number Types ─────────────────────────────────────────
+type ProvisionMethod = "search" | "import";
+
+interface AvailableNumber {
+  phone_number: string;
+  friendly_name: string;
+  locality: string;
+  region: string;
+  iso_country: string;
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { organization, isLoaded } = useOrganization();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [, setCreatedAgentId] = useState<string | null>(null);
+  const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
+  const [createdPhoneNumberId, setCreatedPhoneNumberId] = useState<string | null>(null);
+  const [createdPhoneNumber, setCreatedPhoneNumber] = useState<string | null>(null);
 
   // Agent form state
   const [agentName, setAgentName] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [firstMessage, setFirstMessage] = useState("");
 
-  // Test call state
-  const [testPhoneNumber, setTestPhoneNumber] = useState("");
+  // Phone number state
+  const [provisionMethod, setProvisionMethod] = useState<ProvisionMethod>("search");
+  const [selectedCountry, setSelectedCountry] = useState("US");
+  const [numberType, setNumberType] = useState("local");
+  const [areaCode, setAreaCode] = useState("");
+  const [searchResults, setSearchResults] = useState<AvailableNumber[]>([]);
+  const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
+  const [pricing, setPricing] = useState<{ monthlyBase: number; monthlySaaS: number } | null>(null);
+  const [twilioSid, setTwilioSid] = useState("");
+  const [twilioToken, setTwilioToken] = useState("");
+  const [importNumber, setImportNumber] = useState("");
+
+  // Knowledge base state
+  const [knowledgeName, setKnowledgeName] = useState("");
+  const [knowledgeContent, setKnowledgeContent] = useState("");
 
   const utils = trpc.useUtils();
 
+  // Queries
+  const { data: countries } = trpc.phoneNumbers.getSupportedCountries.useQuery(
+    undefined,
+    { enabled: currentStep === 3 }
+  );
+
+  // Mutations
   const createAgent = trpc.agents.create.useMutation({
     onSuccess: (agent) => {
       setCreatedAgentId(agent.id);
@@ -104,6 +155,63 @@ export default function OnboardingPage() {
     onError: (error) => {
       toast.error(error.message);
     },
+  });
+
+  const searchAvailable = trpc.phoneNumbers.searchAvailable.useMutation({
+    onSuccess: (data) => {
+      setSearchResults(data.numbers);
+      setPricing(data.pricing);
+      if (data.numbers.length === 0) {
+        toast.info("No numbers found. Try a different area code or type.");
+      }
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const buyNumber = trpc.phoneNumbers.buyNumber.useMutation({
+    onSuccess: (phoneNumber) => {
+      setCreatedPhoneNumberId(phoneNumber.id);
+      setCreatedPhoneNumber(phoneNumber.number);
+      toast.success(`Phone number ${phoneNumber.number} provisioned!`);
+      // Auto-assign to agent
+      if (createdAgentId) {
+        assignToAgent.mutate({ id: phoneNumber.id, agentId: createdAgentId });
+      }
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const importTwilio = trpc.phoneNumbers.importTwilio.useMutation({
+    onSuccess: (phoneNumber) => {
+      setCreatedPhoneNumberId(phoneNumber.id);
+      setCreatedPhoneNumber(phoneNumber.number);
+      toast.success(`Phone number ${phoneNumber.number} imported!`);
+      // Auto-assign to agent
+      if (createdAgentId) {
+        assignToAgent.mutate({ id: phoneNumber.id, agentId: createdAgentId });
+      }
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const assignToAgent = trpc.phoneNumbers.assignToAgent.useMutation({
+    onSuccess: () => {
+      toast.success("Phone number assigned to your agent!");
+      setCurrentStep(4);
+    },
+    onError: (err) => {
+      toast.error(`Assignment failed: ${err.message}`);
+      // Still proceed since the number was provisioned
+      setCurrentStep(4);
+    },
+  });
+
+  const createKnowledge = trpc.knowledge.create.useMutation({
+    onSuccess: () => {
+      toast.success("Knowledge base added!");
+      setCurrentStep(5);
+    },
+    onError: (err) => toast.error(err.message),
   });
 
   const completeOnboarding = trpc.users.completeOnboarding.useMutation({
@@ -123,13 +231,20 @@ export default function OnboardingPage() {
     }
   }, [isLoaded, organization, router]);
 
+  // Handlers
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplate(templateId);
     const template = AGENT_TEMPLATES.find((t) => t.id === templateId);
     if (template) {
       setAgentName(templateId === "custom" ? "" : template.title);
-      setSystemPrompt(template.systemPrompt.replace("{company_name}", organization?.name || "your company"));
-      setFirstMessage(template.firstMessage.replace("{agent_name}", "Alex").replace("{company_name}", organization?.name || "your company"));
+      setSystemPrompt(
+        template.systemPrompt.replace(/{company_name}/g, organization?.name || "your company")
+      );
+      setFirstMessage(
+        template.firstMessage
+          .replace("{agent_name}", "Alex")
+          .replace("{company_name}", organization?.name || "your company")
+      );
     }
   };
 
@@ -138,11 +253,10 @@ export default function OnboardingPage() {
       toast.error("Please enter an agent name");
       return;
     }
-    if (!systemPrompt.trim()) {
-      toast.error("Please enter a system prompt");
+    if (!systemPrompt.trim() || systemPrompt.trim().length < 10) {
+      toast.error("Please enter a system prompt (at least 10 characters)");
       return;
     }
-
     createAgent.mutate({
       name: agentName,
       systemPrompt,
@@ -150,13 +264,62 @@ export default function OnboardingPage() {
     });
   };
 
-  const handleSkipTestCall = () => {
-    setCurrentStep(4);
+  const handleSearchNumbers = () => {
+    searchAvailable.mutate({
+      countryCode: selectedCountry,
+      type: numberType as "local" | "toll-free" | "mobile",
+      areaCode: areaCode || undefined,
+      limit: 5,
+    });
+  };
+
+  const handleBuyNumber = () => {
+    if (!selectedNumber) {
+      toast.error("Please select a number");
+      return;
+    }
+    buyNumber.mutate({
+      phoneNumber: selectedNumber,
+      countryCode: selectedCountry,
+      type: numberType as "local" | "toll-free" | "mobile",
+    });
+  };
+
+  const handleImportNumber = () => {
+    if (!twilioSid.trim() || !twilioToken.trim() || !importNumber.trim()) {
+      toast.error("Please fill in all Twilio fields");
+      return;
+    }
+    importTwilio.mutate({
+      twilioAccountSid: twilioSid,
+      twilioAuthToken: twilioToken,
+      phoneNumber: importNumber,
+    });
+  };
+
+  const handleAddKnowledge = () => {
+    if (!knowledgeName.trim()) {
+      toast.error("Please enter a name for the knowledge document");
+      return;
+    }
+    if (!knowledgeContent.trim()) {
+      toast.error("Please enter some business information");
+      return;
+    }
+    createKnowledge.mutate({
+      name: knowledgeName,
+      type: "manual",
+      content: knowledgeContent,
+      agentId: createdAgentId || undefined,
+    });
   };
 
   const handleComplete = () => {
     completeOnboarding.mutate();
   };
+
+  const isPhoneStepBusy =
+    searchAvailable.isPending || buyNumber.isPending || importTwilio.isPending || assignToAgent.isPending;
 
   if (!isLoaded) {
     return (
@@ -175,11 +338,11 @@ export default function OnboardingPage() {
             <div key={step.id} className="flex items-center">
               <div className="flex flex-col items-center">
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                     currentStep > step.id
                       ? "border-primary bg-primary text-white"
                       : currentStep === step.id
-                      ? "border-primary text-primary"
+                      ? "border-primary bg-primary/10 text-primary ring-4 ring-primary/20"
                       : "border-gray-300 text-gray-400"
                   }`}
                 >
@@ -189,67 +352,128 @@ export default function OnboardingPage() {
                     <span className="text-sm font-medium">{step.id}</span>
                   )}
                 </div>
-                <span className={`mt-2 text-xs ${currentStep >= step.id ? "text-primary font-medium" : "text-gray-400"}`}>
+                <span
+                  className={`mt-2 text-[10px] sm:text-xs text-center leading-tight ${
+                    currentStep >= step.id ? "text-primary font-medium" : "text-gray-400"
+                  }`}
+                >
                   {step.title}
                 </span>
               </div>
               {index < STEPS.length - 1 && (
-                <div className={`mx-2 h-0.5 w-16 sm:w-24 ${currentStep > step.id ? "bg-primary" : "bg-gray-200"}`} />
+                <div
+                  className={`mx-1 sm:mx-2 h-0.5 w-8 sm:w-16 transition-colors duration-300 ${
+                    currentStep > step.id ? "bg-primary" : "bg-gray-200"
+                  }`}
+                />
               )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Step 1: Welcome */}
+      {/* ─── Step 1: Welcome ─── */}
       {currentStep === 1 && (
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-              <Bot className="h-8 w-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Welcome to VoxForge AI!</CardTitle>
-            <CardDescription className="text-base">
-              Welcome, {organization?.name}! Let&apos;s set up your first AI voice agent in just a few minutes.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-lg border p-4 text-center">
-                <Bot className="mx-auto h-8 w-8 text-primary" />
-                <h3 className="mt-2 font-medium">Create Agents</h3>
-                <p className="text-sm text-gray-500">Build AI voice agents for any use case</p>
+        <div className="space-y-6">
+          <Card className="overflow-hidden">
+            <div className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-8 text-white text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
+                <Bot className="h-8 w-8" />
               </div>
-              <div className="rounded-lg border p-4 text-center">
-                <Phone className="mx-auto h-8 w-8 text-primary" />
-                <h3 className="mt-2 font-medium">Make Calls</h3>
-                <p className="text-sm text-gray-500">Inbound and outbound calling</p>
-              </div>
-              <div className="rounded-lg border p-4 text-center">
-                <Mic className="mx-auto h-8 w-8 text-primary" />
-                <h3 className="mt-2 font-medium">Natural Voice</h3>
-                <p className="text-sm text-gray-500">Lifelike AI conversations</p>
-              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold">
+                Welcome to CallTone AI!
+              </h1>
+              <p className="mt-2 text-white/80 max-w-lg mx-auto">
+                Welcome, <span className="font-semibold text-white">{organization?.name}</span>!
+                Let&apos;s get your first AI voice agent up and running. This guided setup takes
+                about 5 minutes.
+              </p>
             </div>
-            <div className="flex justify-center">
-              <Button size="lg" onClick={() => setCurrentStep(2)}>
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            <CardContent className="p-6 sm:p-8">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Here&apos;s what we&apos;ll set up together:
+              </h2>
+              <div className="space-y-3">
+                {[
+                  {
+                    step: 1,
+                    icon: Bot,
+                    title: "Create Your AI Agent",
+                    desc: "Choose a template and customize your agent's personality and behavior.",
+                    required: true,
+                  },
+                  {
+                    step: 2,
+                    icon: Phone,
+                    title: "Provision a Phone Number",
+                    desc: "Your agent needs a phone number to make and receive calls. We'll help you get one.",
+                    required: true,
+                  },
+                  {
+                    step: 3,
+                    icon: BookOpen,
+                    title: "Add Business Knowledge",
+                    desc: "Teach your agent about your business so it can answer caller questions accurately.",
+                    required: false,
+                  },
+                  {
+                    step: 4,
+                    icon: PhoneCall,
+                    title: "Make a Test Call",
+                    desc: "Call your agent's number to hear it in action and verify everything works.",
+                    required: false,
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.step}
+                    className="flex items-start gap-4 rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-all hover:border-primary/20"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 flex-shrink-0">
+                      <item.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-gray-900">{item.title}</h3>
+                        {item.required ? (
+                          <Badge variant="default" className="text-[10px] py-0">
+                            Required
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px] py-0">
+                            Optional
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-0.5">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 flex justify-center">
+                <Button size="lg" onClick={() => setCurrentStep(2)} className="px-8">
+                  Let&apos;s Begin
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
-      {/* Step 2: Create Agent */}
+      {/* ─── Step 2: Create Agent ─── */}
       {currentStep === 2 && (
         <div className="space-y-6">
           {!selectedTemplate ? (
             <Card>
               <CardHeader>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge className="bg-primary/10 text-primary border-0">Step 2 of 6</Badge>
+                </div>
                 <CardTitle>Choose a Template</CardTitle>
                 <CardDescription>
-                  Select a template to get started quickly, or create a custom agent from scratch.
+                  Pick a pre-built template to get started quickly. Each template comes with an
+                  optimized system prompt and greeting message that you can customize.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -260,15 +484,18 @@ export default function OnboardingPage() {
                       <button
                         key={template.id}
                         onClick={() => handleSelectTemplate(template.id)}
-                        className="flex items-start gap-4 rounded-lg border p-4 text-left transition-all hover:border-primary hover:shadow-md"
+                        className="flex items-start gap-4 rounded-xl border-2 border-gray-100 p-5 text-left transition-all hover:border-primary hover:shadow-lg hover:-translate-y-0.5 group"
                       >
-                        <div className="rounded-lg bg-primary/10 p-3">
-                          <Icon className="h-6 w-6 text-primary" />
+                        <div className={`rounded-xl ${template.color} p-3 shadow-lg`}>
+                          <Icon className="h-6 w-6 text-white" />
                         </div>
-                        <div>
-                          <h3 className="font-medium text-gray-900">{template.title}</h3>
-                          <p className="text-sm text-gray-500">{template.description}</p>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
+                            {template.title}
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1">{template.description}</p>
                         </div>
+                        <ChevronRight className="h-5 w-5 text-gray-300 group-hover:text-primary mt-1 transition-colors" />
                       </button>
                     );
                   })}
@@ -278,38 +505,47 @@ export default function OnboardingPage() {
           ) : (
             <Card>
               <CardHeader>
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge className="bg-primary/10 text-primary border-0">Step 2 of 6</Badge>
+                </div>
                 <CardTitle>Configure Your Agent</CardTitle>
                 <CardDescription>
-                  Customize your agent&apos;s name and behavior.
+                  Customize your agent&apos;s name and behavior. The system prompt defines how
+                  your agent will interact with callers.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-5">
                 <div>
-                  <Label htmlFor="agentName">Agent Name</Label>
+                  <Label htmlFor="agentName">Agent Name *</Label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    A friendly name to identify this agent in your dashboard
+                  </p>
                   <Input
                     id="agentName"
-                    placeholder="e.g., Sales Assistant"
+                    placeholder="e.g., Sales Assistant, Front Desk"
                     value={agentName}
                     onChange={(e) => setAgentName(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="systemPrompt">System Prompt</Label>
-                  <p className="text-sm text-gray-500 mb-2">
-                    This defines your agent&apos;s personality and behavior
+                  <Label htmlFor="systemPrompt">System Prompt *</Label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    This defines your agent&apos;s personality, tone, and what it should do on
+                    calls. Be specific about the behavior you want.
                   </p>
                   <Textarea
                     id="systemPrompt"
-                    rows={6}
+                    rows={7}
                     placeholder="Describe how your agent should behave..."
                     value={systemPrompt}
                     onChange={(e) => setSystemPrompt(e.target.value)}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="firstMessage">First Message (Optional)</Label>
-                  <p className="text-sm text-gray-500 mb-2">
-                    What your agent says when answering a call
+                  <Label htmlFor="firstMessage">First Message</Label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    The opening line your agent says when it answers or places a call.
+                    Leave blank for a default greeting.
                   </p>
                   <Input
                     id="firstMessage"
@@ -341,11 +577,11 @@ export default function OnboardingPage() {
                 {createAgent.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    Creating Agent...
                   </>
                 ) : (
                   <>
-                    Create Agent
+                    Create Agent & Continue
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
@@ -355,66 +591,467 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Step 3: Test Call */}
+      {/* ─── Step 3: Phone Number ─── */}
       {currentStep === 3 && (
         <div className="space-y-6">
           <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100">
-                <Check className="h-8 w-8 text-green-600" />
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge className="bg-primary/10 text-primary border-0">Step 3 of 6</Badge>
+                <Badge variant="destructive" className="text-[10px] py-0">Required</Badge>
               </div>
-              <CardTitle>Agent Created!</CardTitle>
+              <CardTitle>Provision a Phone Number</CardTitle>
               <CardDescription>
-                Your AI agent is ready. Make a test call to hear it in action.
+                Your AI agent needs a phone number to make and receive calls. Without a number,
+                your agent can&apos;t communicate with anyone. Choose how you&apos;d like to get one:
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="rounded-lg border bg-gray-50 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-primary/10 p-2">
-                    <Bot className="h-6 w-6 text-primary" />
+              {/* Already provisioned — show success */}
+              {createdPhoneNumber ? (
+                <div className="space-y-4">
+                  <div className="rounded-xl border-2 border-green-200 bg-green-50 p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-green-900">Phone Number Ready!</p>
+                        <p className="text-lg font-mono text-green-800">{createdPhoneNumber}</p>
+                        <p className="text-sm text-green-700 mt-0.5">
+                          Assigned to <span className="font-medium">{agentName}</span>
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{agentName}</p>
-                    <p className="text-sm text-gray-500">Ready for calls</p>
+                  <div className="flex justify-end">
+                    <Button onClick={() => setCurrentStep(4)}>
+                      Continue
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Method Toggle */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setProvisionMethod("search")}
+                      className={`flex-1 flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                        provisionMethod === "search"
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className={`rounded-lg p-2 ${provisionMethod === "search" ? "bg-primary/10" : "bg-gray-100"}`}>
+                        <Search className={`h-5 w-5 ${provisionMethod === "search" ? "text-primary" : "text-gray-500"}`} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Search & Buy</p>
+                        <p className="text-xs text-gray-500">Get a new number instantly</p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setProvisionMethod("import")}
+                      className={`flex-1 flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
+                        provisionMethod === "import"
+                          ? "border-primary bg-primary/5"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className={`rounded-lg p-2 ${provisionMethod === "import" ? "bg-primary/10" : "bg-gray-100"}`}>
+                        <Globe className={`h-5 w-5 ${provisionMethod === "import" ? "text-primary" : "text-gray-500"}`} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Import from Twilio</p>
+                        <p className="text-xs text-gray-500">Use your existing number</p>
+                      </div>
+                    </button>
+                  </div>
 
+                  {/* Search & Buy Flow */}
+                  {provisionMethod === "search" && (
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+                        <p className="text-sm text-blue-800">
+                          Search for available phone numbers by country and type. Select one to
+                          purchase and it will be automatically assigned to your agent.
+                        </p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-3">
+                        <div>
+                          <Label>Country</Label>
+                          <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {countries ? (
+                                countries.map((c: { code: string; name: string }) => (
+                                  <SelectItem key={c.code} value={c.code}>
+                                    {c.name}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="US">United States</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Type</Label>
+                          <Select value={numberType} onValueChange={setNumberType}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="local">Local</SelectItem>
+                              <SelectItem value="toll-free">Toll-Free</SelectItem>
+                              <SelectItem value="mobile">Mobile</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Area Code (optional)</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="e.g., 415"
+                              value={areaCode}
+                              onChange={(e) => setAreaCode(e.target.value)}
+                              maxLength={5}
+                            />
+                            <Button
+                              onClick={handleSearchNumbers}
+                              disabled={searchAvailable.isPending}
+                              className="flex-shrink-0"
+                            >
+                              {searchAvailable.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Search className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Search Results */}
+                      {searchResults.length > 0 && (
+                        <div className="space-y-2">
+                          <Label>Select a Number</Label>
+                          {pricing && (
+                            <p className="text-xs text-gray-500">
+                              Monthly cost: ${pricing.monthlySaaS.toFixed(2)}/mo
+                            </p>
+                          )}
+                          <div className="grid gap-2">
+                            {searchResults.map((num) => (
+                              <button
+                                key={num.phone_number}
+                                onClick={() => setSelectedNumber(num.phone_number)}
+                                className={`flex items-center justify-between rounded-lg border-2 p-3 text-left transition-all ${
+                                  selectedNumber === num.phone_number
+                                    ? "border-primary bg-primary/5"
+                                    : "border-gray-200 hover:border-gray-300"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Hash className="h-4 w-4 text-gray-400" />
+                                  <span className="font-mono font-medium">{num.phone_number}</span>
+                                </div>
+                                <span className="text-sm text-gray-500">
+                                  {num.locality && `${num.locality}, `}{num.region}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                          <Button
+                            onClick={handleBuyNumber}
+                            disabled={!selectedNumber || buyNumber.isPending}
+                            className="w-full mt-2"
+                          >
+                            {buyNumber.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Provisioning...
+                              </>
+                            ) : (
+                              <>
+                                <Phone className="mr-2 h-4 w-4" />
+                                Get This Number
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Import Twilio Flow */}
+                  {provisionMethod === "import" && (
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+                        <p className="text-sm text-blue-800">
+                          Already have a Twilio number? Import it here. You&apos;ll need your
+                          Twilio Account SID, Auth Token, and the phone number in E.164 format
+                          (e.g., +14155551234).
+                        </p>
+                      </div>
+                      <div>
+                        <Label>Twilio Account SID</Label>
+                        <Input
+                          placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                          value={twilioSid}
+                          onChange={(e) => setTwilioSid(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Twilio Auth Token</Label>
+                        <Input
+                          type="password"
+                          placeholder="Your Twilio Auth Token"
+                          value={twilioToken}
+                          onChange={(e) => setTwilioToken(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Phone Number (E.164)</Label>
+                        <Input
+                          placeholder="+14155551234"
+                          value={importNumber}
+                          onChange={(e) => setImportNumber(e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        onClick={handleImportNumber}
+                        disabled={importTwilio.isPending}
+                        className="w-full"
+                      >
+                        {importTwilio.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Importing...
+                          </>
+                        ) : (
+                          <>
+                            <Globe className="mr-2 h-4 w-4" />
+                            Import Number
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {!createdPhoneNumber && (
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setCurrentStep(2)}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <Shield className="h-4 w-4" />
+                <span>This step is required</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Step 4: Knowledge Base ─── */}
+      {currentStep === 4 && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge className="bg-primary/10 text-primary border-0">Step 4 of 6</Badge>
+                <Badge variant="secondary" className="text-[10px] py-0">Optional</Badge>
+              </div>
+              <CardTitle>Add Business Knowledge</CardTitle>
+              <CardDescription>
+                Help your agent answer questions about your business accurately. Add
+                information like your services, pricing, hours, FAQ, or anything callers
+                commonly ask about. You can always add more later.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
               <div>
-                <Label htmlFor="testPhone">Your Phone Number</Label>
-                <p className="text-sm text-gray-500 mb-2">
-                  We&apos;ll call this number so you can test your agent
+                <Label htmlFor="knowledgeName">Document Name</Label>
+                <p className="text-xs text-gray-500 mb-2">
+                  A label to identify this knowledge (e.g., &quot;Business Overview&quot;, &quot;FAQ&quot;, &quot;Services&quot;)
                 </p>
                 <Input
-                  id="testPhone"
-                  type="tel"
-                  placeholder="+1 (555) 123-4567"
-                  value={testPhoneNumber}
-                  onChange={(e) => setTestPhoneNumber(e.target.value)}
+                  id="knowledgeName"
+                  placeholder="e.g., Business Overview"
+                  value={knowledgeName}
+                  onChange={(e) => setKnowledgeName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="knowledgeContent">Business Information</Label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Paste or type any information you want your agent to know. Include
+                  details like:
+                </p>
+                <ul className="text-xs text-gray-500 mb-3 ml-4 list-disc space-y-0.5">
+                  <li>Business name, address, and hours of operation</li>
+                  <li>Products or services you offer</li>
+                  <li>Pricing information</li>
+                  <li>Frequently asked questions and answers</li>
+                  <li>Policies (returns, cancellations, etc.)</li>
+                </ul>
+                <Textarea
+                  id="knowledgeContent"
+                  rows={8}
+                  placeholder={`Example:\n\nBusiness: ${organization?.name || "Acme Inc"}\nHours: Mon-Fri 9am-5pm EST\nPhone: ${createdPhoneNumber || "(555) 123-4567"}\n\nServices:\n- Service A: Description and pricing\n- Service B: Description and pricing\n\nFAQ:\nQ: What are your hours?\nA: We're open Monday to Friday, 9am to 5pm Eastern Time.`}
+                  value={knowledgeContent}
+                  onChange={(e) => setKnowledgeContent(e.target.value)}
                 />
               </div>
 
-              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> Test calls require a provisioned phone number.
-                  You can set this up later in the Phone Numbers section.
-                </p>
+              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
+                <div className="flex gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-amber-800">
+                    The more detailed your knowledge base, the better your agent can answer
+                    caller questions. You can add more documents anytime from the Knowledge Base
+                    section.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setCurrentStep(2)}>
+            <Button variant="outline" onClick={() => setCurrentStep(3)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={handleSkipTestCall}>
+              <Button variant="outline" onClick={() => setCurrentStep(5)}>
+                <SkipForward className="mr-2 h-4 w-4" />
                 Skip for Now
               </Button>
-              <Button onClick={() => setCurrentStep(4)}>
-                Continue
+              <Button onClick={handleAddKnowledge} disabled={createKnowledge.isPending}>
+                {createKnowledge.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Save & Continue
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Step 5: Test Call ─── */}
+      {currentStep === 5 && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge className="bg-primary/10 text-primary border-0">Step 5 of 6</Badge>
+                <Badge variant="secondary" className="text-[10px] py-0">Optional</Badge>
+              </div>
+              <CardTitle>Test Your Agent</CardTitle>
+              <CardDescription>
+                Everything is set up! Call your agent&apos;s phone number to hear it in action
+                and make sure it works the way you want.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Agent Summary */}
+              <div className="rounded-xl border-2 border-gray-100 bg-gray-50/50 p-5">
+                <h3 className="font-semibold text-gray-900 mb-3">Your Agent Summary</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                      <Bot className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{agentName}</p>
+                      <p className="text-sm text-gray-500">
+                        {selectedTemplate ? AGENT_TEMPLATES.find(t => t.id === selectedTemplate)?.title : "Custom"} Agent
+                      </p>
+                    </div>
+                  </div>
+                  {createdPhoneNumber && (
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100">
+                        <Phone className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-mono font-medium text-gray-900">{createdPhoneNumber}</p>
+                        <p className="text-sm text-gray-500">Assigned phone number</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Test Call Instructions */}
+              <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 flex-shrink-0">
+                    <PhoneCall className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">How to Test</h3>
+                    <ol className="mt-2 space-y-2 text-sm text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-xs font-bold flex-shrink-0 mt-0.5">1</span>
+                        <span>Pick up your phone and dial <span className="font-mono font-semibold">{createdPhoneNumber || "your agent's number"}</span></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-xs font-bold flex-shrink-0 mt-0.5">2</span>
+                        <span>Your AI agent will answer and greet you</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-xs font-bold flex-shrink-0 mt-0.5">3</span>
+                        <span>Have a conversation to test its responses and behavior</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-xs font-bold flex-shrink-0 mt-0.5">4</span>
+                        <span>If you want to adjust anything, you can edit your agent from the dashboard</span>
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+                <div className="flex gap-2">
+                  <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-blue-800">
+                    It may take a few seconds for a newly provisioned number to become active.
+                    If the call doesn&apos;t connect, wait a moment and try again.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => setCurrentStep(4)}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setCurrentStep(6)}>
+                <SkipForward className="mr-2 h-4 w-4" />
+                Skip for Now
+              </Button>
+              <Button onClick={() => setCurrentStep(6)}>
+                I&apos;ve Tested, Continue
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -422,34 +1059,92 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Step 4: Complete */}
-      {currentStep === 4 && (
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
-              <Sparkles className="h-10 w-10 text-green-600" />
+      {/* ─── Step 6: Complete ─── */}
+      {currentStep === 6 && (
+        <Card className="overflow-hidden">
+          <div className="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 p-8 text-white text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+              <Sparkles className="h-10 w-10" />
             </div>
-            <CardTitle className="text-2xl">You&apos;re All Set!</CardTitle>
-            <CardDescription className="text-base">
-              Your VoxForge AI account is ready. Here&apos;s what you can do next:
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-lg border p-4">
-                <Phone className="h-6 w-6 text-primary mb-2" />
-                <h3 className="font-medium">Set Up Phone Numbers</h3>
-                <p className="text-sm text-gray-500">Provision numbers for inbound and outbound calls</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">You&apos;re All Set!</h1>
+            <p className="mt-2 text-white/90 max-w-lg mx-auto">
+              Your AI voice agent is live and ready to handle calls. Here&apos;s a summary of
+              what we set up:
+            </p>
+          </div>
+          <CardContent className="p-6 sm:p-8 space-y-6">
+            {/* Setup Summary */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 rounded-lg border p-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                  <Check className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">AI Agent Created</p>
+                  <p className="text-xs text-gray-500">{agentName}</p>
+                </div>
               </div>
-              <div className="rounded-lg border p-4">
-                <MessageSquare className="h-6 w-6 text-primary mb-2" />
-                <h3 className="font-medium">Create Campaigns</h3>
-                <p className="text-sm text-gray-500">Launch automated calling campaigns</p>
+              {createdPhoneNumber && (
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                    <Check className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Phone Number Assigned</p>
+                    <p className="text-xs text-gray-500 font-mono">{createdPhoneNumber}</p>
+                  </div>
+                </div>
+              )}
+              {knowledgeContent && (
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                    <Check className="h-4 w-4 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Knowledge Base Added</p>
+                    <p className="text-xs text-gray-500">{knowledgeName}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* What's Next */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3">Explore What&apos;s Next</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-gray-200 p-4 hover:border-primary/30 transition-colors">
+                  <Mic className="h-6 w-6 text-primary mb-2" />
+                  <h4 className="font-medium text-sm">Launch a Campaign</h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Start automated outbound calling campaigns to reach your contacts
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 p-4 hover:border-primary/30 transition-colors">
+                  <BookOpen className="h-6 w-6 text-primary mb-2" />
+                  <h4 className="font-medium text-sm">Add More Knowledge</h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload documents or add more business info to make your agent smarter
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 p-4 hover:border-primary/30 transition-colors">
+                  <Bot className="h-6 w-6 text-primary mb-2" />
+                  <h4 className="font-medium text-sm">Create More Agents</h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Build specialized agents for different departments or use cases
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-200 p-4 hover:border-primary/30 transition-colors">
+                  <Shield className="h-6 w-6 text-primary mb-2" />
+                  <h4 className="font-medium text-sm">Configure Settings</h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Set up team members, billing, integrations, and compliance
+                  </p>
+                </div>
               </div>
             </div>
 
             <div className="flex justify-center pt-4">
-              <Button size="lg" onClick={handleComplete} disabled={completeOnboarding.isPending}>
+              <Button size="lg" onClick={handleComplete} disabled={completeOnboarding.isPending} className="px-8">
                 {completeOnboarding.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />

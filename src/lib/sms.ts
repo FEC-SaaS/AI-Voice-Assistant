@@ -134,7 +134,7 @@ async function getOrganizationSettings(organizationId: string): Promise<{
   });
 
   if (!org) {
-    return { businessName: "VoxForge", smsEnabled: false };
+    return { businessName: "CallTone", smsEnabled: false };
   }
 
   const settings = org.settings as Record<string, unknown> | null;

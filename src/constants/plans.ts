@@ -2,7 +2,7 @@ export const PLANS = {
   "free-trial": {
     id: "free-trial",
     name: "Free Trial",
-    description: "Try VoxForge AI free for 14 days",
+    description: "Try CallTone AI free for 14 days",
     price: 0,
     priceId: null,
     agents: 1,

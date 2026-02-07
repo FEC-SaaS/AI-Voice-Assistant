@@ -75,7 +75,7 @@ export async function POST(req: Request) {
     try {
       const createStripeCustomer = await getCreateStripeCustomer();
       const stripeCustomer = await createStripeCustomer(
-        `${slug}@org.voxforge.ai`,
+        `${slug}@org.calltone.ai`,
         name,
         { clerkOrgId: id }
       );

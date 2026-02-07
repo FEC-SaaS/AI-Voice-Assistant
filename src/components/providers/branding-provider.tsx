@@ -15,7 +15,7 @@ interface BrandingContextValue {
 }
 
 const BrandingContext = createContext<BrandingContextValue>({
-  brandName: "VoxForge",
+  brandName: "CallTone",
   brandLogoUrl: null,
   brandFaviconUrl: null,
   brandPrimaryColor: null,
@@ -81,7 +81,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   }, [data?.brandFaviconUrl]);
 
   const value: BrandingContextValue = {
-    brandName: data?.brandName || "VoxForge",
+    brandName: data?.brandName || "CallTone",
     brandLogoUrl: data?.brandLogoUrl || null,
     brandFaviconUrl: data?.brandFaviconUrl || null,
     brandPrimaryColor: data?.brandPrimaryColor || null,

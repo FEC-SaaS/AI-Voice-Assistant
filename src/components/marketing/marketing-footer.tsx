@@ -31,7 +31,7 @@ export function MarketingFooter() {
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
               <Bot className="h-6 w-6 text-primary" />
-              <span className="font-semibold">VoxForge AI</span>
+              <span className="font-semibold">CallTone AI</span>
             </Link>
             <p className="mt-3 text-sm text-gray-500">
               Enterprise-grade AI voice agents for modern businesses.
@@ -60,7 +60,7 @@ export function MarketingFooter() {
 
         <div className="mt-10 border-t pt-6">
           <p className="text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} VoxForge AI. All rights reserved.
+            &copy; {new Date().getFullYear()} CallTone AI. All rights reserved.
           </p>
         </div>
       </div>

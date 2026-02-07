@@ -199,7 +199,7 @@ export default function BrandingSettingsPage() {
             Brand Name
           </CardTitle>
           <CardDescription>
-            This name replaces &quot;VoxForge&quot; throughout the dashboard and
+            This name replaces &quot;CallTone&quot; throughout the dashboard and
             public pages.
           </CardDescription>
         </CardHeader>
@@ -432,7 +432,7 @@ export default function BrandingSettingsPage() {
                 </div>
               )}
               <span className="text-sm font-bold text-gray-900">
-                {brandName || "VoxForge"}
+                {brandName || "CallTone"}
               </span>
             </div>
 
@@ -458,7 +458,7 @@ export default function BrandingSettingsPage() {
             {!poweredByHidden && (
               <div className="border-t px-4 py-2">
                 <p className="text-[10px] text-gray-400 text-center">
-                  Powered by VoxForge AI
+                  Powered by CallTone AI
                 </p>
               </div>
             )}
@@ -474,7 +474,7 @@ export default function BrandingSettingsPage() {
             White-Label Branding
           </CardTitle>
           <CardDescription>
-            Remove &quot;Powered by VoxForge AI&quot; from the sidebar and
+            Remove &quot;Powered by CallTone AI&quot; from the sidebar and
             public pages.
           </CardDescription>
         </CardHeader>
@@ -483,7 +483,7 @@ export default function BrandingSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">
-                  Hide &quot;Powered by VoxForge AI&quot;
+                  Hide &quot;Powered by CallTone AI&quot;
                 </p>
                 <p className="text-sm text-gray-500">
                   Removes branding from sidebar footer and appointment pages
@@ -507,7 +507,7 @@ export default function BrandingSettingsPage() {
                   </p>
                   <p className="text-sm text-amber-700 mt-1">
                     Upgrade to the Business plan or higher to remove
-                    &quot;Powered by VoxForge AI&quot; branding from your
+                    &quot;Powered by CallTone AI&quot; branding from your
                     dashboard and public pages.
                   </p>
                   <Link href="/dashboard/settings/billing">

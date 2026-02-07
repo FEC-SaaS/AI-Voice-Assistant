@@ -151,7 +151,7 @@ export default function ContactPage() {
                     <Mail className="h-5 w-5 shrink-0 text-primary" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">Email</p>
-                      <p className="text-sm text-gray-500">sales@voxforge.ai</p>
+                      <p className="text-sm text-gray-500">sales@calltone.ai</p>
                     </div>
                   </div>
                   <div className="flex gap-3">
