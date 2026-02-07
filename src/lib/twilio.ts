@@ -58,15 +58,27 @@ export interface TwilioSubaccount {
 /**
  * Create a Twilio subaccount for an organization
  * This isolates their numbers and usage from other clients
+ * Note: Subaccount creation uses top-level /Accounts.json, not nested under an account
  */
 export async function createSubaccount(friendlyName: string): Promise<TwilioSubaccount> {
-  return twilioRequest<TwilioSubaccount>({
+  const url = `${TWILIO_API_URL}/Accounts.json`;
+
+  const response = await fetch(url, {
     method: "POST",
-    path: "/Accounts",
-    body: {
-      FriendlyName: friendlyName,
+    headers: {
+      Authorization: getAuthHeader(),
+      "Content-Type": "application/x-www-form-urlencoded",
     },
+    body: new URLSearchParams({ FriendlyName: friendlyName }).toString(),
   });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    const errorCode = error.code ? ` (${error.code})` : "";
+    throw new Error(`Twilio API error: ${response.status}${errorCode} - ${error.message || JSON.stringify(error)}`);
+  }
+
+  return response.json();
 }
 
 /**
