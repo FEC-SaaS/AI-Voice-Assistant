@@ -43,6 +43,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
   });
 
   const [showReceptionistConfig, setShowReceptionistConfig] = useState(false);
+  const [showMissedCallConfig, setShowMissedCallConfig] = useState(false);
 
   useEffect(() => {
     if (agent) {
@@ -66,12 +67,23 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
           afterHoursAction: (rcConfig.afterHoursAction as "take_message" | "info_only") || "take_message",
           enableCallScreening: (rcConfig.enableCallScreening as boolean) || false,
         } : undefined,
+        enableMissedCallTextBack: (settings.enableMissedCallTextBack as boolean) || false,
+        missedCallConfig: {
+          enableMissedCallTextBack: (settings.enableMissedCallTextBack as boolean) || false,
+          textBackMessage: (settings.missedCallTextBackMessage as string) || "",
+          afterHoursMessage: (settings.missedCallAfterHoursMessage as string) || "",
+          enableAutoCallback: (settings.enableMissedCallAutoCallback as boolean) || false,
+          callbackDelayMinutes: (settings.missedCallCallbackDelay as number) || 5,
+          autoCreateLead: (settings.missedCallAutoCreateLead as boolean) ?? true,
+          dedupWindowMinutes: (settings.missedCallDedupWindow as number) || 30,
+        },
       });
     }
   }, [agent, reset]);
 
   const selectedProvider = watch("voiceProvider");
   const watchReceptionist = watch("enableReceptionist");
+  const watchMissedCall = watch("enableMissedCallTextBack");
   const filteredVoices = VOICES.filter((v) => v.provider === (selectedProvider || "elevenlabs"));
 
   const onSubmit = (data: CreateAgentInput) => {
@@ -276,6 +288,113 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                       Receptionist &rarr; Departments
                     </Link>
                   </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <hr className="border-gray-100" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="enableMissedCallTextBack" className="text-base">Missed Call Text-Back</Label>
+              <p className="text-sm text-gray-500">
+                Automatically send an SMS when an inbound call is missed, and optionally auto-callback
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="enableMissedCallTextBack"
+                className="sr-only peer"
+                {...register("enableMissedCallTextBack")}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+            </label>
+          </div>
+
+          {watchMissedCall && (
+            <div className="ml-4 space-y-4 border-l-2 border-primary/20 pl-4">
+              <button
+                type="button"
+                onClick={() => setShowMissedCallConfig(!showMissedCallConfig)}
+                className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+              >
+                {showMissedCallConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                Missed Call Configuration
+              </button>
+              {showMissedCallConfig && (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="mc-textBack">Text-Back Message</Label>
+                    <textarea
+                      id="mc-textBack"
+                      className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      placeholder="Hi! We missed your call. Reply YES if you'd like us to call you back."
+                      {...register("missedCallConfig.textBackMessage")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mc-afterHours">After-Hours Message</Label>
+                    <textarea
+                      id="mc-afterHours"
+                      className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      placeholder="Thanks for calling! We're currently closed but will return your call during business hours."
+                      {...register("missedCallConfig.afterHoursMessage")}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="mc-autoCallback" className="text-sm">Auto-Callback</Label>
+                      <p className="text-xs text-gray-500">Automatically call back missed callers after a delay</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        id="mc-autoCallback"
+                        className="sr-only peer"
+                        {...register("missedCallConfig.enableAutoCallback")}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="mc-delay">Callback Delay (minutes)</Label>
+                      <Input
+                        id="mc-delay"
+                        type="number"
+                        min={1}
+                        max={60}
+                        {...register("missedCallConfig.callbackDelayMinutes", { valueAsNumber: true })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mc-dedup">Dedup Window (minutes)</Label>
+                      <Input
+                        id="mc-dedup"
+                        type="number"
+                        min={5}
+                        max={1440}
+                        {...register("missedCallConfig.dedupWindowMinutes", { valueAsNumber: true })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="mc-autoLead" className="text-sm">Auto-Create Lead</Label>
+                      <p className="text-xs text-gray-500">Automatically create a contact/lead from missed callers</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        id="mc-autoLead"
+                        className="sr-only peer"
+                        {...register("missedCallConfig.autoCreateLead")}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
                 </div>
               )}
             </div>

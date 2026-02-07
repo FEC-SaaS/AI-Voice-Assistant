@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Bot,
@@ -13,6 +14,7 @@ import {
   Plug,
   Settings,
   ChevronLeft,
+  ChevronDown,
   Users,
   Calendar,
   X,
@@ -21,27 +23,54 @@ import {
   Target,
   Shield,
   PhoneForwarded,
+  PhoneMissed,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { useBranding } from "@/components/providers/branding-provider";
 
-const navItems = [
-  { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Agents", href: "/dashboard/agents", icon: Bot },
-  { title: "Campaigns", href: "/dashboard/campaigns", icon: Megaphone },
-  { title: "Contacts", href: "/dashboard/contacts", icon: Users },
-  { title: "Calls", href: "/dashboard/calls", icon: Phone },
-  { title: "Live Calls", href: "/dashboard/live", icon: Radio },
-  { title: "Appointments", href: "/dashboard/appointments", icon: Calendar },
-  { title: "Receptionist", href: "/dashboard/receptionist", icon: PhoneForwarded },
-  { title: "Leads", href: "/dashboard/leads", icon: Target },
-  { title: "Intelligence", href: "/dashboard/intelligence", icon: Brain },
-  { title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { title: "Compliance", href: "/dashboard/compliance", icon: Shield },
-  { title: "Knowledge Base", href: "/dashboard/knowledge", icon: BookOpen },
-  { title: "Phone Numbers", href: "/dashboard/phone-numbers", icon: Hash },
-  { title: "Integrations", href: "/dashboard/integrations", icon: Plug },
+// A nav item is either a plain link or a collapsible group with children
+interface NavLink {
+  type: "link";
+  title: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+interface NavGroup {
+  type: "group";
+  title: string;
+  icon: LucideIcon;
+  children: { title: string; href: string; icon: LucideIcon }[];
+}
+
+type NavItem = NavLink | NavGroup;
+
+const navItems: NavItem[] = [
+  { type: "link", title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { type: "link", title: "Agents", href: "/dashboard/agents", icon: Bot },
+  { type: "link", title: "Campaigns", href: "/dashboard/campaigns", icon: Megaphone },
+  { type: "link", title: "Contacts", href: "/dashboard/contacts", icon: Users },
+  {
+    type: "group",
+    title: "Calls",
+    icon: Phone,
+    children: [
+      { title: "Call Logs", href: "/dashboard/calls", icon: Phone },
+      { title: "Live Calls", href: "/dashboard/live", icon: Radio },
+      { title: "Missed Calls", href: "/dashboard/missed-calls", icon: PhoneMissed },
+    ],
+  },
+  { type: "link", title: "Appointments", href: "/dashboard/appointments", icon: Calendar },
+  { type: "link", title: "Receptionist", href: "/dashboard/receptionist", icon: PhoneForwarded },
+  { type: "link", title: "Leads", href: "/dashboard/leads", icon: Target },
+  { type: "link", title: "Intelligence", href: "/dashboard/intelligence", icon: Brain },
+  { type: "link", title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+  { type: "link", title: "Compliance", href: "/dashboard/compliance", icon: Shield },
+  { type: "link", title: "Knowledge Base", href: "/dashboard/knowledge", icon: BookOpen },
+  { type: "link", title: "Phone Numbers", href: "/dashboard/phone-numbers", icon: Hash },
+  { type: "link", title: "Integrations", href: "/dashboard/integrations", icon: Plug },
 ];
 
 const bottomNavItems = [
@@ -55,11 +84,25 @@ interface SidebarProps {
   onCollapse?: (collapsed: boolean) => void;
 }
 
+function isGroupActive(group: NavGroup, pathname: string): boolean {
+  return group.children.some(
+    (child) => pathname === child.href || pathname.startsWith(`${child.href}/`)
+  );
+}
+
 export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse }: SidebarProps) {
   const pathname = usePathname();
   const prevPathname = useRef(pathname);
   const onCloseRef = useRef(onClose);
   const { brandName, brandLogoUrl, poweredByHidden } = useBranding();
+
+  // Track which groups are manually expanded
+  // Groups auto-open when a child is active; this tracks manual toggles
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (title: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [title]: !prev[title] }));
+  };
 
   // Keep onClose ref updated
   useEffect(() => {
@@ -73,6 +116,79 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
       onCloseRef.current?.();
     }
   }, [pathname]);
+
+  const renderNavLink = (item: { title: string; href: string; icon: LucideIcon }, indent = false) => {
+    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={cn(
+          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+          indent && !collapsed && "ml-4 pl-3",
+          isActive
+            ? "bg-primary text-white shadow-md shadow-primary/25"
+            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+        )}
+      >
+        <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-white")} />
+        {!collapsed && <span>{item.title}</span>}
+      </Link>
+    );
+  };
+
+  const renderNavGroup = (group: NavGroup) => {
+    const groupActive = isGroupActive(group, pathname);
+    // Show expanded if manually toggled, or if a child is active
+    const isExpanded = expandedGroups[group.title] ?? groupActive;
+
+    // When sidebar is collapsed, just show the group icon — clicking goes to first child
+    if (collapsed) {
+      const firstChild = group.children[0]!;
+      return (
+        <Link
+          key={group.title}
+          href={firstChild.href}
+          className={cn(
+            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+            groupActive
+              ? "bg-primary text-white shadow-md shadow-primary/25"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+          )}
+        >
+          <group.icon className={cn("h-5 w-5 flex-shrink-0", groupActive && "text-white")} />
+        </Link>
+      );
+    }
+
+    return (
+      <div key={group.title}>
+        <button
+          onClick={() => toggleGroup(group.title)}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+            groupActive
+              ? "text-primary"
+              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+          )}
+        >
+          <group.icon className={cn("h-5 w-5 flex-shrink-0", groupActive && "text-primary")} />
+          <span className="flex-1 text-left">{group.title}</span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 text-gray-400 transition-transform duration-200",
+              isExpanded && "rotate-180"
+            )}
+          />
+        </button>
+        {isExpanded && (
+          <div className="mt-0.5 space-y-0.5">
+            {group.children.map((child) => renderNavLink(child, true))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const sidebarContent = (
     <>
@@ -129,25 +245,11 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
         <div className="space-y-1">
-          {navItems.map((item) => {
-            const isActive =
-              pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  isActive
-                    ? "bg-primary text-white shadow-md shadow-primary/25"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                )}
-              >
-                <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-white")} />
-                {!collapsed && <span>{item.title}</span>}
-              </Link>
-            );
-          })}
+          {navItems.map((item) =>
+            item.type === "group"
+              ? renderNavGroup(item)
+              : renderNavLink(item)
+          )}
         </div>
       </nav>
 
