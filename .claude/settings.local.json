@@ -15,7 +15,8 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(grep:*)",
-      "Bash(npx prisma migrate dev:*)"
+      "Bash(npx prisma migrate dev:*)",
+      "WebSearch"
     ]
   }
 }
