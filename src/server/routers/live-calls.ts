@@ -25,6 +25,34 @@ async function vapiPost(path: string, body: unknown) {
 
 export const liveCallsRouter = router({
   getActiveCalls: protectedProcedure.query(async ({ ctx }) => {
+    // Auto-clean stale calls: any call older than 4 hours still in active status
+    // is clearly stuck — mark it as completed
+    const staleThreshold = new Date(Date.now() - 4 * 60 * 60 * 1000);
+    const staleCalls = await ctx.db.call.findMany({
+      where: {
+        organizationId: ctx.orgId,
+        status: { in: ["in-progress", "ringing", "queued"] },
+        OR: [
+          { startedAt: { lt: staleThreshold } },
+          { startedAt: null, createdAt: { lt: staleThreshold } },
+        ],
+      },
+      select: { id: true, status: true },
+    });
+
+    if (staleCalls.length > 0) {
+      log.info(`Cleaning up ${staleCalls.length} stale calls`);
+      await ctx.db.call.updateMany({
+        where: {
+          id: { in: staleCalls.map((c) => c.id) },
+        },
+        data: {
+          status: "completed",
+          endedAt: new Date(),
+        },
+      });
+    }
+
     const calls = await ctx.db.call.findMany({
       where: {
         organizationId: ctx.orgId,

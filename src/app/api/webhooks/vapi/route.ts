@@ -55,7 +55,9 @@ interface VapiWebhookEvent {
     status?: string;
     startedAt?: string;
     endedAt?: string;
-    transcript?: string;
+    // Vapi may send transcript as a string OR an array of message objects
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    transcript?: string | any[];
     recordingUrl?: string;
     customer?: {
       number: string;
@@ -82,6 +84,26 @@ interface VapiWebhookEvent {
       };
     }>;
   };
+}
+
+/**
+ * Normalize transcript from Vapi — handles both string and array-of-messages format.
+ * Vapi v2 sends transcript as an array: [{ role: "assistant", message: "..." }, ...]
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeTranscript(transcript: string | any[] | undefined): string | undefined {
+  if (!transcript) return undefined;
+  if (typeof transcript === "string") return transcript;
+  if (Array.isArray(transcript)) {
+    return transcript
+      .map((msg) => {
+        const role = msg.role || "unknown";
+        const text = msg.message || msg.content || msg.text || "";
+        return `${role}: ${text}`;
+      })
+      .join("\n");
+  }
+  return String(transcript);
 }
 
 // Tool call result interface
@@ -1141,6 +1163,10 @@ export async function POST(req: NextRequest) {
           finalStatus = "no-answer";
         }
 
+        // Normalize transcript (Vapi may send as string or array of messages)
+        const transcriptText = normalizeTranscript(call.transcript);
+        log.info(`Call ended: ${call.id}, status: ${finalStatus}, duration: ${durationSeconds}s, transcript: ${transcriptText?.length ?? 0} chars`);
+
         // Update call record
         const updatedCall = await db.call.upsert({
           where: { vapiCallId: call.id },
@@ -1157,7 +1183,7 @@ export async function POST(req: NextRequest) {
             startedAt,
             endedAt,
             durationSeconds,
-            transcript: call.transcript,
+            transcript: transcriptText,
             recordingUrl: call.recordingUrl,
             costCents,
           },
@@ -1165,7 +1191,7 @@ export async function POST(req: NextRequest) {
             status: finalStatus,
             endedAt,
             durationSeconds,
-            transcript: call.transcript,
+            transcript: transcriptText,
             recordingUrl: call.recordingUrl,
             costCents,
           },
@@ -1186,7 +1212,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Trigger async call analysis if we have a transcript
-        if (call.transcript && updatedCall.id) {
+        if (transcriptText && updatedCall.id) {
           // Fire and forget - analyze in background
           getAnalyzeCall().then((analyzeCall) => {
             analyzeCall(updatedCall.id).catch((error) => {
@@ -1226,10 +1252,11 @@ export async function POST(req: NextRequest) {
       case "transcript":
       case "transcript.partial": {
         // Update transcript mid-call for live monitoring
-        if (call.transcript) {
+        const partialText = normalizeTranscript(call.transcript);
+        if (partialText) {
           await db.call.update({
             where: { vapiCallId: call.id },
-            data: { transcript: call.transcript },
+            data: { transcript: partialText },
           }).catch(() => {
             // Call record may not exist yet
           });
@@ -1240,10 +1267,11 @@ export async function POST(req: NextRequest) {
       case "transcript.complete":
       case "transcript-complete": {
         // Update transcript when complete
-        if (call.transcript) {
+        const completeText = normalizeTranscript(call.transcript);
+        if (completeText) {
           const updatedCall = await db.call.update({
             where: { vapiCallId: call.id },
-            data: { transcript: call.transcript },
+            data: { transcript: completeText },
           });
 
           // Trigger analysis now that we have the full transcript
@@ -1262,6 +1290,25 @@ export async function POST(req: NextRequest) {
       case "function-called": {
         // Legacy function call handling (newer versions use tool-calls message type)
         log.debug("Function called (legacy):", call.id);
+        break;
+      }
+
+      case "status-update": {
+        // Handle intermediate status updates from Vapi
+        const newStatus = call.status;
+        if (newStatus && call.id) {
+          // Normalize Vapi status to our status values
+          let mappedStatus = newStatus;
+          if (newStatus === "ended") mappedStatus = "completed";
+
+          await db.call.update({
+            where: { vapiCallId: call.id },
+            data: { status: mappedStatus },
+          }).catch(() => {
+            // Call record may not exist yet
+          });
+          log.debug(`Status update for ${call.id}: ${newStatus}`);
+        }
         break;
       }
 

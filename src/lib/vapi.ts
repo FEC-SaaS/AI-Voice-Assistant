@@ -97,7 +97,7 @@ export interface VapiAssistant {
 
 // Vapi's built-in voices (no external credentials needed)
 const VAPI_VOICES = [
-  "Elliot", "Kylie", "Rohan", "Lily", "Savannah", "Hana", "Neha", "Cole",
+  "Elliot", "Kylie", "Rohan", "Lily", "Savannah", "Hana", "Neha",
   "Harry", "Paige", "Spencer", "Leah", "Tara", "Jess", "Leo", "Dan", "Mia", "Zac", "Zoe"
 ];
 

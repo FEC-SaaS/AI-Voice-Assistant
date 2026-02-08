@@ -70,14 +70,6 @@ export const VOICES: Voice[] = [
     description: "Warm and conversational female voice",
   },
   {
-    id: "Cole",
-    name: "Cole",
-    provider: "vapi",
-    gender: "male",
-    accent: "American",
-    description: "Deep and authoritative male voice",
-  },
-  {
     id: "Harry",
     name: "Harry",
     provider: "vapi",

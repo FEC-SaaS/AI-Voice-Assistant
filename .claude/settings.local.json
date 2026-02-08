@@ -16,7 +16,8 @@
       "Bash(npx tsc:*)",
       "Bash(grep:*)",
       "Bash(npx prisma migrate dev:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:docs.vapi.ai)"
     ]
   }
 }
