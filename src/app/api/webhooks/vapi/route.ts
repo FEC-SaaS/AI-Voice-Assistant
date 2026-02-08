@@ -45,28 +45,56 @@ async function getOrganizationBranding(
   };
 }
 
-// Vapi webhook event types
-interface VapiWebhookEvent {
-  type: string;
-  call?: {
-    id: string;
-    assistantId?: string;
-    phoneNumberId?: string;
-    status?: string;
-    startedAt?: string;
-    endedAt?: string;
-    // Vapi may send transcript as a string OR an array of message objects
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    transcript?: string | any[];
-    recordingUrl?: string;
-    customer?: {
-      number: string;
-    };
-    metadata?: Record<string, string>;
+// Call object shape from Vapi
+interface VapiCallObject {
+  id: string;
+  assistantId?: string;
+  phoneNumberId?: string;
+  status?: string;
+  startedAt?: string;
+  endedAt?: string;
+  // Vapi may send transcript as a string OR an array of message objects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  transcript?: string | any[];
+  recordingUrl?: string;
+  customer?: {
+    number: string;
   };
-  // For tool/function calls
+  metadata?: Record<string, string>;
+}
+
+// Vapi webhook event types
+// Vapi Server Messages nest data inside body.message (not at top level).
+// e.g. { message: { type: "status-update", call: {...}, status: "in-progress" } }
+// e.g. { message: { type: "end-of-call-report", call: {...}, artifact: { transcript, messages, recordingUrl } } }
+interface VapiWebhookEvent {
+  // Legacy/direct format (may be undefined for server messages)
+  type?: string;
+  call?: VapiCallObject;
+  // Server message format — Vapi sends ALL events here
   message?: {
     type: string;
+    // Call object (present in status-update, end-of-call-report, etc.)
+    call?: VapiCallObject;
+    // Status for status-update events
+    status?: string;
+    // End reason for end-of-call-report
+    endedReason?: string;
+    // Artifact contains transcript, recording, messages for end-of-call-report
+    artifact?: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      transcript?: string | any[];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      messages?: any[];
+      recordingUrl?: string;
+      stereoRecordingUrl?: string;
+    };
+    // Analysis contains AI-generated summary
+    analysis?: {
+      summary?: string;
+      successEvaluation?: string;
+    };
+    // For tool/function calls
     toolCalls?: Array<{
       id: string;
       type: string;
@@ -83,6 +111,8 @@ interface VapiWebhookEvent {
         arguments: string | Record<string, unknown>;
       };
     }>;
+    // Timestamp
+    timestamp?: string;
   };
 }
 
@@ -925,11 +955,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = JSON.parse(rawBody) as VapiWebhookEvent;
-    const { type, call, message } = body;
+    const { message } = body;
 
-    log.debug(`Received event: ${type}`, {
+    // Vapi Server Messages nest type and call inside body.message.
+    // Support both legacy (body.type / body.call) and server message format.
+    const type = body.type || message?.type;
+    const call = body.call || message?.call;
+
+    log.info(`Received event: ${type}`, {
       callId: call?.id,
       messageType: message?.type,
+      hasArtifact: !!message?.artifact,
+      bodyKeys: Object.keys(body),
     });
 
     // Handle tool/function calls (Vapi sends these as assistant-request or tool-calls)
@@ -1234,9 +1271,26 @@ export async function POST(req: NextRequest) {
           finalStatus = "no-answer";
         }
 
-        // Normalize transcript (Vapi may send as string or array of messages)
-        const transcriptText = normalizeTranscript(call.transcript);
-        log.info(`Call ended: ${call.id}, status: ${finalStatus}, duration: ${durationSeconds}s, transcript: ${transcriptText?.length ?? 0} chars`);
+        // Extract transcript from multiple possible sources:
+        // 1. call.transcript (legacy)
+        // 2. message.artifact.transcript (server message format)
+        // 3. message.artifact.messages (array of role/message objects)
+        const artifact = message?.artifact;
+        let transcriptText = normalizeTranscript(call.transcript);
+        if (!transcriptText && artifact?.transcript) {
+          transcriptText = normalizeTranscript(artifact.transcript);
+        }
+        if (!transcriptText && artifact?.messages) {
+          transcriptText = normalizeTranscript(artifact.messages);
+        }
+
+        // Extract recording URL from artifact if not on call object
+        const recordingUrl = call.recordingUrl || artifact?.recordingUrl || artifact?.stereoRecordingUrl;
+
+        // Extract AI-generated summary from analysis
+        const summary = message?.analysis?.summary;
+
+        log.info(`Call ended: ${call.id}, status: ${finalStatus}, duration: ${durationSeconds}s, transcript: ${transcriptText?.length ?? 0} chars, recording: ${!!recordingUrl}, summary: ${!!summary}`);
 
         // Try to find existing record first
         const existingEndId = await findExistingCallRecord();
@@ -1254,7 +1308,8 @@ export async function POST(req: NextRequest) {
               endedAt,
               durationSeconds,
               transcript: transcriptText,
-              recordingUrl: call.recordingUrl,
+              recordingUrl,
+              summary,
               costCents,
             },
           });
@@ -1276,7 +1331,8 @@ export async function POST(req: NextRequest) {
               endedAt,
               durationSeconds,
               transcript: transcriptText,
-              recordingUrl: call.recordingUrl,
+              recordingUrl,
+              summary,
               costCents,
             },
           });
@@ -1353,7 +1409,9 @@ export async function POST(req: NextRequest) {
       case "transcript.complete":
       case "transcript-complete": {
         // Update transcript when complete
-        const completeText = normalizeTranscript(call.transcript);
+        const completeText = normalizeTranscript(call.transcript)
+          || normalizeTranscript(message?.artifact?.transcript)
+          || normalizeTranscript(message?.artifact?.messages);
         if (completeText) {
           const updatedCall = await db.call.update({
             where: { vapiCallId: call.id },
@@ -1381,19 +1439,35 @@ export async function POST(req: NextRequest) {
 
       case "status-update": {
         // Handle intermediate status updates from Vapi
-        const newStatus = call.status;
+        // Status may be in message.status (server message format) or call.status
+        const newStatus = message?.status || call.status;
         if (newStatus && call.id) {
           // Normalize Vapi status to our status values
           let mappedStatus = newStatus;
           if (newStatus === "ended") mappedStatus = "completed";
 
-          await db.call.update({
-            where: { vapiCallId: call.id },
-            data: { status: mappedStatus },
-          }).catch(() => {
-            // Call record may not exist yet
-          });
-          log.debug(`Status update for ${call.id}: ${newStatus}`);
+          log.info(`Status update for ${call.id}: ${newStatus} -> ${mappedStatus}`);
+
+          // Try to find existing record (handles outbound calls where vapiCallId might not be set)
+          const existingStatusId = await findExistingCallRecord();
+          if (existingStatusId) {
+            await db.call.update({
+              where: { id: existingStatusId },
+              data: {
+                vapiCallId: call.id,
+                status: mappedStatus,
+                ...(newStatus === "in-progress" && !call.startedAt ? { startedAt: new Date() } : {}),
+              },
+            });
+          } else {
+            // Fallback: try direct update by vapiCallId
+            await db.call.update({
+              where: { vapiCallId: call.id },
+              data: { status: mappedStatus },
+            }).catch(() => {
+              log.warn(`Status update: no record found for call ${call.id}`);
+            });
+          }
         }
         break;
       }

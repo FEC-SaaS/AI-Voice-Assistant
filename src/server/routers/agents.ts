@@ -536,6 +536,22 @@ export const agentsRouter = router({
         });
       }
 
+      // Fetch knowledge base content for this agent
+      const knowledgeDocs = await ctx.db.knowledgeDocument.findMany({
+        where: {
+          agentId: agent.id,
+          organizationId: ctx.orgId,
+          isActive: true,
+        },
+      });
+
+      let knowledgeContent = "";
+      if (knowledgeDocs.length > 0) {
+        knowledgeContent = "\n\n--- KNOWLEDGE BASE ---\n" +
+          knowledgeDocs.map(d => `=== ${d.name} ===\n${d.content || ""}`).join("\n\n") +
+          "\n--- END KNOWLEDGE BASE ---";
+      }
+
       // Create call record first (so we can pass callId in metadata)
       const call = await ctx.db.call.create({
         data: {
@@ -574,17 +590,26 @@ export const agentsRouter = router({
             messages: [
               {
                 role: "system",
-                content: `${agent.systemPrompt}
+                content: `${agent.systemPrompt}${knowledgeContent}
 
 IMPORTANT CONTEXT — OUTBOUND CALL:
-You are making an OUTBOUND call to a potential customer. YOU initiated this call, the customer did NOT call you.
-- Introduce yourself and the business naturally in your opening.
-- Clearly state the purpose of your call early in the conversation.
-- Be professional, persuasive, and respectful of the customer's time.
-- If the customer is busy, offer to call back at a better time.
-- Use consultative selling techniques: ask questions, listen, identify needs, and position your solution.
-- If the customer is not interested, thank them politely and end the call gracefully.
-- NEVER say "Thank you for calling" or "How can I help you today?" — YOU are the one calling THEM.`,
+You are making an OUTBOUND call on behalf of ${businessName}. YOU initiated this call, the customer did NOT call you.
+
+CALL GUIDELINES:
+1. OPENING: Introduce yourself and the business naturally. State the purpose of your call clearly and concisely within the first 15 seconds.
+2. KNOWLEDGE-DRIVEN CONVERSATION: Your conversation MUST be strictly based on the knowledge base content provided above. ONLY discuss products, services, and offerings that are described in the knowledge base. NEVER invent, fabricate, or assume products/services that are not in the knowledge base.
+3. DISCOVERY: Ask open-ended questions to understand the customer's needs, challenges, and goals. Listen actively and acknowledge their responses.
+4. VALUE PROPOSITION: Based on what you learn, position relevant products/services from the knowledge base as solutions. Explain specific benefits that address their stated needs.
+5. OBJECTION HANDLING: When facing objections, acknowledge concerns, ask clarifying questions, and provide evidence-based responses from the knowledge base.
+6. CLOSING: Guide the conversation toward a clear next step — scheduling a meeting, sending information, or a follow-up call.
+7. PROFESSIONALISM: Be warm, confident, and respectful of the customer's time. If they're busy, offer to call back at a convenient time.
+8. If the customer is not interested, thank them politely and end the call gracefully.
+
+STRICT RULES:
+- NEVER say "Thank you for calling" or "How can I help you today?" — YOU are the one calling THEM.
+- NEVER discuss products, services, or offers that are NOT in the knowledge base.
+- Keep your responses concise and conversational — avoid long monologues.
+- Use the customer's name naturally throughout the conversation when known.`,
               },
             ],
           },
