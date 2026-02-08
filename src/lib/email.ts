@@ -384,6 +384,17 @@ export async function sendAppointmentConfirmation(
 
           ${actionButtonsHtml}
 
+          <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #0369a1; font-size: 14px;">
+              You can also reply to this email with one of the following:
+            </p>
+            <ul style="margin: 0; padding-left: 20px; color: #0c4a6e; font-size: 13px; line-height: 1.8;">
+              <li>Reply <strong>CONFIRM</strong> to confirm your attendance</li>
+              <li>Reply <strong>RESCHEDULE</strong> to request a new time</li>
+              <li>Reply <strong>CANCEL</strong> to cancel this appointment</li>
+            </ul>
+          </div>
+
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 
           <p style="color: #666; font-size: 14px; text-align: center;">
@@ -482,6 +493,17 @@ export async function sendAppointmentReminder(
           ${meetingDetails}
 
           ${actionButtonsHtml}
+
+          <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #0369a1; font-size: 14px;">
+              You can also reply to this email with one of the following:
+            </p>
+            <ul style="margin: 0; padding-left: 20px; color: #0c4a6e; font-size: 13px; line-height: 1.8;">
+              <li>Reply <strong>CONFIRM</strong> to confirm your attendance</li>
+              <li>Reply <strong>RESCHEDULE</strong> to request a new time</li>
+              <li>Reply <strong>CANCEL</strong> to cancel this appointment</li>
+            </ul>
+          </div>
 
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 
@@ -717,6 +739,17 @@ export async function sendAppointmentRescheduled(
           ${meetingDetails}
 
           ${actionButtonsHtml}
+
+          <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
+            <p style="margin: 0 0 8px 0; font-weight: 600; color: #0369a1; font-size: 14px;">
+              You can also reply to this email with one of the following:
+            </p>
+            <ul style="margin: 0; padding-left: 20px; color: #0c4a6e; font-size: 13px; line-height: 1.8;">
+              <li>Reply <strong>CONFIRM</strong> to confirm your attendance</li>
+              <li>Reply <strong>RESCHEDULE</strong> to request a new time</li>
+              <li>Reply <strong>CANCEL</strong> to cancel this appointment</li>
+            </ul>
+          </div>
 
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 

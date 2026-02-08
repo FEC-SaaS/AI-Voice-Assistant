@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, FileText, Globe, PenLine, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, FileText, Globe, PenLine, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DocumentUpload } from "@/components/knowledge/document-upload";
 import { toast } from "sonner";
 
 export default function NewKnowledgePage() {
@@ -28,8 +29,14 @@ export default function NewKnowledgePage() {
   const [urlName, setUrlName] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
 
-  // Upload state (placeholder - full implementation requires file storage)
+  // Upload state
   const [uploadName, setUploadName] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFileContent, setUploadedFileContent] = useState<{
+    content: string;
+    fileName: string;
+    fileType: string;
+  } | null>(null);
 
   const createMutation = trpc.knowledge.create.useMutation({
     onSuccess: () => {
@@ -84,8 +91,73 @@ export default function NewKnowledgePage() {
     });
   };
 
-  const handleUploadSubmit = () => {
-    toast.info("File upload requires cloud storage integration (R2/S3). For now, please use URL or Manual entry.");
+  const handleFileContent = useCallback(
+    (content: string, fileName: string, fileType: string) => {
+      setUploadedFileContent({ content, fileName, fileType });
+      if (!uploadName) {
+        setUploadName(fileName.replace(/\.[^.]+$/, ""));
+      }
+    },
+    [uploadName]
+  );
+
+  const handleUploadSubmit = async () => {
+    if (!uploadedFileContent) {
+      toast.error("Please select a file first");
+      return;
+    }
+    if (!uploadName.trim()) {
+      toast.error("Please enter a document name");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const { content, fileName, fileType } = uploadedFileContent;
+      const isTextFile =
+        fileType === "text/plain" ||
+        fileType === "text/csv" ||
+        fileName.endsWith(".txt");
+
+      if (isTextFile) {
+        // For text files, save content directly via tRPC (no R2 needed)
+        createMutation.mutate({
+          name: uploadName,
+          type: "manual",
+          content: content,
+        });
+      } else {
+        // For binary files (PDF, DOCX), upload via the API route to R2
+        const binaryData = Uint8Array.from(atob(content), (c) =>
+          c.charCodeAt(0)
+        );
+        const blob = new Blob([binaryData], { type: fileType });
+        const formData = new FormData();
+        formData.append("file", blob, fileName);
+        formData.append("name", uploadName);
+
+        const response = await fetch("/api/upload/knowledge", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Upload failed");
+        }
+
+        toast.success("Document uploaded successfully");
+        router.push("/dashboard/knowledge");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload file"
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -241,28 +313,21 @@ A: You can reach our support team at support@example.com or call 1-800-EXAMPLE."
                   onChange={(e) => setUploadName(e.target.value)}
                 />
               </div>
-              <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
-                <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="mt-2 text-sm text-gray-600">
-                  Drag and drop a file, or click to browse
-                </p>
-                <p className="mt-1 text-xs text-gray-500">
-                  Supported: PDF, DOCX, TXT (max 10MB)
-                </p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={handleUploadSubmit}
-                >
-                  Select File
-                </Button>
-              </div>
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
-                <p className="text-sm text-amber-800">
-                  <strong>Coming Soon:</strong> File upload requires cloud storage integration.
-                  For now, please use the Manual or URL options, or paste your document content manually.
-                </p>
-              </div>
+              <DocumentUpload
+                onFileContent={handleFileContent}
+                isUploading={isUploading}
+              />
+              <Button
+                onClick={handleUploadSubmit}
+                disabled={isUploading || createMutation.isPending || !uploadedFileContent}
+                className="w-full"
+              >
+                {isUploading || createMutation.isPending ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...</>
+                ) : (
+                  "Upload Document"
+                )}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

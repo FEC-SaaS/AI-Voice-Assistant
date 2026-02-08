@@ -5,6 +5,57 @@
 
 import { db } from "./db";
 
+/**
+ * Strip HTML tags and decode common entities to extract plain text.
+ * Used as fallback when the webhook doesn't provide a text body.
+ */
+function htmlToPlainText(html: string): string {
+  return html
+    // Remove style and script blocks entirely
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    // Convert <br> and block-level tags to newlines
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, "\n")
+    // Strip remaining HTML tags
+    .replace(/<[^>]+>/g, " ")
+    // Decode common HTML entities
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    // Collapse whitespace
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
+ * Extract only the newest reply from an email thread.
+ * Strips quoted text (lines starting with >) and everything after
+ * common reply headers like "On ... wrote:" or "From: ...".
+ */
+function extractLatestReply(text: string): string {
+  const lines = text.split("\n");
+  const result: string[] = [];
+
+  for (const line of lines) {
+    // Stop at quoted text markers
+    if (/^>/.test(line)) break;
+    // Stop at "On <date> <person> wrote:" patterns
+    if (/^On .+ wrote:$/i.test(line.trim())) break;
+    // Stop at "From: " header (forwarded/quoted block)
+    if (/^From:\s/i.test(line.trim())) break;
+    // Stop at separator lines like "------" or "______"
+    if (/^[-_=]{5,}/.test(line.trim())) break;
+    result.push(line);
+  }
+
+  return result.join("\n").trim();
+}
+
 // Keywords that indicate customer intent
 const CONFIRMATION_KEYWORDS = [
   "confirm", "confirmed", "yes", "i'll be there", "i will be there",
@@ -117,10 +168,15 @@ async function findAppointmentByEmail(email: string): Promise<{
 export async function processInboundEmail(email: InboundEmail): Promise<ProcessedEmailResult> {
   try {
     const senderEmail = extractEmail(email.from);
-    const emailContent = email.text || "";
+
+    // Extract text content: prefer plain text, fall back to stripping HTML
+    const rawText = email.text || (email.html ? htmlToPlainText(email.html) : "");
+    // Extract only the latest reply (strip quoted thread content)
+    const emailContent = extractLatestReply(rawText) || rawText;
 
     console.log(`[Email Reply] Processing email from: ${senderEmail}`);
     console.log(`[Email Reply] Subject: ${email.subject}`);
+    console.log(`[Email Reply] Extracted content (${emailContent.length} chars): ${emailContent.substring(0, 200)}`);
 
     // Find appointment for this sender
     const appointment = await findAppointmentByEmail(senderEmail);
@@ -137,8 +193,11 @@ export async function processInboundEmail(email: InboundEmail): Promise<Processe
 
     console.log(`[Email Reply] Found appointment: ${appointment.id} - ${appointment.title}`);
 
-    // Detect intent
-    const intent = detectIntent(emailContent);
+    // Detect intent from email body first, then fall back to subject line
+    let intent = detectIntent(emailContent);
+    if (intent === "unknown" && email.subject) {
+      intent = detectIntent(email.subject);
+    }
     console.log(`[Email Reply] Detected intent: ${intent}`);
 
     switch (intent) {
