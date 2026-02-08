@@ -99,7 +99,7 @@ async function detectIntentWithAI(
 ): Promise<{ intent: EmailIntent; summary: string }> {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",

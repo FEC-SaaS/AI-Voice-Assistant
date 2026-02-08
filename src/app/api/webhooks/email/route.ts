@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { processInboundEmail, logEmailActivity } from "@/lib/email-reply-processor";
-import { sendEmail, resend } from "@/lib/email";
+import { sendEmail } from "@/lib/email";
 import { db } from "@/lib/db";
 
 /**
@@ -139,25 +139,30 @@ export async function POST(request: NextRequest) {
         let emailHtml: string | undefined;
         let emailHeaders: Record<string, string> | undefined;
 
-        if (emailId) {
+        if (emailId && process.env.RESEND_API_KEY) {
           try {
-            console.log(`[Email Webhook] Fetching email body from Resend API for: ${emailId}`);
-            const { data: fullEmail, error: fetchError } = await resend.emails.get(emailId);
+            console.log(`[Email Webhook] Fetching inbound email body from Resend API for: ${emailId}`);
+            // Use the Resend inbound email API endpoint directly
+            // SDK v2.1.0 doesn't have emails.receiving — requires direct fetch
+            const res = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
+              headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+            });
 
-            if (fetchError) {
-              console.error("[Email Webhook] Resend API error:", fetchError);
-            } else if (fullEmail) {
+            if (!res.ok) {
+              const errBody = await res.text();
+              console.error(`[Email Webhook] Resend API ${res.status}: ${errBody}`);
+            } else {
+              const fullEmail = await res.json();
               emailText = fullEmail.text ?? undefined;
               emailHtml = fullEmail.html ?? undefined;
-              // headers may not be in the standard get() response type but can exist on inbound emails
-              emailHeaders = (fullEmail as unknown as { headers?: Record<string, string> }).headers;
+              emailHeaders = fullEmail.headers ?? undefined;
               console.log(`[Email Webhook] Fetched body — text: ${emailText?.length ?? 0} chars, html: ${emailHtml?.length ?? 0} chars`);
             }
           } catch (fetchErr) {
             console.error("[Email Webhook] Failed to fetch email from Resend:", fetchErr);
           }
         } else {
-          console.warn("[Email Webhook] No email_id in webhook payload, cannot fetch body");
+          console.warn("[Email Webhook] No email_id or RESEND_API_KEY, cannot fetch body");
         }
 
         // Process inbound email
