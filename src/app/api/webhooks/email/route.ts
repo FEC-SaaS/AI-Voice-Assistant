@@ -130,6 +130,19 @@ export async function POST(request: NextRequest) {
     // Handle different event types
     switch (event.type) {
       case "email.received": {
+        // Log raw payload to debug body extraction
+        console.log("[Email Webhook] Raw event.data keys:", Object.keys(event.data));
+        console.log("[Email Webhook] Raw payload sample:", JSON.stringify({
+          from: event.data.from,
+          to: event.data.to,
+          subject: event.data.subject,
+          hasText: !!event.data.text,
+          textLength: event.data.text?.length,
+          hasHtml: !!event.data.html,
+          htmlLength: event.data.html?.length,
+          headerKeys: event.data.headers ? Object.keys(event.data.headers) : [],
+        }));
+
         // Process inbound email
         const toAddress = Array.isArray(event.data.to) ? event.data.to[0] : event.data.to;
         const inboundEmail = {
@@ -244,6 +257,7 @@ async function notifyBusinessOfEmailReply(
       const actionLabel = {
         confirmed: "Appointment Confirmed",
         cancel_requested: "Cancellation Requested",
+        reschedule_requested: "Reschedule Requested",
         question: "Customer Question",
       }[result.action] || "Email Received";
 

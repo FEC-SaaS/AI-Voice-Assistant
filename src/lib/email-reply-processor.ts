@@ -1,9 +1,11 @@
 /**
  * Email Reply Processing Service
- * Processes inbound email replies from customers and takes appropriate actions
+ * Processes inbound email replies from customers using OpenAI for intent detection.
+ * Understands natural language — clients can write full sentences, not just keywords.
  */
 
 import { db } from "./db";
+import { openai } from "./openai";
 
 /**
  * Strip HTML tags and decode common entities to extract plain text.
@@ -56,24 +58,6 @@ function extractLatestReply(text: string): string {
   return result.join("\n").trim();
 }
 
-// Keywords that indicate customer intent
-const CONFIRMATION_KEYWORDS = [
-  "confirm", "confirmed", "yes", "i'll be there", "i will be there",
-  "see you then", "sounds good", "perfect", "great", "okay", "ok",
-  "i can make it", "count me in", "attending"
-];
-
-const CANCELLATION_KEYWORDS = [
-  "cancel", "cancelled", "can't make it", "cannot make it", "won't be able",
-  "unable to attend", "have to cancel", "need to cancel", "reschedule",
-  "different time", "change the time", "postpone"
-];
-
-const QUESTION_KEYWORDS = [
-  "?", "what time", "where", "how long", "address", "location",
-  "meeting link", "zoom", "video call", "phone number"
-];
-
 export interface InboundEmail {
   from: string;
   to: string;
@@ -84,11 +68,14 @@ export interface InboundEmail {
   references?: string;
 }
 
+export type EmailIntent = "confirm" | "cancel" | "reschedule" | "question" | "unknown";
+
 export interface ProcessedEmailResult {
   success: boolean;
-  action?: "confirmed" | "cancel_requested" | "question" | "no_action";
+  action?: "confirmed" | "cancel_requested" | "reschedule_requested" | "question" | "no_action";
   appointmentId?: string;
   message?: string;
+  customerMessage?: string;
   shouldNotifyBusiness?: boolean;
 }
 
@@ -102,33 +89,68 @@ function extractEmail(emailString: string): string {
 }
 
 /**
- * Detect customer intent from email content
+ * Use OpenAI to detect customer intent from their email reply.
+ * Returns the intent and the reasoning/summary of what the customer said.
  */
-function detectIntent(text: string): "confirm" | "cancel" | "question" | "unknown" {
-  const lowerText = text.toLowerCase();
+async function detectIntentWithAI(
+  emailBody: string,
+  subject: string,
+  appointmentTitle: string
+): Promise<{ intent: EmailIntent; summary: string }> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-turbo",
+      messages: [
+        {
+          role: "system",
+          content: `You are an appointment management assistant. A customer has replied to an appointment confirmation email. Your job is to determine their intent from their reply.
 
-  // Check for cancellation first (higher priority)
-  for (const keyword of CANCELLATION_KEYWORDS) {
-    if (lowerText.includes(keyword)) {
-      return "cancel";
+IMPORTANT CONTEXT:
+- The email subject line is from the ORIGINAL confirmation email, NOT from the customer. Do NOT use the subject to determine intent.
+- Only use the customer's actual reply text (the "Email body" field) to determine intent.
+- If the email body is empty or contains no meaningful text, return intent "unknown".
+
+Classify the customer's intent into exactly one of these categories:
+- "confirm" — Customer is confirming they will attend (e.g., "I'll be there", "Sounds good", "Yes, confirmed")
+- "cancel" — Customer wants to cancel the appointment (e.g., "I need to cancel", "Something came up, can't make it", "Please cancel")
+- "reschedule" — Customer wants to change the time/date (e.g., "Can we move this to Thursday?", "I need to reschedule", "Different time please")
+- "question" — Customer is asking a question about the appointment (e.g., "Where is the office?", "What should I bring?", "How long will it take?")
+- "unknown" — Cannot determine intent, email body is empty, or the message doesn't relate to any of the above
+
+Return a JSON object with:
+- "intent": one of "confirm", "cancel", "reschedule", "question", "unknown"
+- "summary": a brief 1-sentence summary of what the customer said (or "No message content" if body is empty)`,
+        },
+        {
+          role: "user",
+          content: `Appointment: "${appointmentTitle}"
+Email subject: "${subject}"
+Email body: "${emailBody || "(empty — no text content in the reply)"}"`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+      max_tokens: 150,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      console.log("[Email Reply AI] No response from OpenAI");
+      return { intent: "unknown", summary: "AI classification unavailable" };
     }
-  }
 
-  // Check for confirmation
-  for (const keyword of CONFIRMATION_KEYWORDS) {
-    if (lowerText.includes(keyword)) {
-      return "confirm";
-    }
-  }
+    const parsed = JSON.parse(content);
+    const intent = ["confirm", "cancel", "reschedule", "question", "unknown"].includes(parsed.intent)
+      ? (parsed.intent as EmailIntent)
+      : "unknown";
 
-  // Check for questions
-  for (const keyword of QUESTION_KEYWORDS) {
-    if (lowerText.includes(keyword)) {
-      return "question";
-    }
+    console.log(`[Email Reply AI] Classification: ${intent} — "${parsed.summary}"`);
+    return { intent, summary: parsed.summary || "" };
+  } catch (error) {
+    console.error("[Email Reply AI] OpenAI error:", error);
+    // Fall back to unknown rather than guessing
+    return { intent: "unknown", summary: "AI classification failed" };
   }
-
-  return "unknown";
 }
 
 /**
@@ -176,7 +198,7 @@ export async function processInboundEmail(email: InboundEmail): Promise<Processe
 
     console.log(`[Email Reply] Processing email from: ${senderEmail}`);
     console.log(`[Email Reply] Subject: ${email.subject}`);
-    console.log(`[Email Reply] Extracted content (${emailContent.length} chars): ${emailContent.substring(0, 200)}`);
+    console.log(`[Email Reply] Extracted content (${emailContent.length} chars): ${emailContent.substring(0, 300)}`);
 
     // Find appointment for this sender
     const appointment = await findAppointmentByEmail(senderEmail);
@@ -187,18 +209,20 @@ export async function processInboundEmail(email: InboundEmail): Promise<Processe
         success: true,
         action: "no_action",
         message: "No upcoming appointment found for this email address",
-        shouldNotifyBusiness: true, // Let business know about unmatched email
+        shouldNotifyBusiness: true,
       };
     }
 
     console.log(`[Email Reply] Found appointment: ${appointment.id} - ${appointment.title}`);
 
-    // Detect intent from email body first, then fall back to subject line
-    let intent = detectIntent(emailContent);
-    if (intent === "unknown" && email.subject) {
-      intent = detectIntent(email.subject);
-    }
-    console.log(`[Email Reply] Detected intent: ${intent}`);
+    // Use OpenAI to classify the customer's intent
+    const { intent, summary } = await detectIntentWithAI(
+      emailContent,
+      email.subject,
+      appointment.title
+    );
+
+    console.log(`[Email Reply] AI detected intent: ${intent}`);
 
     switch (intent) {
       case "confirm":
@@ -218,23 +242,47 @@ export async function processInboundEmail(email: InboundEmail): Promise<Processe
           action: "confirmed",
           appointmentId: appointment.id,
           message: `Appointment "${appointment.title}" confirmed via email reply`,
+          customerMessage: summary,
           shouldNotifyBusiness: true,
         };
 
       case "cancel":
-        // Don't auto-cancel - notify business for manual handling
-        // Create a note/flag on the appointment
+        // Update appointment status to cancelled
         await db.appointment.update({
           where: { id: appointment.id },
           data: {
-            notes: `[AUTO] Customer requested cancellation via email on ${new Date().toISOString()}. Original message: "${emailContent.substring(0, 200)}..."`,
+            status: "cancelled",
+            cancelledAt: new Date(),
+            cancelReason: summary || emailContent.substring(0, 500) || "Cancelled via email reply",
+            notes: `[AUTO] Customer requested cancellation via email on ${new Date().toISOString()}. Message: "${emailContent.substring(0, 500) || summary}"`,
           },
         });
+        console.log(`[Email Reply] Appointment ${appointment.id} cancelled via email`);
         return {
           success: true,
           action: "cancel_requested",
           appointmentId: appointment.id,
-          message: `Customer requested cancellation for "${appointment.title}" - requires manual review`,
+          message: `Appointment "${appointment.title}" cancelled via email reply`,
+          customerMessage: summary,
+          shouldNotifyBusiness: true,
+        };
+
+      case "reschedule":
+        // Mark appointment as needing reschedule — don't auto-cancel, notify business
+        await db.appointment.update({
+          where: { id: appointment.id },
+          data: {
+            status: "rescheduled",
+            notes: `[AUTO] Customer requested reschedule via email on ${new Date().toISOString()}. Message: "${emailContent.substring(0, 500) || summary}"`,
+          },
+        });
+        console.log(`[Email Reply] Appointment ${appointment.id} reschedule requested via email`);
+        return {
+          success: true,
+          action: "reschedule_requested",
+          appointmentId: appointment.id,
+          message: `Customer requested reschedule for "${appointment.title}" — requires follow-up`,
+          customerMessage: summary,
           shouldNotifyBusiness: true,
         };
 
@@ -243,7 +291,8 @@ export async function processInboundEmail(email: InboundEmail): Promise<Processe
           success: true,
           action: "question",
           appointmentId: appointment.id,
-          message: `Customer has a question about "${appointment.title}"`,
+          message: `Customer has a question about "${appointment.title}": ${summary}`,
+          customerMessage: summary,
           shouldNotifyBusiness: true,
         };
 
@@ -253,6 +302,7 @@ export async function processInboundEmail(email: InboundEmail): Promise<Processe
           action: "no_action",
           appointmentId: appointment.id,
           message: "Email received but no specific action detected",
+          customerMessage: summary,
           shouldNotifyBusiness: true,
         };
     }
