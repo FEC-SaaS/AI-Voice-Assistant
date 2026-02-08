@@ -569,6 +569,8 @@ export const agentsRouter = router({
           firstMessage: outboundFirstMessage,
           firstMessageMode: "assistant-speaks-first",
           model: {
+            provider: agent.modelProvider || "openai",
+            model: agent.model || "gpt-4o",
             messages: [
               {
                 role: "system",

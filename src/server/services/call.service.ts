@@ -108,6 +108,8 @@ export async function initiateCall(input: InitiateCallInput) {
         firstMessage: outboundFirstMessage,
         firstMessageMode: "assistant-speaks-first",
         model: {
+          provider: agent.modelProvider || "openai",
+          model: agent.model || "gpt-4o",
           messages: [
             {
               role: "system",
