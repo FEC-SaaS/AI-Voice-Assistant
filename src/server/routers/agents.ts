@@ -507,7 +507,10 @@ export const agentsRouter = router({
           id: input.agentId,
           organizationId: ctx.orgId,
         },
-        include: { phoneNumbers: true },
+        include: {
+          phoneNumbers: true,
+          organization: { select: { name: true } },
+        },
       });
 
       if (!agent) {
@@ -533,29 +536,63 @@ export const agentsRouter = router({
         });
       }
 
-      // Initiate call via Vapi
-      const vapiCall = await createCall({
-        assistantId: agent.vapiAssistantId,
-        phoneNumberId: phoneNumber.vapiPhoneId,
-        customerNumber: input.phoneNumber,
-        metadata: {
-          organizationId: ctx.orgId,
-          agentId: agent.id,
-          type: "test",
-        },
-      });
-
-      // Create call record
+      // Create call record first (so we can pass callId in metadata)
       const call = await ctx.db.call.create({
         data: {
           organizationId: ctx.orgId,
           agentId: agent.id,
-          vapiCallId: vapiCall.id,
           direction: "outbound",
           status: "queued",
           toNumber: input.phoneNumber,
           fromNumber: phoneNumber.number,
         },
+      });
+
+      // Build outbound-specific overrides
+      const businessName = agent.organization.name;
+      const outboundFirstMessage = `Hi there, this is ${agent.name} calling from ${businessName}. Do you have a moment to talk?`;
+
+      // Initiate call via Vapi with outbound overrides
+      const vapiCall = await createCall({
+        assistantId: agent.vapiAssistantId,
+        phoneNumberId: phoneNumber.vapiPhoneId,
+        customerNumber: input.phoneNumber,
+        metadata: {
+          callId: call.id,
+          organizationId: ctx.orgId,
+          agentId: agent.id,
+          direction: "outbound",
+          fromNumber: phoneNumber.number,
+          type: "test",
+        },
+        assistantOverrides: {
+          firstMessage: outboundFirstMessage,
+          firstMessageMode: "assistant-speaks-first",
+          model: {
+            messages: [
+              {
+                role: "system",
+                content: `${agent.systemPrompt}
+
+IMPORTANT CONTEXT — OUTBOUND CALL:
+You are making an OUTBOUND call to a potential customer. YOU initiated this call, the customer did NOT call you.
+- Introduce yourself and the business naturally in your opening.
+- Clearly state the purpose of your call early in the conversation.
+- Be professional, persuasive, and respectful of the customer's time.
+- If the customer is busy, offer to call back at a better time.
+- Use consultative selling techniques: ask questions, listen, identify needs, and position your solution.
+- If the customer is not interested, thank them politely and end the call gracefully.
+- NEVER say "Thank you for calling" or "How can I help you today?" — YOU are the one calling THEM.`,
+              },
+            ],
+          },
+        },
+      });
+
+      // Link vapiCallId to the DB record
+      await ctx.db.call.update({
+        where: { id: call.id },
+        data: { vapiCallId: vapiCall.id },
       });
 
       return { callId: call.id, vapiCallId: vapiCall.id, status: vapiCall.status };

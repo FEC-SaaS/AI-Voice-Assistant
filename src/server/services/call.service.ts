@@ -40,9 +40,10 @@ export async function initiateCall(input: InitiateCallInput) {
     });
   }
 
-  // Get the agent with Vapi ID
+  // Get the agent with Vapi ID and org name for outbound context
   const agent = await db.agent.findFirst({
     where: { id: input.agentId, organizationId: input.organizationId },
+    include: { organization: { select: { name: true } } },
   });
 
   if (!agent || !agent.vapiAssistantId) {
@@ -84,6 +85,13 @@ export async function initiateCall(input: InitiateCallInput) {
 
   try {
     // Initiate call via Vapi
+    // Build outbound-specific overrides for the assistant
+    const contactName = input.metadata?.contactName;
+    const businessName = agent.organization.name;
+    const outboundFirstMessage = contactName
+      ? `Hi ${contactName}, this is ${agent.name} calling from ${businessName}. Do you have a moment to talk?`
+      : `Hi there, this is ${agent.name} calling from ${businessName}. Do you have a moment to talk?`;
+
     const vapiCall = await createCall({
       assistantId: agent.vapiAssistantId,
       phoneNumberId: phoneNumber.vapiPhoneId,
@@ -92,6 +100,31 @@ export async function initiateCall(input: InitiateCallInput) {
         ...input.metadata,
         callId: call.id,
         organizationId: input.organizationId,
+        direction: "outbound",
+        fromNumber: phoneNumber.number,
+        agentId: input.agentId,
+      },
+      assistantOverrides: {
+        firstMessage: outboundFirstMessage,
+        firstMessageMode: "assistant-speaks-first",
+        model: {
+          messages: [
+            {
+              role: "system",
+              content: `${agent.systemPrompt}
+
+IMPORTANT CONTEXT — OUTBOUND CALL:
+You are making an OUTBOUND call to a potential customer. YOU initiated this call, the customer did NOT call you.
+- Introduce yourself and the business naturally in your opening.
+- Clearly state the purpose of your call early in the conversation.
+- Be professional, persuasive, and respectful of the customer's time.
+- If the customer is busy, offer to call back at a better time.
+- Use consultative selling techniques: ask questions, listen, identify needs, and position your solution.
+- If the customer is not interested, thank them politely and end the call gracefully.
+- NEVER say "Thank you for calling" or "How can I help you today?" — YOU are the one calling THEM.`,
+            },
+          ],
+        },
       },
     });
 

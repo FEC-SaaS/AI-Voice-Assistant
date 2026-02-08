@@ -279,6 +279,16 @@ export interface CallConfig {
   phoneNumberId: string;
   customerNumber: string;
   metadata?: Record<string, string>;
+  assistantOverrides?: {
+    firstMessage?: string;
+    firstMessageMode?: "assistant-speaks-first" | "assistant-waits-for-user" | "assistant-speaks-first-with-model-generated-message";
+    model?: {
+      provider?: string;
+      model?: string;
+      messages?: Array<{ role: string; content: string }>;
+    };
+    variableValues?: Record<string, string>;
+  };
 }
 
 export interface VapiCall {
@@ -302,6 +312,9 @@ export async function createCall(config: CallConfig): Promise<VapiCall> {
         number: config.customerNumber,
       },
       metadata: config.metadata,
+      ...(config.assistantOverrides && {
+        assistantOverrides: config.assistantOverrides,
+      }),
     },
   });
 }

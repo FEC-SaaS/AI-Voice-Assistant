@@ -1085,6 +1085,8 @@ export async function POST(req: NextRequest) {
 
     const db = await getDb();
 
+    log.info(`Processing event: ${type}, callId: ${call.id}, assistantId: ${call.assistantId}, status: ${call.status}`);
+
     // Find the agent by Vapi assistant ID
     const agent = call.assistantId
       ? await db.agent.findFirst({
@@ -1096,36 +1098,105 @@ export async function POST(req: NextRequest) {
     // Get campaign and contact IDs from metadata
     const campaignId = call.metadata?.campaignId;
     const contactId = call.metadata?.contactId;
-    const organizationId = call.metadata?.organizationId || agent?.organizationId;
+    let organizationId = call.metadata?.organizationId || agent?.organizationId;
+
+    // For inbound calls, metadata may be empty. Resolve org from the phone number.
+    if (!organizationId && call.phoneNumberId) {
+      const phoneRecord = await db.phoneNumber.findFirst({
+        where: { vapiPhoneId: call.phoneNumberId },
+        select: { organizationId: true, agentId: true },
+      });
+      if (phoneRecord) {
+        organizationId = phoneRecord.organizationId;
+        log.info(`Resolved org from phoneNumberId: ${organizationId}`);
+      }
+    }
+
+    // Determine call direction: if metadata has direction use it, otherwise
+    // check if this call was initiated by us (has metadata.callId) or is inbound
+    const callDirection = call.metadata?.direction
+      || (call.metadata?.callId ? "outbound" : "inbound");
 
     if (!organizationId) {
-      log.warn("Could not determine organization for call", { callId: call.id });
+      log.warn("Could not determine organization for call", {
+        callId: call.id,
+        assistantId: call.assistantId,
+        phoneNumberId: call.phoneNumberId,
+        metadata: call.metadata,
+      });
     }
+
+    // Helper: try to find an existing DB call record by metadata.callId first,
+    // then by vapiCallId. This handles outbound calls where the DB record was
+    // created before the Vapi call and may not have vapiCallId set yet.
+    const findExistingCallRecord = async (): Promise<string | null> => {
+      // 1. Check by vapiCallId (standard path)
+      const byVapi = await db.call.findUnique({
+        where: { vapiCallId: call!.id },
+        select: { id: true },
+      });
+      if (byVapi) return byVapi.id;
+
+      // 2. Check by metadata.callId (outbound calls pass their DB id in metadata)
+      if (call!.metadata?.callId) {
+        const byMeta = await db.call.findUnique({
+          where: { id: call!.metadata.callId },
+          select: { id: true, vapiCallId: true },
+        });
+        if (byMeta) {
+          // Link the vapiCallId to this record if not yet set
+          if (!byMeta.vapiCallId) {
+            await db.call.update({
+              where: { id: byMeta.id },
+              data: { vapiCallId: call!.id },
+            });
+            log.info(`Linked vapiCallId ${call!.id} to DB record ${byMeta.id} via metadata.callId`);
+          }
+          return byMeta.id;
+        }
+      }
+
+      return null;
+    };
 
     switch (type) {
       case "call.started":
       case "call-started":
       case "call.ringing": {
-        // Create or update call record when call starts
-        await db.call.upsert({
-          where: { vapiCallId: call.id },
-          create: {
-            vapiCallId: call.id,
-            organizationId: organizationId || "",
-            agentId: agent?.id,
-            campaignId: campaignId || null,
-            contactId: contactId || null,
-            direction: call.metadata?.direction || "outbound",
-            status: "in-progress",
-            fromNumber: call.metadata?.fromNumber,
-            toNumber: call.customer?.number,
-            startedAt: call.startedAt ? new Date(call.startedAt) : new Date(),
-          },
-          update: {
-            status: "in-progress",
-            startedAt: call.startedAt ? new Date(call.startedAt) : new Date(),
-          },
-        });
+        // Try to find existing DB record first (for outbound calls)
+        const existingId = await findExistingCallRecord();
+        const startTime = call.startedAt ? new Date(call.startedAt) : new Date();
+
+        if (existingId) {
+          // Update existing record
+          await db.call.update({
+            where: { id: existingId },
+            data: {
+              vapiCallId: call.id,
+              status: "in-progress",
+              startedAt: startTime,
+              agentId: agent?.id || undefined,
+            },
+          });
+          log.info(`Call started: updated existing record ${existingId}`);
+        } else {
+          // Create new record (inbound calls)
+          await db.call.create({
+            data: {
+              vapiCallId: call.id,
+              organizationId: organizationId || "",
+              agentId: agent?.id,
+              campaignId: campaignId || null,
+              contactId: contactId || null,
+              direction: callDirection,
+              status: "in-progress",
+              fromNumber: callDirection === "inbound" ? call.customer?.number : call.metadata?.fromNumber,
+              toNumber: callDirection === "inbound" ? call.metadata?.fromNumber : call.customer?.number,
+              startedAt: startTime,
+            },
+          });
+          log.info(`Call started: created new ${callDirection} record for ${call.id}`);
+        }
 
         // Update contact status if applicable
         if (contactId) {
@@ -1167,35 +1238,50 @@ export async function POST(req: NextRequest) {
         const transcriptText = normalizeTranscript(call.transcript);
         log.info(`Call ended: ${call.id}, status: ${finalStatus}, duration: ${durationSeconds}s, transcript: ${transcriptText?.length ?? 0} chars`);
 
-        // Update call record
-        const updatedCall = await db.call.upsert({
-          where: { vapiCallId: call.id },
-          create: {
-            vapiCallId: call.id,
-            organizationId: organizationId || "",
-            agentId: agent?.id,
-            campaignId: campaignId || null,
-            contactId: contactId || null,
-            direction: call.metadata?.direction || "outbound",
-            status: finalStatus,
-            fromNumber: call.metadata?.fromNumber,
-            toNumber: call.customer?.number,
-            startedAt,
-            endedAt,
-            durationSeconds,
-            transcript: transcriptText,
-            recordingUrl: call.recordingUrl,
-            costCents,
-          },
-          update: {
-            status: finalStatus,
-            endedAt,
-            durationSeconds,
-            transcript: transcriptText,
-            recordingUrl: call.recordingUrl,
-            costCents,
-          },
-        });
+        // Try to find existing record first
+        const existingEndId = await findExistingCallRecord();
+        let updatedCall;
+
+        if (existingEndId) {
+          // Update existing record
+          updatedCall = await db.call.update({
+            where: { id: existingEndId },
+            data: {
+              vapiCallId: call.id,
+              status: finalStatus,
+              agentId: agent?.id || undefined,
+              startedAt: startedAt || undefined,
+              endedAt,
+              durationSeconds,
+              transcript: transcriptText,
+              recordingUrl: call.recordingUrl,
+              costCents,
+            },
+          });
+          log.info(`Call ended: updated existing record ${existingEndId}`);
+        } else {
+          // Create new record (shouldn't normally happen, but handles edge cases)
+          updatedCall = await db.call.create({
+            data: {
+              vapiCallId: call.id,
+              organizationId: organizationId || "",
+              agentId: agent?.id,
+              campaignId: campaignId || null,
+              contactId: contactId || null,
+              direction: callDirection,
+              status: finalStatus,
+              fromNumber: callDirection === "inbound" ? call.customer?.number : call.metadata?.fromNumber,
+              toNumber: callDirection === "inbound" ? call.metadata?.fromNumber : call.customer?.number,
+              startedAt,
+              endedAt,
+              durationSeconds,
+              transcript: transcriptText,
+              recordingUrl: call.recordingUrl,
+              costCents,
+            },
+          });
+          log.info(`Call ended: created new record for ${call.id}`);
+        }
 
         // Update contact status based on call outcome
         if (contactId) {
@@ -1223,9 +1309,9 @@ export async function POST(req: NextRequest) {
 
         // Detect missed calls for inbound calls
         // A missed call is: inbound + (no-answer status OR zero duration OR failed with short duration)
-        const callDirection = call.metadata?.direction || updatedCall.direction || "outbound";
+        const endCallDirection = callDirection || updatedCall.direction || "outbound";
         const isMissedCall =
-          callDirection === "inbound" &&
+          endCallDirection === "inbound" &&
           (finalStatus === "no-answer" ||
            (durationSeconds <= 5 && finalStatus !== "completed") ||
            finalStatus === "busy");
@@ -1314,24 +1400,30 @@ export async function POST(req: NextRequest) {
 
       case "call.failed":
       case "call-failed": {
-        // Handle failed calls
-        await db.call.upsert({
-          where: { vapiCallId: call.id },
-          create: {
-            vapiCallId: call.id,
-            organizationId: organizationId || "",
-            agentId: agent?.id,
-            campaignId: campaignId || null,
-            contactId: contactId || null,
-            direction: call.metadata?.direction || "outbound",
-            status: "failed",
-            fromNumber: call.metadata?.fromNumber,
-            toNumber: call.customer?.number,
-          },
-          update: {
-            status: "failed",
-          },
-        });
+        log.info(`Call failed: ${call.id}`);
+        // Handle failed calls - find existing record first
+        const existingFailId = await findExistingCallRecord();
+
+        if (existingFailId) {
+          await db.call.update({
+            where: { id: existingFailId },
+            data: { vapiCallId: call.id, status: "failed" },
+          });
+        } else {
+          await db.call.create({
+            data: {
+              vapiCallId: call.id,
+              organizationId: organizationId || "",
+              agentId: agent?.id,
+              campaignId: campaignId || null,
+              contactId: contactId || null,
+              direction: callDirection,
+              status: "failed",
+              fromNumber: callDirection === "inbound" ? call.customer?.number : call.metadata?.fromNumber,
+              toNumber: callDirection === "inbound" ? call.metadata?.fromNumber : call.customer?.number,
+            },
+          });
+        }
 
         // Update contact status
         if (contactId) {
@@ -1347,8 +1439,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Detect missed inbound calls that failed
-        const failedDirection = call.metadata?.direction || "outbound";
-        if (failedDirection === "inbound" && organizationId && call.customer?.number) {
+        if (callDirection === "inbound" && organizationId && call.customer?.number) {
           import("@/lib/missed-calls").then(({ processMissedCall }) => {
             processMissedCall({
               organizationId: organizationId!,
