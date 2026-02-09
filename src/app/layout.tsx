@@ -22,7 +22,7 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <body className={`${inter.variable} font-sans antialiased`}>
           {children}
-          <Toaster position="top-right" richColors />
+          <Toaster position="top-right" richColors theme="dark" />
         </body>
       </html>
     </ClerkProvider>

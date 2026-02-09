@@ -9,12 +9,12 @@ export default function PricingPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-gray-50 to-white py-16">
+      <section className="bg-gradient-to-b from-secondary to-white py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Simple, Transparent Pricing
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
             Start free, scale as you grow. No hidden fees, no surprises.
           </p>
         </div>
@@ -30,7 +30,7 @@ export default function PricingPage() {
               return (
                 <div
                   key={plan.id}
-                  className={`relative rounded-2xl border bg-white p-8 shadow-sm ${
+                  className={`relative rounded-2xl border bg-card p-8 shadow-sm ${
                     isPopular ? "border-primary ring-2 ring-primary" : ""
                   }`}
                 >
@@ -43,17 +43,17 @@ export default function PricingPage() {
                   )}
 
                   <div className="text-center">
-                    <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                    <p className="mt-2 h-12 text-sm text-gray-500">{plan.description}</p>
+                    <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
+                    <p className="mt-2 h-12 text-sm text-muted-foreground">{plan.description}</p>
 
                     <div className="mt-6">
                       {plan.price !== null ? (
                         <div>
-                          <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
-                          <span className="text-gray-500">/month</span>
+                          <span className="text-4xl font-bold text-foreground">${plan.price}</span>
+                          <span className="text-muted-foreground">/month</span>
                         </div>
                       ) : (
-                        <span className="text-2xl font-semibold text-gray-900">Custom</span>
+                        <span className="text-2xl font-semibold text-foreground">Custom</span>
                       )}
                     </div>
 
@@ -71,7 +71,7 @@ export default function PricingPage() {
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-3">
                         <Check className="h-5 w-5 shrink-0 text-green-500" />
-                        <span className="text-sm text-gray-600">{feature}</span>
+                        <span className="text-sm text-muted-foreground">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -85,7 +85,7 @@ export default function PricingPage() {
             <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
               <div>
                 <h3 className="text-2xl font-bold">Enterprise</h3>
-                <p className="mt-2 max-w-xl text-gray-300">
+                <p className="mt-2 max-w-xl text-muted-foreground">
                   Custom solutions for large organizations. Get unlimited agents,
                   dedicated support, custom integrations, and SLAs tailored to your needs.
                 </p>
@@ -93,7 +93,7 @@ export default function PricingPage() {
                   {PLANS.enterprise.features.slice(0, 4).map((feature, i) => (
                     <li key={i} className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-400" />
-                      <span className="text-sm text-gray-300">{feature}</span>
+                      <span className="text-sm text-muted-foreground">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -110,9 +110,9 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="border-t bg-gray-50 py-16">
+      <section className="border-t bg-secondary py-16">
         <div className="container mx-auto px-4">
-          <h2 className="text-center text-3xl font-bold text-gray-900">
+          <h2 className="text-center text-3xl font-bold text-foreground">
             Frequently Asked Questions
           </h2>
           <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
@@ -166,8 +166,8 @@ export default function PricingPage() {
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (
     <div>
-      <h3 className="font-semibold text-gray-900">{question}</h3>
-      <p className="mt-2 text-sm text-gray-600">{answer}</p>
+      <h3 className="font-semibold text-foreground">{question}</h3>
+      <p className="mt-2 text-sm text-muted-foreground">{answer}</p>
     </div>
   );
 }

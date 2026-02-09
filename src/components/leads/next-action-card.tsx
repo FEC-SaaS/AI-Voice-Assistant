@@ -14,14 +14,14 @@ export function NextActionCard({ action, contactName }: NextActionCardProps) {
       className={cn(
         "flex items-start gap-2 rounded-lg border p-3",
         action
-          ? "border-purple-200 bg-purple-50"
-          : "border-gray-200 bg-gray-50"
+          ? "border-purple-200 bg-purple-500/10"
+          : "border-border bg-secondary"
       )}
     >
       <Sparkles
         className={cn(
           "mt-0.5 h-4 w-4 shrink-0",
-          action ? "text-purple-500" : "text-gray-400"
+          action ? "text-purple-500" : "text-muted-foreground/70"
         )}
       />
       <div className="min-w-0 flex-1">
@@ -29,7 +29,7 @@ export function NextActionCard({ action, contactName }: NextActionCardProps) {
           <p
             className={cn(
               "text-xs font-medium",
-              action ? "text-purple-700" : "text-gray-500"
+              action ? "text-purple-400" : "text-muted-foreground"
             )}
           >
             {contactName}
@@ -38,7 +38,7 @@ export function NextActionCard({ action, contactName }: NextActionCardProps) {
         <p
           className={cn(
             "text-sm",
-            action ? "text-purple-900" : "text-gray-400 italic"
+            action ? "text-purple-900" : "text-muted-foreground/70 italic"
           )}
         >
           {action || "No recommended action"}

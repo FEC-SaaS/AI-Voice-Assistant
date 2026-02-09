@@ -19,9 +19,9 @@ interface InsightsOverviewProps {
 }
 
 function getCloseProbabilityColor(value: number): string {
-  if (value >= 60) return "text-green-600";
-  if (value >= 40) return "text-yellow-600";
-  return "text-red-600";
+  if (value >= 60) return "text-green-400";
+  if (value >= 40) return "text-yellow-400";
+  return "text-red-400";
 }
 
 interface MetricCardProps {

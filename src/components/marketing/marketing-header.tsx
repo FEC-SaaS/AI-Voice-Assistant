@@ -15,7 +15,7 @@ export function MarketingHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="border-b bg-white">
+    <header className="border-b bg-card">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
           <Bot className="h-8 w-8 text-primary" />
@@ -28,8 +28,8 @@ export function MarketingHeader() {
               href={link.href}
               className={`text-sm ${
                 pathname === link.href
-                  ? "font-medium text-gray-900"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "font-medium text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {link.label}

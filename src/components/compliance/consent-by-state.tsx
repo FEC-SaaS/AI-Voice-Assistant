@@ -69,9 +69,9 @@ function getRateColor(rate: number): string {
 }
 
 function getRateTextColor(rate: number): string {
-  if (rate >= 90) return "text-green-600";
-  if (rate >= 70) return "text-yellow-600";
-  return "text-red-600";
+  if (rate >= 90) return "text-green-400";
+  if (rate >= 70) return "text-yellow-400";
+  return "text-red-400";
 }
 
 export function ConsentByState({ data, isLoading }: ConsentByStateProps) {

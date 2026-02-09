@@ -22,7 +22,7 @@ export function OrgGuard({ children }: { children: React.ReactNode }) {
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -31,7 +31,7 @@ export function OrgGuard({ children }: { children: React.ReactNode }) {
   if (!organization && !isOnboarding) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }

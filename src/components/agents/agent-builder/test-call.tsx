@@ -34,8 +34,8 @@ export function TestCall({ agentId }: TestCallProps) {
 
   return (
     <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
-      <h3 className="text-lg font-semibold text-gray-900">Make a Test Call</h3>
-      <p className="mt-1 text-sm text-gray-500">
+      <h3 className="text-lg font-semibold text-foreground">Make a Test Call</h3>
+      <p className="mt-1 text-sm text-muted-foreground">
         Enter a phone number to test this agent. The agent will call the number
         and use its configured prompt.
       </p>

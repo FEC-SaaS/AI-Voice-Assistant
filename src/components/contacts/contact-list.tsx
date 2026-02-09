@@ -53,7 +53,7 @@ interface ContactListProps {
 }
 
 const statusColors: Record<string, string> = {
-  pending: "bg-gray-100 text-gray-800",
+  pending: "bg-secondary text-foreground",
   called: "bg-blue-100 text-blue-800",
   completed: "bg-green-100 text-green-800",
   failed: "bg-red-100 text-red-800",
@@ -162,7 +162,7 @@ export function ContactList({ campaignId }: ContactListProps) {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
           <Input
             placeholder="Search contacts..."
             value={search}
@@ -204,8 +204,8 @@ export function ContactList({ campaignId }: ContactListProps) {
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             </div>
           ) : data?.contacts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-              <Users className="h-12 w-12 text-gray-300" />
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Users className="h-12 w-12 text-muted-foreground/70" />
               <p className="mt-2">No contacts found</p>
               <p className="text-sm">Import contacts to get started</p>
             </div>
@@ -222,7 +222,7 @@ export function ContactList({ campaignId }: ContactListProps) {
                         selectedContacts.size === data.contacts.length
                       }
                       onChange={handleSelectAll}
-                      className="rounded border-gray-300"
+                      className="rounded border-border"
                     />
                   </TableHead>
                   <TableHead>Contact</TableHead>
@@ -242,7 +242,7 @@ export function ContactList({ campaignId }: ContactListProps) {
                         type="checkbox"
                         checked={selectedContacts.has(contact.id)}
                         onChange={() => handleSelectContact(contact.id)}
-                        className="rounded border-gray-300"
+                        className="rounded border-border"
                       />
                     </TableCell>
                     <TableCell>
@@ -253,7 +253,7 @@ export function ContactList({ campaignId }: ContactListProps) {
                             : "Unknown"}
                         </div>
                         {contact.email && (
-                          <div className="flex items-center gap-1 text-sm text-gray-500">
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <Mail className="h-3 w-3" />
                             {contact.email}
                           </div>
@@ -262,34 +262,34 @@ export function ContactList({ campaignId }: ContactListProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Phone className="h-4 w-4 text-gray-400" />
+                        <Phone className="h-4 w-4 text-muted-foreground/70" />
                         {formatPhoneNumber(contact.phoneNumber)}
                       </div>
                     </TableCell>
                     <TableCell>
                       {contact.company ? (
                         <div className="flex items-center gap-1">
-                          <Building className="h-4 w-4 text-gray-400" />
+                          <Building className="h-4 w-4 text-muted-foreground/70" />
                           {contact.company}
                         </div>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-muted-foreground/70">-</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {(contact as Record<string, unknown>).leadScore != null ? (
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
                           (contact as Record<string, unknown>).leadScore as number >= 70
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-green-100 text-green-400"
                             : (contact as Record<string, unknown>).leadScore as number >= 40
                               ? "bg-amber-100 text-amber-700"
-                              : "bg-red-100 text-red-700"
+                              : "bg-red-100 text-red-400"
                         }`}>
                           <Target className="h-3 w-3" />
                           {(contact as Record<string, unknown>).leadScore as number}
                         </span>
                       ) : (
-                        <span className="text-gray-400 text-xs">—</span>
+                        <span className="text-muted-foreground/70 text-xs">—</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -302,7 +302,7 @@ export function ContactList({ campaignId }: ContactListProps) {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-gray-500">{contact._count.calls}</span>
+                      <span className="text-muted-foreground">{contact._count.calls}</span>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -325,7 +325,7 @@ export function ContactList({ campaignId }: ContactListProps) {
                               setContactToDelete(contact.id);
                               setDeleteDialogOpen(true);
                             }}
-                            className="text-red-600"
+                            className="text-red-400"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
@@ -344,7 +344,7 @@ export function ContactList({ campaignId }: ContactListProps) {
       {/* Pagination */}
       {data && data.pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             Showing {(page - 1) * data.pagination.limit + 1} to{" "}
             {Math.min(page * data.pagination.limit, data.pagination.total)} of{" "}
             {data.pagination.total} contacts

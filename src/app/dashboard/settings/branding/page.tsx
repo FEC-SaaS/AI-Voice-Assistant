@@ -161,7 +161,7 @@ export default function BrandingSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -171,10 +171,10 @@ export default function BrandingSettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Branding Settings
           </h1>
-          <p className="text-gray-500">
+          <p className="text-muted-foreground">
             Customize your dashboard appearance, logos, and colors
           </p>
         </div>
@@ -215,7 +215,7 @@ export default function BrandingSettingsPage() {
                 markChanged();
               }}
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Leave as your organization name or enter a custom brand name.
             </p>
           </div>
@@ -240,7 +240,7 @@ export default function BrandingSettingsPage() {
             <Label>Brand Logo</Label>
             {brandLogoUrl ? (
               <div className="flex items-center gap-4">
-                <div className="relative h-16 w-40 rounded-lg border bg-gray-50 flex items-center justify-center p-2">
+                <div className="relative h-16 w-40 rounded-lg border bg-secondary flex items-center justify-center p-2">
                   <img
                     src={brandLogoUrl}
                     alt="Brand logo"
@@ -262,18 +262,18 @@ export default function BrandingSettingsPage() {
             ) : (
               <div
                 {...logoDropzone.getRootProps()}
-                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-6 transition-colors hover:border-primary/50"
+                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-6 transition-colors hover:border-primary/50"
               >
                 <input {...logoDropzone.getInputProps()} />
                 {uploadingLogo ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
                 ) : (
                   <>
-                    <Upload className="h-8 w-8 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-600">
+                    <Upload className="h-8 w-8 text-muted-foreground/70" />
+                    <p className="mt-2 text-sm text-muted-foreground">
                       Drop your logo here or click to upload
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground/70">
                       Recommended: 200x50px, PNG or SVG
                     </p>
                   </>
@@ -287,7 +287,7 @@ export default function BrandingSettingsPage() {
             <Label>Favicon</Label>
             {brandFaviconUrl ? (
               <div className="flex items-center gap-4">
-                <div className="relative h-10 w-10 rounded-lg border bg-gray-50 flex items-center justify-center p-1">
+                <div className="relative h-10 w-10 rounded-lg border bg-secondary flex items-center justify-center p-1">
                   <img
                     src={brandFaviconUrl}
                     alt="Favicon"
@@ -309,18 +309,18 @@ export default function BrandingSettingsPage() {
             ) : (
               <div
                 {...faviconDropzone.getRootProps()}
-                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-6 transition-colors hover:border-primary/50"
+                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-6 transition-colors hover:border-primary/50"
               >
                 <input {...faviconDropzone.getInputProps()} />
                 {uploadingFavicon ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
                 ) : (
                   <>
-                    <Upload className="h-6 w-6 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-600">
+                    <Upload className="h-6 w-6 text-muted-foreground/70" />
+                    <p className="mt-2 text-sm text-muted-foreground">
                       Drop favicon here or click to upload
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground/70">
                       32x32px, PNG or ICO
                     </p>
                   </>
@@ -367,7 +367,7 @@ export default function BrandingSettingsPage() {
                   placeholder="#1e293b"
                 />
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Used for buttons, links, sidebar highlights
               </p>
             </div>
@@ -395,7 +395,7 @@ export default function BrandingSettingsPage() {
                   placeholder="#f1f5f9"
                 />
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Used for hover states and secondary elements
               </p>
             </div>
@@ -412,7 +412,7 @@ export default function BrandingSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="w-64 rounded-lg border bg-white overflow-hidden shadow-sm">
+          <div className="w-64 rounded-lg border bg-card overflow-hidden shadow-sm">
             {/* Mock sidebar header */}
             <div className="flex h-14 items-center gap-3 border-b px-4">
               {brandLogoUrl ? (
@@ -431,7 +431,7 @@ export default function BrandingSettingsPage() {
                   <Bot className="h-4 w-4" />
                 </div>
               )}
-              <span className="text-sm font-bold text-gray-900">
+              <span className="text-sm font-bold text-foreground">
                 {brandName || "CallTone"}
               </span>
             </div>
@@ -446,10 +446,10 @@ export default function BrandingSettingsPage() {
               >
                 Dashboard
               </div>
-              <div className="rounded-lg px-3 py-2 text-xs text-gray-600 hover:bg-gray-100">
+              <div className="rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-secondary">
                 Agents
               </div>
-              <div className="rounded-lg px-3 py-2 text-xs text-gray-600 hover:bg-gray-100">
+              <div className="rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-secondary">
                 Campaigns
               </div>
             </div>
@@ -457,7 +457,7 @@ export default function BrandingSettingsPage() {
             {/* Powered by footer */}
             {!poweredByHidden && (
               <div className="border-t px-4 py-2">
-                <p className="text-[10px] text-gray-400 text-center">
+                <p className="text-[10px] text-muted-foreground/70 text-center">
                   Powered by CallTone AI
                 </p>
               </div>
@@ -482,10 +482,10 @@ export default function BrandingSettingsPage() {
           {planAllowsHide ? (
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-foreground">
                   Hide &quot;Powered by CallTone AI&quot;
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Removes branding from sidebar footer and appointment pages
                 </p>
               </div>

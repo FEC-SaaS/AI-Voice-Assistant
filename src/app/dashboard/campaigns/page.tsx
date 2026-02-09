@@ -29,14 +29,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
-const DEFAULT_STATUS = { label: "Draft", color: "text-gray-600", bgColor: "bg-gray-100" };
+const DEFAULT_STATUS = { label: "Draft", color: "text-muted-foreground", bgColor: "bg-secondary" };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
   draft: DEFAULT_STATUS,
-  scheduled: { label: "Scheduled", color: "text-blue-600", bgColor: "bg-blue-100" },
-  running: { label: "Running", color: "text-green-600", bgColor: "bg-green-100" },
-  paused: { label: "Paused", color: "text-yellow-600", bgColor: "bg-yellow-100" },
-  completed: { label: "Completed", color: "text-purple-600", bgColor: "bg-purple-100" },
+  scheduled: { label: "Scheduled", color: "text-blue-400", bgColor: "bg-blue-500/10" },
+  running: { label: "Running", color: "text-green-400", bgColor: "bg-green-500/10" },
+  paused: { label: "Paused", color: "text-yellow-400", bgColor: "bg-yellow-500/10" },
+  completed: { label: "Completed", color: "text-purple-400", bgColor: "bg-purple-500/10" },
 };
 
 function formatDate(date: string | Date | null) {
@@ -137,12 +137,12 @@ export default function CampaignsPage() {
       <div className="space-y-6 max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
-            <p className="text-gray-500">Loading...</p>
+            <h1 className="text-2xl font-bold text-foreground">Campaigns</h1>
+            <p className="text-muted-foreground">Loading...</p>
           </div>
         </div>
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
         </div>
       </div>
     );
@@ -153,8 +153,8 @@ export default function CampaignsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Campaigns</h1>
+          <p className="text-muted-foreground">
             {campaigns?.length
               ? `${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""}`
               : "Create and manage outbound calling campaigns"}
@@ -170,12 +170,12 @@ export default function CampaignsPage() {
 
       {/* Campaigns List */}
       {!campaigns?.length ? (
-        <div className="rounded-2xl border border-gray-200/50 bg-white p-8 lg:p-12 text-center shadow-sm">
+        <div className="rounded-2xl border border-border/50 bg-card p-8 lg:p-12 text-center shadow-sm">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center">
             <Megaphone className="h-8 w-8 text-amber-500" />
           </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">No campaigns yet</h3>
-          <p className="mt-2 text-sm text-gray-500 max-w-sm mx-auto">
+          <h3 className="mt-4 text-lg font-semibold text-foreground">No campaigns yet</h3>
+          <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
             Create a campaign to start making outbound calls to your contacts.
           </p>
           <Link href="/dashboard/campaigns/new">
@@ -195,14 +195,14 @@ export default function CampaignsPage() {
             return (
               <div
                 key={campaign.id}
-                className="rounded-2xl border border-gray-200/50 bg-white p-5 hover:shadow-lg hover:shadow-gray-200/50 hover:-translate-y-0.5 transition-all"
+                className="rounded-2xl border border-border/50 bg-card p-5 hover:shadow-lg hover:shadow-border/50 hover:-translate-y-0.5 transition-all"
               >
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <Link
                       href={`/dashboard/campaigns/${campaign.id}`}
-                      className="text-lg font-semibold text-gray-900 hover:text-primary truncate block"
+                      className="text-lg font-semibold text-foreground hover:text-primary truncate block"
                     >
                       {campaign.name}
                     </Link>
@@ -226,7 +226,7 @@ export default function CampaignsPage() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => handleDelete(campaign.id, campaign.name)}
-                        className="text-red-600"
+                        className="text-red-400"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete
@@ -237,24 +237,24 @@ export default function CampaignsPage() {
 
                 {/* Description */}
                 {campaign.description && (
-                  <p className="mt-2 text-sm text-gray-500 line-clamp-2">{campaign.description}</p>
+                  <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{campaign.description}</p>
                 )}
 
                 {/* Stats */}
                 <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Bot className="h-4 w-4" />
                     <span className="truncate">{campaign.agent?.name || "No agent"}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Users className="h-4 w-4" />
                     <span>{campaign._count.contacts} contacts</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Phone className="h-4 w-4" />
                     <span>{campaign._count.calls} calls</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     <span>{callingHours?.start} - {callingHours?.end}</span>
                   </div>
@@ -262,7 +262,7 @@ export default function CampaignsPage() {
 
                 {/* Schedule */}
                 {campaign.scheduleStart && (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                  <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
                     <span>
                       {formatDate(campaign.scheduleStart)}

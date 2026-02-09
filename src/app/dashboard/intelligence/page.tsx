@@ -28,11 +28,11 @@ export default function IntelligencePage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
           <Brain className="h-7 w-7" />
           Conversation Intelligence
         </h1>
-        <p className="text-gray-500 mt-1">
+        <p className="text-muted-foreground mt-1">
           AI-powered insights from your call conversations — competitor
           tracking, objection analysis, buying signals, and coaching
           recommendations.

@@ -49,9 +49,9 @@ export function ObjectionPatterns({ patterns }: ObjectionPatternsProps) {
       </CardHeader>
       <CardContent>
         {!hasData ? (
-          <div className="flex h-[240px] items-center justify-center text-gray-500">
+          <div className="flex h-[240px] items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <ShieldAlert className="mx-auto h-12 w-12 text-gray-300" />
+              <ShieldAlert className="mx-auto h-12 w-12 text-muted-foreground/70" />
               <p className="mt-4">No objection patterns detected</p>
               <p className="text-sm">
                 Patterns will appear as more calls are analyzed

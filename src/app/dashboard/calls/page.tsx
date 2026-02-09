@@ -11,15 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 const STATUS_STYLES: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
-  completed: { icon: CheckCircle, color: "text-green-600 bg-green-50", label: "Completed" },
-  failed: { icon: XCircle, color: "text-red-600 bg-red-50", label: "Failed" },
-  "no-answer": { icon: AlertCircle, color: "text-yellow-600 bg-yellow-50", label: "No Answer" },
-  queued: { icon: Clock, color: "text-blue-600 bg-blue-50", label: "Queued" },
-  "in-progress": { icon: Phone, color: "text-blue-600 bg-blue-50", label: "In Progress" },
+  completed: { icon: CheckCircle, color: "text-green-400 bg-green-500/100/10", label: "Completed" },
+  failed: { icon: XCircle, color: "text-red-400 bg-red-500/10", label: "Failed" },
+  "no-answer": { icon: AlertCircle, color: "text-yellow-400 bg-yellow-500/10", label: "No Answer" },
+  queued: { icon: Clock, color: "text-blue-400 bg-blue-500/100/10", label: "Queued" },
+  "in-progress": { icon: Phone, color: "text-blue-400 bg-blue-500/100/10", label: "In Progress" },
 };
 
 function getStatusStyle(status: string) {
-  return STATUS_STYLES[status] || { icon: AlertCircle, color: "text-gray-600 bg-gray-50", label: status };
+  return STATUS_STYLES[status] || { icon: AlertCircle, color: "text-muted-foreground bg-secondary", label: status };
 }
 
 function formatDuration(seconds: number | null) {
@@ -69,8 +69,8 @@ export default function CallsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Call Logs</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Call Logs</h1>
+          <p className="text-muted-foreground">
             View and analyze all your call recordings
           </p>
         </div>
@@ -87,33 +87,33 @@ export default function CallsPage() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
-          <div className="rounded-2xl border border-gray-200/50 bg-white p-4 text-center shadow-sm">
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            <p className="text-xs text-gray-500">Total Calls</p>
+          <div className="rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm">
+            <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+            <p className="text-xs text-muted-foreground">Total Calls</p>
           </div>
-          <div className="rounded-2xl border border-gray-200/50 bg-white p-4 text-center shadow-sm">
-            <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-            <p className="text-xs text-gray-500">Completed</p>
+          <div className="rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm">
+            <p className="text-2xl font-bold text-green-400">{stats.completed}</p>
+            <p className="text-xs text-muted-foreground">Completed</p>
           </div>
-          <div className="rounded-2xl border border-gray-200/50 bg-white p-4 text-center shadow-sm">
-            <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
-            <p className="text-xs text-gray-500">Failed</p>
+          <div className="rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm">
+            <p className="text-2xl font-bold text-red-400">{stats.failed}</p>
+            <p className="text-xs text-muted-foreground">Failed</p>
           </div>
-          <div className="rounded-2xl border border-gray-200/50 bg-white p-4 text-center shadow-sm">
-            <p className="text-2xl font-bold text-gray-900">{stats.totalMinutes}</p>
-            <p className="text-xs text-gray-500">Total Minutes</p>
+          <div className="rounded-2xl border border-border/50 bg-card p-4 text-center shadow-sm">
+            <p className="text-2xl font-bold text-foreground">{stats.totalMinutes}</p>
+            <p className="text-xs text-muted-foreground">Total Minutes</p>
           </div>
         </div>
       )}
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="rounded-2xl border border-gray-200/50 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>Agent</Label>
               <select
-                className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
                 value={filters.agentId || ""}
                 onChange={(e) => setFilters((f) => ({ ...f, agentId: e.target.value || undefined }))}
               >
@@ -126,7 +126,7 @@ export default function CallsPage() {
             <div className="space-y-2">
               <Label>Status</Label>
               <select
-                className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
                 value={filters.status || ""}
                 onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value || undefined }))}
               >
@@ -141,7 +141,7 @@ export default function CallsPage() {
             <div className="space-y-2">
               <Label>Direction</Label>
               <select
-                className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+                className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
                 value={filters.direction || ""}
                 onChange={(e) =>
                   setFilters((f) => ({
@@ -172,15 +172,15 @@ export default function CallsPage() {
       {/* Calls List */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
         </div>
       ) : !calls.length ? (
-        <div className="rounded-2xl border border-gray-200/50 bg-white p-8 lg:p-12 text-center shadow-sm">
+        <div className="rounded-2xl border border-border/50 bg-card p-8 lg:p-12 text-center shadow-sm">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center">
             <Phone className="h-8 w-8 text-blue-500" />
           </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">No calls yet</h3>
-          <p className="mt-2 text-sm text-gray-500 max-w-sm mx-auto">
+          <h3 className="mt-4 text-lg font-semibold text-foreground">No calls yet</h3>
+          <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
             Make a test call or run a campaign to see call logs here.
           </p>
         </div>
@@ -195,11 +195,11 @@ export default function CallsPage() {
                 <Link
                   key={call.id}
                   href={`/dashboard/calls/${call.id}`}
-                  className="block rounded-2xl border border-gray-200/50 bg-white p-4 hover:shadow-md transition-all"
+                  className="block rounded-2xl border border-border/50 bg-card p-4 hover:shadow-md transition-all"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`rounded-xl p-2 ${call.direction === "inbound" ? "bg-blue-50" : "bg-green-50"}`}>
+                      <div className={`rounded-xl p-2 ${call.direction === "inbound" ? "bg-blue-500/10" : "bg-green-500/10"}`}>
                         {call.direction === "inbound" ? (
                           <PhoneIncoming className="h-5 w-5 text-blue-500" />
                         ) : (
@@ -207,10 +207,10 @@ export default function CallsPage() {
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 font-mono text-sm">
+                        <p className="font-medium text-foreground font-mono text-sm">
                           {call.toNumber || "—"}
                         </p>
-                        <p className="text-xs text-gray-500">{call.agent?.name || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{call.agent?.name || "—"}</p>
                       </div>
                     </div>
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${style.color}`}>
@@ -218,7 +218,7 @@ export default function CallsPage() {
                       {style.label}
                     </span>
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                     <span>{formatDuration(call.durationSeconds)}</span>
                     <span>{formatDate(call.createdAt)}</span>
                   </div>
@@ -228,11 +228,11 @@ export default function CallsPage() {
           </div>
 
           {/* Desktop Table View */}
-          <div className="hidden lg:block rounded-2xl border border-gray-200/50 bg-white shadow-sm">
+          <div className="hidden lg:block rounded-2xl border border-border/50 bg-card shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b text-left text-xs font-medium uppercase text-gray-500">
+                  <tr className="border-b text-left text-xs font-medium uppercase text-muted-foreground">
                     <th className="px-6 py-4">Direction</th>
                     <th className="px-6 py-4">To / From</th>
                     <th className="px-6 py-4">Agent</th>
@@ -242,12 +242,12 @@ export default function CallsPage() {
                     <th className="px-6 py-4"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-border">
                   {calls.map((call) => {
                     const style = getStatusStyle(call.status || "unknown");
                     const StatusIcon = style.icon;
                     return (
-                      <tr key={call.id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={call.id} className="hover:bg-background transition-colors">
                         <td className="px-6 py-4">
                           {call.direction === "inbound" ? (
                             <PhoneIncoming className="h-4 w-4 text-blue-500" />
@@ -256,17 +256,17 @@ export default function CallsPage() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm font-medium text-gray-900 font-mono">
+                          <p className="text-sm font-medium text-foreground font-mono">
                             {call.toNumber || "—"}
                           </p>
                           {call.fromNumber && (
-                            <p className="text-xs text-gray-500 font-mono">
+                            <p className="text-xs text-muted-foreground font-mono">
                               from {call.fromNumber}
                             </p>
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-sm text-gray-700">
+                          <span className="text-sm text-foreground/80">
                             {call.agent?.name || "—"}
                           </span>
                         </td>
@@ -276,10 +276,10 @@ export default function CallsPage() {
                             {style.label}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
                           {formatDuration(call.durationSeconds)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
+                        <td className="px-6 py-4 text-sm text-muted-foreground">
                           {formatDate(call.createdAt)}
                         </td>
                         <td className="px-6 py-4">

@@ -37,7 +37,7 @@ type SortField = "leadScore" | "name" | "company";
 type SortDirection = "asc" | "desc";
 
 const statusColors: Record<string, string> = {
-  pending: "bg-gray-100 text-gray-800",
+  pending: "bg-secondary text-foreground",
   called: "bg-blue-100 text-blue-800",
   completed: "bg-green-100 text-green-800",
   failed: "bg-red-100 text-red-800",
@@ -45,9 +45,9 @@ const statusColors: Record<string, string> = {
 };
 
 const sentimentColors: Record<string, string> = {
-  positive: "text-green-600",
-  neutral: "text-gray-600",
-  negative: "text-red-600",
+  positive: "text-green-400",
+  neutral: "text-muted-foreground",
+  negative: "text-red-400",
 };
 
 export function LeadList() {
@@ -131,7 +131,7 @@ export function LeadList() {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <div className="relative max-w-sm flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
           <Input
             placeholder="Search leads..."
             value={search}
@@ -161,19 +161,19 @@ export function LeadList() {
             <div className="space-y-3 p-6">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
-                  <div className="h-7 w-7 animate-pulse rounded-full bg-gray-200" />
-                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
-                  <div className="h-4 w-36 animate-pulse rounded bg-gray-200" />
+                  <div className="h-7 w-7 animate-pulse rounded-full bg-secondary" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-secondary" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-secondary" />
+                  <div className="h-4 w-28 animate-pulse rounded bg-secondary" />
+                  <div className="h-4 w-16 animate-pulse rounded bg-secondary" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-secondary" />
+                  <div className="h-4 w-36 animate-pulse rounded bg-secondary" />
                 </div>
               ))}
             </div>
           ) : sortedContacts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-              <Users className="h-12 w-12 text-gray-300" />
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Users className="h-12 w-12 text-muted-foreground/70" />
               <p className="mt-2">No leads found</p>
               <p className="text-sm">
                 {search || status
@@ -243,16 +243,16 @@ export function LeadList() {
                       <TableCell>
                         {contact.company ? (
                           <div className="flex items-center gap-1">
-                            <Building className="h-4 w-4 text-gray-400" />
+                            <Building className="h-4 w-4 text-muted-foreground/70" />
                             <span className="text-sm">{contact.company}</span>
                           </div>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-muted-foreground/70">-</span>
                         )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Phone className="h-3.5 w-3.5 text-gray-400" />
+                          <Phone className="h-3.5 w-3.5 text-muted-foreground/70" />
                           <span className="text-sm">
                             {formatPhoneNumber(contact.phoneNumber)}
                           </span>
@@ -266,13 +266,13 @@ export function LeadList() {
                           <span
                             className={`text-sm font-medium capitalize ${
                               sentimentColors[contact.sentiment] ||
-                              "text-gray-600"
+                              "text-muted-foreground"
                             }`}
                           >
                             {contact.sentiment}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-400">-</span>
+                          <span className="text-sm text-muted-foreground/70">-</span>
                         )}
                       </TableCell>
                       <TableCell className="max-w-[200px]">
@@ -281,7 +281,7 @@ export function LeadList() {
                             action={contact.nextBestAction}
                           />
                         ) : (
-                          <span className="text-sm text-gray-400">-</span>
+                          <span className="text-sm text-muted-foreground/70">-</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -305,7 +305,7 @@ export function LeadList() {
       {/* Pagination */}
       {data && data.pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-muted-foreground">
             Showing {(page - 1) * data.pagination.limit + 1} to{" "}
             {Math.min(page * data.pagination.limit, data.pagination.total)} of{" "}
             {data.pagination.total} leads

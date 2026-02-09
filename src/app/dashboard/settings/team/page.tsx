@@ -39,11 +39,11 @@ import {
 import { toast } from "sonner";
 
 const ROLE_CONFIG: Record<string, { icon: typeof User; label: string; color: string; description: string }> = {
-  owner: { icon: Crown, label: "Owner", color: "text-yellow-600 bg-yellow-50", description: "Full control over organization" },
-  admin: { icon: Shield, label: "Admin", color: "text-purple-600 bg-purple-50", description: "Full access to all features and settings" },
-  manager: { icon: UserCog, label: "Manager", color: "text-blue-600 bg-blue-50", description: "Can manage agents, campaigns, and calls" },
-  member: { icon: User, label: "Member", color: "text-gray-600 bg-gray-50", description: "Can view and use agents, limited settings" },
-  viewer: { icon: Eye, label: "Viewer", color: "text-gray-500 bg-gray-50", description: "Read-only access to analytics and calls" },
+  owner: { icon: Crown, label: "Owner", color: "text-yellow-400 bg-yellow-500/10", description: "Full control over organization" },
+  admin: { icon: Shield, label: "Admin", color: "text-purple-400 bg-purple-500/10", description: "Full access to all features and settings" },
+  manager: { icon: UserCog, label: "Manager", color: "text-blue-400 bg-blue-500/10", description: "Can manage agents, campaigns, and calls" },
+  member: { icon: User, label: "Member", color: "text-muted-foreground bg-secondary", description: "Can view and use agents, limited settings" },
+  viewer: { icon: Eye, label: "Viewer", color: "text-muted-foreground bg-secondary", description: "Read-only access to analytics and calls" },
 };
 
 export default function TeamPage() {
@@ -168,8 +168,8 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Team Members</h1>
-          <p className="text-gray-500">Manage who has access to your organization</p>
+          <h1 className="text-2xl font-bold text-foreground">Team Members</h1>
+          <p className="text-muted-foreground">Manage who has access to your organization</p>
         </div>
         {isAdmin && (
           <Button onClick={() => setInviteOpen(true)}>
@@ -189,7 +189,7 @@ export default function TeamPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{users?.length || 0}</p>
-                <p className="text-sm text-gray-500">Total Members</p>
+                <p className="text-sm text-muted-foreground">Total Members</p>
               </div>
             </div>
           </CardContent>
@@ -197,14 +197,14 @@ export default function TeamPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="rounded-full bg-purple-100 p-3">
-                <Shield className="h-6 w-6 text-purple-600" />
+              <div className="rounded-full bg-purple-500/10 p-3">
+                <Shield className="h-6 w-6 text-purple-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
                   {users?.filter((u) => u.role === "admin" || u.role === "owner").length || 0}
                 </p>
-                <p className="text-sm text-gray-500">Admins</p>
+                <p className="text-sm text-muted-foreground">Admins</p>
               </div>
             </div>
           </CardContent>
@@ -212,12 +212,12 @@ export default function TeamPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="rounded-full bg-orange-100 p-3">
-                <Mail className="h-6 w-6 text-orange-600" />
+              <div className="rounded-full bg-orange-500/10 p-3">
+                <Mail className="h-6 w-6 text-orange-400" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{pendingInvitations?.length || 0}</p>
-                <p className="text-sm text-gray-500">Pending Invites</p>
+                <p className="text-sm text-muted-foreground">Pending Invites</p>
               </div>
             </div>
           </CardContent>
@@ -237,7 +237,7 @@ export default function TeamPage() {
           <CardContent>
             {loadingInvitations ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/70" />
               </div>
             ) : (
               <div className="divide-y">
@@ -245,7 +245,7 @@ export default function TeamPage() {
                   const roleConfig = ROLE_CONFIG[invitation.role] ?? {
                     icon: User,
                     label: "Member",
-                    color: "text-gray-600 bg-gray-50",
+                    color: "text-muted-foreground bg-secondary",
                     description: "",
                   };
                   const RoleIcon = roleConfig.icon;
@@ -253,12 +253,12 @@ export default function TeamPage() {
                   return (
                     <div key={invitation.id} className="flex items-center justify-between py-4">
                       <div className="flex items-center gap-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                          <Mail className="h-5 w-5 text-gray-500" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+                          <Mail className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{invitation.email}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="font-medium text-foreground">{invitation.email}</p>
+                          <p className="text-sm text-muted-foreground">
                             Invited {formatTimeAgo(invitation.createdAt)}
                           </p>
                         </div>
@@ -279,7 +279,7 @@ export default function TeamPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-400 hover:text-foreground hover:bg-secondary"
                           onClick={() => setRevokeInvitationId(invitation.id)}
                         >
                           <XCircle className="h-4 w-4" />
@@ -303,12 +303,12 @@ export default function TeamPage() {
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/70" />
             </div>
           ) : !users || users.length === 0 ? (
             <div className="py-8 text-center">
-              <Users className="mx-auto h-12 w-12 text-gray-300" />
-              <p className="mt-2 text-gray-500">No team members yet</p>
+              <Users className="mx-auto h-12 w-12 text-muted-foreground/70" />
+              <p className="mt-2 text-muted-foreground">No team members yet</p>
             </div>
           ) : (
             <div className="divide-y">
@@ -316,7 +316,7 @@ export default function TeamPage() {
                 const roleConfig = ROLE_CONFIG[user.role] ?? {
                   icon: User,
                   label: "Member",
-                  color: "text-gray-600 bg-gray-50",
+                  color: "text-muted-foreground bg-secondary",
                   description: "",
                 };
                 const RoleIcon = roleConfig.icon;
@@ -332,13 +332,13 @@ export default function TeamPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-foreground">
                           {user.name || "No name"}
                           {isCurrentUser && (
-                            <span className="ml-2 text-xs text-gray-500">(You)</span>
+                            <span className="ml-2 text-xs text-muted-foreground">(You)</span>
                           )}
                         </p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -360,7 +360,7 @@ export default function TeamPage() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              className="text-red-600"
+                              className="text-red-400"
                               onClick={() => setRemoveUserId(user.id)}
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
@@ -391,10 +391,10 @@ export default function TeamPage() {
               return (
                 <div key={key} className="rounded-lg border p-4">
                   <div className="flex items-center gap-2">
-                    <Icon className="h-5 w-5 text-gray-600" />
+                    <Icon className="h-5 w-5 text-muted-foreground" />
                     <h4 className="font-medium">{config.label}</h4>
                   </div>
-                  <p className="mt-2 text-sm text-gray-500">{config.description}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{config.description}</p>
                 </div>
               );
             })}

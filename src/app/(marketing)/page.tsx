@@ -6,13 +6,13 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-gray-50 to-white py-20">
+      <section className="bg-gradient-to-b from-secondary to-white py-20">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="mx-auto max-w-4xl text-5xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+          <h1 className="mx-auto max-w-4xl text-5xl font-bold tracking-tight text-foreground sm:text-6xl">
             AI Voice Agents That Actually
             <span className="text-primary"> Work</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
             Deploy enterprise-grade AI voice agents for cold calling, customer support,
             and appointment scheduling. 24/7 availability, human-like conversations.
           </p>
@@ -29,27 +29,27 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
-          <p className="mt-4 text-sm text-gray-500">
+          <p className="mt-4 text-sm text-muted-foreground">
             No credit card required. 14-day free trial.
           </p>
         </div>
       </section>
 
       {/* Social Proof Stats */}
-      <section className="border-y bg-white py-12">
+      <section className="border-y bg-card py-12">
         <div className="container mx-auto px-4">
           <div className="grid gap-8 text-center md:grid-cols-3">
             <div>
-              <div className="text-4xl font-bold text-gray-900">500+</div>
-              <p className="mt-1 text-sm text-gray-500">Businesses Served</p>
+              <div className="text-4xl font-bold text-foreground">500+</div>
+              <p className="mt-1 text-sm text-muted-foreground">Businesses Served</p>
             </div>
             <div>
-              <div className="text-4xl font-bold text-gray-900">1M+</div>
-              <p className="mt-1 text-sm text-gray-500">Calls Made</p>
+              <div className="text-4xl font-bold text-foreground">1M+</div>
+              <p className="mt-1 text-sm text-muted-foreground">Calls Made</p>
             </div>
             <div>
-              <div className="text-4xl font-bold text-gray-900">98%</div>
-              <p className="mt-1 text-sm text-gray-500">Uptime Guarantee</p>
+              <div className="text-4xl font-bold text-foreground">98%</div>
+              <p className="mt-1 text-sm text-muted-foreground">Uptime Guarantee</p>
             </div>
           </div>
         </div>
@@ -58,10 +58,10 @@ export default function HomePage() {
       {/* How it Works */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-center text-3xl font-bold text-gray-900">
+          <h2 className="text-center text-3xl font-bold text-foreground">
             How It Works
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-gray-600">
+          <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
             Get up and running in three simple steps.
           </p>
           <div className="mt-16 grid gap-8 md:grid-cols-3">
@@ -85,12 +85,12 @@ export default function HomePage() {
       </section>
 
       {/* Features */}
-      <section className="bg-gray-50 py-20">
+      <section className="bg-secondary py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-center text-3xl font-bold text-gray-900">
+          <h2 className="text-center text-3xl font-bold text-foreground">
             Everything You Need
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-gray-600">
+          <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
             Build, deploy, and manage AI voice agents without any coding.
           </p>
           <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -131,10 +131,10 @@ export default function HomePage() {
       {/* Testimonials */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <h2 className="text-center text-3xl font-bold text-gray-900">
+          <h2 className="text-center text-3xl font-bold text-foreground">
             Trusted by Growing Teams
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-gray-600">
+          <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
             See what business leaders are saying about CallTone AI.
           </p>
           <div className="mt-16 grid gap-8 md:grid-cols-3">
@@ -186,12 +186,12 @@ function StepCard({
   description: string;
 }) {
   return (
-    <div className="relative rounded-lg border bg-white p-6 text-center">
+    <div className="relative rounded-lg border bg-card p-6 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-xl font-bold text-white">
         {step}
       </div>
-      <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
-      <p className="mt-2 text-gray-600">{description}</p>
+      <h3 className="mt-4 text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mt-2 text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -206,12 +206,12 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="rounded-lg border bg-white p-6">
+    <div className="rounded-lg border bg-card p-6">
       <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
         <Icon className="h-6 w-6 text-primary" />
       </div>
-      <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
-      <p className="mt-2 text-gray-600">{description}</p>
+      <h3 className="mt-4 text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mt-2 text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -226,7 +226,7 @@ function TestimonialCard({
   role: string;
 }) {
   return (
-    <div className="rounded-lg border bg-white p-6">
+    <div className="rounded-lg border bg-card p-6">
       <div className="flex gap-1">
         {[...Array(5)].map((_, i) => (
           <svg
@@ -239,10 +239,10 @@ function TestimonialCard({
           </svg>
         ))}
       </div>
-      <p className="mt-4 text-gray-600">&ldquo;{quote}&rdquo;</p>
+      <p className="mt-4 text-muted-foreground">&ldquo;{quote}&rdquo;</p>
       <div className="mt-4 border-t pt-4">
-        <p className="font-semibold text-gray-900">{name}</p>
-        <p className="text-sm text-gray-500">{role}</p>
+        <p className="font-semibold text-foreground">{name}</p>
+        <p className="text-sm text-muted-foreground">{role}</p>
       </div>
     </div>
   );

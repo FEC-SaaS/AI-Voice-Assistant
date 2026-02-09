@@ -45,9 +45,9 @@ export function HourlyChart({ data, isLoading }: HourlyChartProps) {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : !hasData ? (
-          <div className="flex h-[300px] items-center justify-center text-gray-500">
+          <div className="flex h-[300px] items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <Clock className="mx-auto h-12 w-12 text-gray-300" />
+              <Clock className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4">No hourly data yet</p>
               <p className="text-sm">Make some calls to see peak hours</p>
             </div>

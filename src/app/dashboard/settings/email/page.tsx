@@ -39,10 +39,10 @@ import {
 // Domain status badge component
 function DomainStatusBadge({ status }: { status: string }) {
   const statusConfig = {
-    verified: { icon: CheckCircle2, color: "text-green-600 bg-green-50", label: "Verified" },
-    pending: { icon: Clock, color: "text-yellow-600 bg-yellow-50", label: "Pending Verification" },
-    not_started: { icon: AlertCircle, color: "text-gray-600 bg-gray-50", label: "Not Started" },
-    failed: { icon: AlertCircle, color: "text-red-600 bg-red-50", label: "Verification Failed" },
+    verified: { icon: CheckCircle2, color: "text-green-400 bg-green-500/10", label: "Verified" },
+    pending: { icon: Clock, color: "text-yellow-400 bg-yellow-500/10", label: "Pending Verification" },
+    not_started: { icon: AlertCircle, color: "text-muted-foreground bg-secondary", label: "Not Started" },
+    failed: { icon: AlertCircle, color: "text-red-400 bg-red-500/10", label: "Verification Failed" },
   };
 
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started;
@@ -169,7 +169,7 @@ export default function EmailSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -179,8 +179,8 @@ export default function EmailSettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Email Settings</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Email Settings</h1>
+          <p className="text-muted-foreground">
             Configure how your appointment confirmation emails appear to customers
           </p>
         </div>
@@ -215,7 +215,7 @@ export default function EmailSettingsPage() {
               value={formData.emailBusinessName}
               onChange={(e) => handleChange("emailBusinessName", e.target.value)}
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Leave empty to use your organization name: &quot;{settings?.organizationName}&quot;
             </p>
           </div>
@@ -241,20 +241,20 @@ export default function EmailSettingsPage() {
               className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
                 !useCustomDomain
                   ? "border-primary bg-primary/5"
-                  : "border-gray-200 hover:border-gray-300"
+                  : "border-border hover:border-border"
               }`}
               onClick={() => setUseCustomDomain(false)}
             >
               <div className="flex items-start gap-3">
-                <div className={`rounded-full p-2 ${!useCustomDomain ? "bg-primary/10" : "bg-gray-100"}`}>
-                  <Mail className={`h-5 w-5 ${!useCustomDomain ? "text-primary" : "text-gray-500"}`} />
+                <div className={`rounded-full p-2 ${!useCustomDomain ? "bg-primary/10" : "bg-secondary"}`}>
+                  <Mail className={`h-5 w-5 ${!useCustomDomain ? "text-primary" : "text-muted-foreground"}`} />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">Shared Domain</h4>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <h4 className="font-medium text-foreground">Shared Domain</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Emails sent from our verified domain on your behalf. Quick setup, no DNS changes needed.
                   </p>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-muted-foreground/70 mt-2">
                     Sent from: noreply@calltone.ai
                   </p>
                 </div>
@@ -269,20 +269,20 @@ export default function EmailSettingsPage() {
               className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
                 useCustomDomain
                   ? "border-primary bg-primary/5"
-                  : "border-gray-200 hover:border-gray-300"
+                  : "border-border hover:border-border"
               }`}
               onClick={() => setUseCustomDomain(true)}
             >
               <div className="flex items-start gap-3">
-                <div className={`rounded-full p-2 ${useCustomDomain ? "bg-primary/10" : "bg-gray-100"}`}>
-                  <Globe className={`h-5 w-5 ${useCustomDomain ? "text-primary" : "text-gray-500"}`} />
+                <div className={`rounded-full p-2 ${useCustomDomain ? "bg-primary/10" : "bg-secondary"}`}>
+                  <Globe className={`h-5 w-5 ${useCustomDomain ? "text-primary" : "text-muted-foreground"}`} />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">Custom Domain</h4>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <h4 className="font-medium text-foreground">Custom Domain</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Send emails from your own domain for full brand control. Requires DNS verification.
                   </p>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-xs text-muted-foreground/70 mt-2">
                     Example: mail.yourbusiness.com
                   </p>
                 </div>
@@ -298,24 +298,24 @@ export default function EmailSettingsPage() {
             <div className="border-t pt-6 space-y-4">
               {domainLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/70" />
                 </div>
               ) : domainData?.hasCustomDomain && domainData.domain ? (
                 // Show existing domain configuration
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Globe className="h-5 w-5 text-gray-400" />
+                      <Globe className="h-5 w-5 text-muted-foreground/70" />
                       <div>
-                        <p className="font-medium text-gray-900">{domainData.domain.name}</p>
-                        <p className="text-xs text-gray-500">Added domain</p>
+                        <p className="font-medium text-foreground">{domainData.domain.name}</p>
+                        <p className="text-xs text-muted-foreground">Added domain</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <DomainStatusBadge status={domainData.domain.status} />
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                          <Button variant="ghost" size="sm" className="text-red-400 hover:text-foreground hover:bg-secondary">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
@@ -347,12 +347,12 @@ export default function EmailSettingsPage() {
 
                   {/* DNS Records */}
                   {domainData.domain.status !== "verified" && domainData.domain.records.length > 0 && (
-                    <div className="rounded-lg border bg-gray-50 p-4 space-y-4">
+                    <div className="rounded-lg border bg-secondary p-4 space-y-4">
                       <div className="flex items-start gap-2">
-                        <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
                         <div className="text-sm">
-                          <p className="font-medium text-gray-900">Configure DNS Records</p>
-                          <p className="text-gray-600 mt-1">
+                          <p className="font-medium text-foreground">Configure DNS Records</p>
+                          <p className="text-muted-foreground mt-1">
                             Add the following DNS records to your domain provider. DNS changes may take up to 48 hours to propagate.
                           </p>
                         </div>
@@ -362,10 +362,10 @@ export default function EmailSettingsPage() {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b">
-                              <th className="text-left py-2 px-2 font-medium text-gray-600">Type</th>
-                              <th className="text-left py-2 px-2 font-medium text-gray-600">Name</th>
-                              <th className="text-left py-2 px-2 font-medium text-gray-600">Value</th>
-                              <th className="text-left py-2 px-2 font-medium text-gray-600">Status</th>
+                              <th className="text-left py-2 px-2 font-medium text-muted-foreground">Type</th>
+                              <th className="text-left py-2 px-2 font-medium text-muted-foreground">Name</th>
+                              <th className="text-left py-2 px-2 font-medium text-muted-foreground">Value</th>
+                              <th className="text-left py-2 px-2 font-medium text-muted-foreground">Status</th>
                               <th className="py-2 px-2"></th>
                             </tr>
                           </thead>
@@ -373,7 +373,7 @@ export default function EmailSettingsPage() {
                             {domainData.domain.records.map((record, index) => (
                               <tr key={index} className="border-b last:border-0">
                                 <td className="py-2 px-2">
-                                  <span className="font-mono text-xs bg-gray-200 px-1.5 py-0.5 rounded">
+                                  <span className="font-mono text-xs bg-secondary px-1.5 py-0.5 rounded">
                                     {record.type}
                                   </span>
                                 </td>
@@ -385,7 +385,7 @@ export default function EmailSettingsPage() {
                                 </td>
                                 <td className="py-2 px-2">
                                   <span className={`text-xs ${
-                                    record.status === "verified" ? "text-green-600" : "text-yellow-600"
+                                    record.status === "verified" ? "text-green-400" : "text-yellow-400"
                                   }`}>
                                     {record.status === "verified" ? "Verified" : "Pending"}
                                   </span>
@@ -433,11 +433,11 @@ export default function EmailSettingsPage() {
 
                   {/* Verified domain success message */}
                   {domainData.domain.status === "verified" && (
-                    <div className="rounded-lg bg-green-50 border border-green-200 p-4 flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div className="rounded-lg bg-green-500/10 border border-border p-4 flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
                       <div className="text-sm">
                         <p className="font-medium text-green-800">Domain Verified</p>
-                        <p className="text-green-700 mt-1">
+                        <p className="text-green-400 mt-1">
                           Your domain is verified and ready to use. Emails will be sent from{" "}
                           <strong>noreply@{domainData.domain.name}</strong>
                         </p>
@@ -448,8 +448,8 @@ export default function EmailSettingsPage() {
               ) : (
                 // Add new domain form
                 <div className="space-y-4">
-                  <div className="rounded-lg bg-blue-50 p-4 flex items-start gap-3">
-                    <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="rounded-lg bg-blue-500/10 p-4 flex items-start gap-3">
+                    <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-blue-800">
                       <p className="font-medium">Setting Up a Custom Domain</p>
                       <p className="mt-1">
@@ -517,7 +517,7 @@ export default function EmailSettingsPage() {
               value={formData.emailReplyTo}
               onChange={(e) => handleChange("emailReplyTo", e.target.value)}
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               When customers reply to emails, responses will go to this address.
             </p>
           </div>
@@ -552,7 +552,7 @@ export default function EmailSettingsPage() {
                 className="w-32"
                 placeholder="#22c55e"
               />
-              <span className="text-sm text-gray-500">Used for email headers and buttons</span>
+              <span className="text-sm text-muted-foreground">Used for email headers and buttons</span>
             </div>
           </div>
 
@@ -568,7 +568,7 @@ export default function EmailSettingsPage() {
               value={formData.emailLogoUrl}
               onChange={(e) => handleChange("emailLogoUrl", e.target.value)}
             />
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               A URL to your logo image. Recommended size: 200x50 pixels. PNG format works best.
             </p>
           </div>
@@ -604,16 +604,16 @@ export default function EmailSettingsPage() {
             </div>
 
             {/* Body */}
-            <div className="p-4 bg-white">
-              <p className="text-gray-700 mb-4">Hi Customer,</p>
-              <p className="text-gray-600 text-sm mb-4">
+            <div className="p-4 bg-card">
+              <p className="text-foreground/80 mb-4">Hi Customer,</p>
+              <p className="text-muted-foreground text-sm mb-4">
                 Your appointment has been scheduled. Here are the details:
               </p>
 
-              <div className="bg-gray-50 p-3 rounded-lg mb-4">
+              <div className="bg-secondary p-3 rounded-lg mb-4">
                 <p className="font-medium">Sales Consultation</p>
-                <p className="text-sm text-gray-500">Monday, February 10, 2026 at 2:00 PM</p>
-                <p className="text-sm text-gray-500">30 minutes</p>
+                <p className="text-sm text-muted-foreground">Monday, February 10, 2026 at 2:00 PM</p>
+                <p className="text-sm text-muted-foreground">30 minutes</p>
               </div>
 
               {/* Action buttons */}
@@ -640,7 +640,7 @@ export default function EmailSettingsPage() {
 
               <hr className="my-4" />
 
-              <p className="text-center text-sm text-gray-500">
+              <p className="text-center text-sm text-muted-foreground">
                 From {formData.emailBusinessName || settings?.organizationName || "Your Business"}
               </p>
             </div>

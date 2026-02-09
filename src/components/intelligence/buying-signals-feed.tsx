@@ -34,7 +34,7 @@ function getLeadScoreColor(score: number): string {
   if (score >= 80) return "bg-green-100 text-green-800 border-green-200";
   if (score >= 60) return "bg-blue-100 text-blue-800 border-blue-200";
   if (score >= 40) return "bg-yellow-100 text-yellow-800 border-yellow-200";
-  return "bg-gray-100 text-gray-800 border-gray-200";
+  return "bg-secondary text-foreground border-border";
 }
 
 function getLeadScoreLabel(score: number): string {
@@ -60,9 +60,9 @@ export function BuyingSignalsFeed({ alerts }: BuyingSignalsFeedProps) {
       </CardHeader>
       <CardContent>
         {!hasData ? (
-          <div className="flex h-[200px] items-center justify-center text-gray-500">
+          <div className="flex h-[200px] items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <Zap className="mx-auto h-12 w-12 text-gray-300" />
+              <Zap className="mx-auto h-12 w-12 text-muted-foreground/70" />
               <p className="mt-4">No buying signal alerts</p>
               <p className="text-sm">
                 Alerts will appear when AI detects strong buying intent
@@ -122,7 +122,7 @@ export function BuyingSignalsFeed({ alerts }: BuyingSignalsFeedProps) {
                       <Badge
                         key={idx}
                         variant="outline"
-                        className="text-xs bg-purple-50 text-purple-700 border-purple-200"
+                        className="text-xs bg-purple-500/10 text-purple-400 border-purple-200"
                       >
                         {signal}
                       </Badge>
@@ -132,7 +132,7 @@ export function BuyingSignalsFeed({ alerts }: BuyingSignalsFeedProps) {
 
                 {/* Next best action */}
                 {alert.nextBestAction && (
-                  <div className="text-sm bg-blue-50 text-blue-800 rounded-md px-3 py-2">
+                  <div className="text-sm bg-blue-500/10 text-blue-800 rounded-md px-3 py-2">
                     <span className="font-medium">Next action:</span>{" "}
                     {alert.nextBestAction}
                   </div>

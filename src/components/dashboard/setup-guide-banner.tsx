@@ -17,7 +17,7 @@ export function SetupGuideBanner() {
     <div className="relative rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 p-5 shadow-sm">
       <button
         onClick={() => setDismissed(true)}
-        className="absolute top-3 right-3 rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+        className="absolute top-3 right-3 rounded-lg p-1 text-muted-foreground/70 hover:text-muted-foreground hover:bg-secondary transition-colors"
         aria-label="Dismiss"
       >
         <X className="h-4 w-4" />
@@ -27,8 +27,8 @@ export function SetupGuideBanner() {
           <Compass className="h-6 w-6 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900">Setup Guide</h3>
-          <p className="text-sm text-gray-600 mt-0.5">
+          <h3 className="font-semibold text-foreground">Setup Guide</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Follow our step-by-step guide to set up your first AI agent, provision a phone
             number, and get everything ready for calls.
           </p>

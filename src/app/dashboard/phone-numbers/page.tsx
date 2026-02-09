@@ -209,19 +209,19 @@ export default function PhoneNumbersPage() {
     switch (provider) {
       case "twilio-managed":
         return (
-          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-400">
             Managed
           </span>
         );
       case "twilio-imported":
         return (
-          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-400">
             Imported
           </span>
         );
       case "vapi":
         return (
-          <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+          <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-400">
             Cloud Voice
           </span>
         );
@@ -235,11 +235,11 @@ export default function PhoneNumbersPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Phone Numbers</h1>
-          <p className="text-gray-500">Loading...</p>
+          <h1 className="text-2xl font-bold text-foreground">Phone Numbers</h1>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
         </div>
       </div>
     );
@@ -251,8 +251,8 @@ export default function PhoneNumbersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Phone Numbers</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Phone Numbers</h1>
+          <p className="text-muted-foreground">
             {phoneNumbers?.length
               ? `${phoneNumbers.length} phone number${phoneNumbers.length !== 1 ? "s" : ""}`
               : "Get phone numbers for your AI agents"}
@@ -266,7 +266,7 @@ export default function PhoneNumbersPage() {
 
       {/* ── Provision Panel ────────────────────────────────── */}
       {showPanel && (
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <div className="rounded-lg border bg-card p-6 shadow-sm">
           {/* Method tabs */}
           <div className="mb-6">
             <Label className="text-base font-semibold">How would you like to get a phone number?</Label>
@@ -277,17 +277,17 @@ export default function PhoneNumbersPage() {
                 className={`flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors ${
                   provisionMethod === "instant"
                     ? "border-primary bg-primary/5"
-                    : "border-gray-200 hover:border-gray-300"
+                    : "border-border hover:border-border"
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <Globe className="h-5 w-5 text-primary" />
                   <span className="font-medium">Get Number Instantly</span>
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-400">
                     Recommended
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Search and purchase phone numbers from US, Canada, or UK.
                 </p>
               </button>
@@ -298,14 +298,14 @@ export default function PhoneNumbersPage() {
                 className={`flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors ${
                   provisionMethod === "import"
                     ? "border-primary bg-primary/5"
-                    : "border-gray-200 hover:border-gray-300"
+                    : "border-border hover:border-border"
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <ExternalLink className="h-5 w-5 text-blue-600" />
+                  <ExternalLink className="h-5 w-5 text-blue-400" />
                   <span className="font-medium">Import from Twilio</span>
                 </div>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Use your existing Twilio phone number with your AI agents.
                 </p>
               </button>
@@ -385,7 +385,7 @@ export default function PhoneNumbersPage() {
                   <div className="flex items-center justify-between">
                     <Label>Available Numbers</Label>
                     {pricing && (
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-muted-foreground">
                         ${pricing.monthlySaaS.toFixed(2)}/month per number
                       </span>
                     )}
@@ -399,12 +399,12 @@ export default function PhoneNumbersPage() {
                         className={`flex items-center justify-between rounded-lg border p-3 text-left transition-colors ${
                           selectedNumber === num.phone_number
                             ? "border-primary bg-primary/5"
-                            : "border-gray-200 hover:border-gray-300"
+                            : "border-border hover:border-border"
                         }`}
                       >
                         <div>
                           <span className="font-mono font-medium">{num.phone_number}</span>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             {num.locality && `${num.locality}, `}{num.region}
                           </p>
                         </div>
@@ -419,8 +419,8 @@ export default function PhoneNumbersPage() {
 
               {/* Configure & Purchase */}
               {selectedNumber && (
-                <div className="space-y-4 rounded-lg bg-gray-50 p-4">
-                  <h4 className="flex items-center gap-2 font-medium text-gray-900">
+                <div className="space-y-4 rounded-lg bg-secondary p-4">
+                  <h4 className="flex items-center gap-2 font-medium text-foreground">
                     <Building2 className="h-4 w-4" />
                     Business Branding & Caller ID
                   </h4>
@@ -436,7 +436,7 @@ export default function PhoneNumbersPage() {
                         onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
                         maxLength={15}
                       />
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         Max 15 chars. Shown on recipient&apos;s phone screen during calls.
                       </p>
                     </div>
@@ -448,7 +448,7 @@ export default function PhoneNumbersPage() {
                         value={friendlyName}
                         onChange={(e) => setFriendlyName(e.target.value)}
                       />
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         For your own reference only. Not visible to callers.
                       </p>
                     </div>
@@ -473,10 +473,10 @@ export default function PhoneNumbersPage() {
           {/* ── Import from Twilio ─────────────────────────── */}
           {provisionMethod === "import" && (
             <div className="space-y-4">
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="rounded-lg border border-border bg-blue-500/10 p-4">
                 <div className="flex gap-3">
                   <AlertCircle className="h-5 w-5 text-blue-500 shrink-0" />
-                  <div className="text-sm text-blue-700">
+                  <div className="text-sm text-blue-400">
                     <p className="font-medium">Import your existing Twilio number</p>
                     <p className="mt-1">
                       You&apos;ll need your Twilio Account SID and Auth Token from your{" "}
@@ -524,12 +524,12 @@ export default function PhoneNumbersPage() {
                   onChange={(e) => setImportPhoneNumber(e.target.value)}
                   className="max-w-sm"
                 />
-                <p className="text-xs text-gray-500">E.164 format (include + and country code)</p>
+                <p className="text-xs text-muted-foreground">E.164 format (include + and country code)</p>
               </div>
 
               {/* Business Branding for Import */}
-              <div className="rounded-lg bg-gray-50 p-4 space-y-4">
-                <h4 className="flex items-center gap-2 font-medium text-gray-900">
+              <div className="rounded-lg bg-secondary p-4 space-y-4">
+                <h4 className="flex items-center gap-2 font-medium text-foreground">
                   <Building2 className="h-4 w-4" />
                   Business Branding & Caller ID
                 </h4>
@@ -545,7 +545,7 @@ export default function PhoneNumbersPage() {
                       onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
                       maxLength={15}
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       Max 15 chars. Shown on recipient&apos;s phone screen during calls.
                     </p>
                   </div>
@@ -612,7 +612,7 @@ export default function PhoneNumbersPage() {
                         placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                         value={credSid}
                         onChange={(e) => setCredSid(e.target.value)}
-                        className="bg-white"
+                        className="bg-card"
                       />
                     </div>
                     <div className="space-y-1">
@@ -623,7 +623,7 @@ export default function PhoneNumbersPage() {
                         placeholder="Your auth token"
                         value={credToken}
                         onChange={(e) => setCredToken(e.target.value)}
-                        className="bg-white"
+                        className="bg-card"
                       />
                     </div>
                   </div>
@@ -656,10 +656,10 @@ export default function PhoneNumbersPage() {
 
       {/* ── Phone Numbers Table ────────────────────────────── */}
       {!phoneNumbers?.length ? (
-        <div className="rounded-lg border bg-white p-12 text-center">
-          <Hash className="mx-auto h-12 w-12 text-gray-300" />
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">No phone numbers yet</h3>
-          <p className="mt-2 text-sm text-gray-500">
+        <div className="rounded-lg border bg-card p-12 text-center">
+          <Hash className="mx-auto h-12 w-12 text-muted-foreground/70" />
+          <h3 className="mt-4 text-lg font-semibold text-foreground">No phone numbers yet</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
             Get a phone number to enable voice calls with your AI agents.
           </p>
           <Button className="mt-6" onClick={() => setShowPanel(true)}>
@@ -668,11 +668,11 @@ export default function PhoneNumbersPage() {
           </Button>
         </div>
       ) : (
-        <div className="rounded-lg border bg-white">
+        <div className="rounded-lg border bg-card">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b text-left text-xs font-medium uppercase text-gray-500">
+                <tr className="border-b text-left text-xs font-medium uppercase text-muted-foreground">
                   <th className="px-6 py-3">Number</th>
                   <th className="px-6 py-3">Caller ID</th>
                   <th className="px-6 py-3">Type</th>
@@ -686,17 +686,17 @@ export default function PhoneNumbersPage() {
                 {phoneNumbers.map((pn) => {
                   const cnam = (pn as Record<string, unknown>).callerIdName as string | null;
                   return (
-                    <tr key={pn.id} className="hover:bg-gray-50">
+                    <tr key={pn.id} className="hover:bg-secondary">
                       {/* Number + Label */}
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-gray-400" />
+                          <Phone className="h-4 w-4 text-muted-foreground/70" />
                           <div>
-                            <span className="font-mono text-sm font-medium text-gray-900">
+                            <span className="font-mono text-sm font-medium text-foreground">
                               {pn.number}
                             </span>
                             {pn.friendlyName && (
-                              <p className="text-xs text-gray-500">{pn.friendlyName}</p>
+                              <p className="text-xs text-muted-foreground">{pn.friendlyName}</p>
                             )}
                           </div>
                         </div>
@@ -729,7 +729,7 @@ export default function PhoneNumbersPage() {
                                 }
                               }}
                               disabled={!editCallerIdValue.trim() || updateCallerIdName.isPending}
-                              className="rounded p-1 text-green-600 hover:bg-green-50 disabled:opacity-50"
+                              className="rounded p-1 text-green-400 hover:bg-green-100 disabled:opacity-50"
                               title="Save"
                             >
                               {updateCallerIdName.isPending ? (
@@ -751,8 +751,8 @@ export default function PhoneNumbersPage() {
                             {cnam ? (
                               <>
                                 <Building2 className="h-3.5 w-3.5 text-green-500" />
-                                <span className="font-medium text-gray-900">{cnam}</span>
-                                <Pencil className="h-3 w-3 text-gray-300 opacity-0 group-hover:opacity-100" />
+                                <span className="font-medium text-foreground">{cnam}</span>
+                                <Pencil className="h-3 w-3 text-muted-foreground/70 opacity-0 group-hover:opacity-100" />
                               </>
                             ) : (
                               <span className="text-amber-600 hover:text-amber-700">
@@ -767,10 +767,10 @@ export default function PhoneNumbersPage() {
                       <td className="px-6 py-4">
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                           pn.type === "toll_free"
-                            ? "bg-purple-100 text-purple-700"
+                            ? "bg-purple-100 text-purple-400"
                             : pn.type === "mobile"
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-blue-100 text-blue-700"
+                            ? "bg-orange-500/10 text-orange-400"
+                            : "bg-blue-100 text-blue-400"
                         }`}>
                           {pn.type === "toll_free" ? "Toll-Free" : pn.type === "mobile" ? "Mobile" : "Local"}
                         </span>
@@ -782,7 +782,7 @@ export default function PhoneNumbersPage() {
                       {/* Status */}
                       <td className="px-6 py-4">
                         {pn.vapiPhoneId ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                          <span className="inline-flex items-center gap-1 text-xs text-green-400">
                             <CheckCircle className="h-3 w-3" />
                             Ready
                           </span>
@@ -831,7 +831,7 @@ export default function PhoneNumbersPage() {
                               release.mutate({ id: pn.id });
                             }
                           }}
-                          className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                          className="rounded p-1.5 text-muted-foreground/70 hover:bg-red-500/10 hover:text-red-400"
                           title="Release number"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -847,12 +847,12 @@ export default function PhoneNumbersPage() {
       )}
 
       {/* ── Caller ID & Branding Info ──────────────────────── */}
-      <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+      <div className="rounded-lg border border-border bg-green-500/10 p-4">
         <div className="flex gap-3">
-          <Building2 className="h-5 w-5 text-green-600 shrink-0" />
+          <Building2 className="h-5 w-5 text-green-400 shrink-0" />
           <div>
             <h4 className="font-medium text-green-900">Caller ID & Business Branding</h4>
-            <ul className="mt-2 list-disc list-inside text-sm text-green-700 space-y-1">
+            <ul className="mt-2 list-disc list-inside text-sm text-green-400 space-y-1">
               <li><strong>CNAM (Caller Name):</strong> Set your business name to display on recipient phones during calls. All numbers should have Caller ID configured for trust and professionalism.</li>
               <li><strong>Character limit:</strong> CNAM is limited to 15 characters by telecom standards (e.g., &quot;ACME INC&quot;, &quot;DR SMITH OFFICE&quot;).</li>
               <li><strong>Propagation:</strong> CNAM updates take 24-48 hours to propagate across carrier networks.</li>
@@ -863,9 +863,9 @@ export default function PhoneNumbersPage() {
       </div>
 
       {/* ── Compliance & Regulatory ────────────────────────── */}
-      <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+      <div className="rounded-lg border border-border bg-purple-500/10 p-4">
         <div className="flex gap-3">
-          <ShieldCheck className="h-5 w-5 text-purple-600 shrink-0" />
+          <ShieldCheck className="h-5 w-5 text-purple-400 shrink-0" />
           <div>
             <h4 className="font-medium text-purple-900">Compliance & Regulatory</h4>
             <div className="mt-2 space-y-3">
@@ -874,7 +874,7 @@ export default function PhoneNumbersPage() {
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   <span className="text-sm font-medium text-purple-800">STIR/SHAKEN Verified</span>
                 </div>
-                <p className="ml-6 text-sm text-purple-700">
+                <p className="ml-6 text-sm text-purple-400">
                   All managed Twilio numbers include STIR/SHAKEN attestation, reducing the chance of calls being marked as spam.
                 </p>
               </div>
@@ -884,7 +884,7 @@ export default function PhoneNumbersPage() {
                   <Info className="h-4 w-4 text-amber-500" />
                   <span className="text-sm font-medium text-purple-800">A2P 10DLC Registration (SMS)</span>
                 </div>
-                <p className="ml-6 text-sm text-purple-700">
+                <p className="ml-6 text-sm text-purple-400">
                   US carriers require A2P 10DLC registration for business SMS. This improves deliverability and avoids filtering.
                 </p>
                 <div className="ml-6 mt-1 flex flex-wrap gap-2">
@@ -892,7 +892,7 @@ export default function PhoneNumbersPage() {
                     href="https://www.twilio.com/docs/messaging/guides/10dlc"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 hover:bg-purple-200"
+                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-400 hover:bg-purple-200"
                   >
                     <ExternalLink className="h-3 w-3" />
                     Twilio 10DLC Guide
@@ -901,7 +901,7 @@ export default function PhoneNumbersPage() {
                     href="https://www.twilio.com/docs/messaging/guides/10dlc/10dlc-brand-registration"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 hover:bg-purple-200"
+                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-400 hover:bg-purple-200"
                   >
                     <ExternalLink className="h-3 w-3" />
                     Register Your Brand
@@ -910,7 +910,7 @@ export default function PhoneNumbersPage() {
                     href="https://www.twilio.com/docs/messaging/guides/10dlc/10dlc-campaign-registration"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 hover:bg-purple-200"
+                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-400 hover:bg-purple-200"
                   >
                     <ExternalLink className="h-3 w-3" />
                     Register SMS Campaign
@@ -923,7 +923,7 @@ export default function PhoneNumbersPage() {
                   <AlertCircle className="h-4 w-4 text-amber-500" />
                   <span className="text-sm font-medium text-purple-800">TCPA Compliance</span>
                 </div>
-                <p className="ml-6 text-sm text-purple-700">
+                <p className="ml-6 text-sm text-purple-400">
                   Ensure prior express consent before making AI-assisted outbound calls. Maintain Do Not Call lists and honor opt-out requests.
                 </p>
               </div>
@@ -933,12 +933,12 @@ export default function PhoneNumbersPage() {
       </div>
 
       {/* ── Phone Number Options Info ──────────────────────── */}
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+      <div className="rounded-lg border border-border bg-blue-500/10 p-4">
         <div className="flex gap-3">
           <Globe className="h-5 w-5 text-blue-500 shrink-0" />
           <div>
             <h4 className="font-medium text-blue-900">Phone Number Options</h4>
-            <ul className="mt-2 list-disc list-inside text-sm text-blue-700 space-y-1">
+            <ul className="mt-2 list-disc list-inside text-sm text-blue-400 space-y-1">
               <li><strong>Managed numbers:</strong> We provision and bill you monthly. Simplest option.</li>
               <li><strong>Imported numbers:</strong> Use your own Twilio numbers. You pay Twilio directly.</li>
               <li>All numbers support inbound and outbound calling with your AI agents.</li>

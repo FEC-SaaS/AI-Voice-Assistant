@@ -53,11 +53,11 @@ const BLOG_POSTS = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Guide: "bg-blue-100 text-blue-700",
-  Compliance: "bg-purple-100 text-purple-700",
-  "Case Study": "bg-green-100 text-green-700",
-  Business: "bg-orange-100 text-orange-700",
-  Technology: "bg-indigo-100 text-indigo-700",
+  Guide: "bg-blue-500/10 text-blue-400",
+  Compliance: "bg-purple-500/10 text-purple-400",
+  "Case Study": "bg-green-500/10 text-green-400",
+  Business: "bg-orange-500/10 text-orange-400",
+  Technology: "bg-indigo-500/10 text-indigo-400",
   "Best Practices": "bg-teal-100 text-teal-700",
 };
 
@@ -65,12 +65,12 @@ export default function BlogPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-gray-50 to-white py-16">
+      <section className="bg-gradient-to-b from-secondary to-white py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Blog & Resources
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
             Insights, guides, and best practices for AI voice technology and business automation.
           </p>
         </div>
@@ -83,16 +83,16 @@ export default function BlogPage() {
             {BLOG_POSTS.map((post) => (
               <article
                 key={post.title}
-                className="group relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md"
+                className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md"
               >
                 {/* Image placeholder */}
-                <div className="aspect-[16/9] bg-gradient-to-br from-gray-100 to-gray-50" />
+                <div className="aspect-[16/9] bg-gradient-to-br from-secondary to-secondary/50" />
 
                 <div className="flex flex-1 flex-col p-6">
                   <div className="flex items-center gap-2">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        CATEGORY_COLORS[post.category] || "bg-gray-100 text-gray-700"
+                        CATEGORY_COLORS[post.category] || "bg-secondary text-foreground/80"
                       }`}
                     >
                       {post.category}
@@ -102,15 +102,15 @@ export default function BlogPage() {
                     </Badge>
                   </div>
 
-                  <h2 className="mt-3 text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors">
+                  <h2 className="mt-3 text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                     {post.title}
                   </h2>
 
-                  <p className="mt-2 flex-1 text-sm text-gray-600 line-clamp-3">
+                  <p className="mt-2 flex-1 text-sm text-muted-foreground line-clamp-3">
                     {post.excerpt}
                   </p>
 
-                  <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                  <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                     <span>{post.date}</span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
@@ -125,21 +125,21 @@ export default function BlogPage() {
           {/* Newsletter CTA */}
           <div className="mx-auto mt-16 max-w-2xl rounded-2xl bg-gray-900 p-8 text-center text-white md:p-12">
             <h2 className="text-2xl font-bold">Stay Updated</h2>
-            <p className="mt-3 text-gray-300">
+            <p className="mt-3 text-muted-foreground">
               Get the latest insights on AI voice technology and automation delivered to your inbox.
             </p>
             <div className="mt-6 flex gap-3 sm:mx-auto sm:max-w-md">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 rounded-lg border-0 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white/30"
+                className="flex-1 rounded-lg border-0 bg-card/10 px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-white/30"
               />
-              <button className="inline-flex items-center gap-1 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 transition-colors">
+              <button className="inline-flex items-center gap-1 rounded-lg bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors">
                 Subscribe
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-3 text-xs text-gray-400">
+            <p className="mt-3 text-xs text-muted-foreground/70">
               No spam. Unsubscribe anytime.
             </p>
           </div>

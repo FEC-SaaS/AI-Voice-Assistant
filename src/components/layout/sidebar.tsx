@@ -128,7 +128,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
           indent && !collapsed && "ml-4 pl-3",
           isActive
             ? "bg-primary text-white shadow-md shadow-primary/25"
-            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
         )}
       >
         <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-white")} />
@@ -153,7 +153,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
             "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
             groupActive
               ? "bg-primary text-white shadow-md shadow-primary/25"
-              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
           )}
         >
           <group.icon className={cn("h-5 w-5 flex-shrink-0", groupActive && "text-white")} />
@@ -169,14 +169,14 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
             "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
             groupActive
               ? "text-primary"
-              : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
           )}
         >
           <group.icon className={cn("h-5 w-5 flex-shrink-0", groupActive && "text-primary")} />
           <span className="flex-1 text-left">{group.title}</span>
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-gray-400 transition-transform duration-200",
+              "h-4 w-4 text-muted-foreground/70 transition-transform duration-200",
               isExpanded && "rotate-180"
             )}
           />
@@ -193,7 +193,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
   const sidebarContent = (
     <>
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b border-gray-100 px-4">
+      <div className="flex h-16 items-center justify-between border-b border-border/50 px-4">
         {!collapsed && (
           <Link href="/dashboard" className="flex items-center gap-3">
             {brandLogoUrl ? (
@@ -203,7 +203,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-white shadow-md shadow-primary/20">
                   <Bot className="h-5 w-5" />
                 </div>
-                <span className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                <span className="text-lg font-bold gradient-text">
                   {brandName}
                 </span>
               </>
@@ -222,11 +222,11 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
         {/* Desktop collapse button */}
         <button
           onClick={() => onCollapse?.(!collapsed)}
-          className="hidden lg:flex rounded-lg p-2 hover:bg-gray-100 transition-colors"
+          className="hidden lg:flex rounded-lg p-2 hover:bg-secondary transition-colors"
         >
           <ChevronLeft
             className={cn(
-              "h-5 w-5 text-gray-400 transition-transform",
+              "h-5 w-5 text-muted-foreground/70 transition-transform",
               collapsed && "rotate-180"
             )}
           />
@@ -235,9 +235,9 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden rounded-lg p-2 hover:bg-gray-100 transition-colors"
+            className="lg:hidden rounded-lg p-2 hover:bg-secondary transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-muted-foreground" />
           </button>
         )}
       </div>
@@ -254,7 +254,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
       </nav>
 
       {/* Bottom Navigation */}
-      <div className="border-t border-gray-100 p-3">
+      <div className="border-t border-border/50 p-3">
         {bottomNavItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
@@ -265,7 +265,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 isActive
                   ? "bg-primary text-white shadow-md shadow-primary/25"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
               <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-white")} />
@@ -274,7 +274,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
           );
         })}
         {!poweredByHidden && !collapsed && (
-          <p className="mt-2 text-center text-[10px] text-gray-400">
+          <p className="mt-2 text-center text-[10px] text-muted-foreground/70">
             Powered by CallTone AI
           </p>
         )}
@@ -287,7 +287,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "hidden lg:flex h-full flex-col bg-white/80 backdrop-blur-xl border-r border-gray-200/50 transition-all duration-300",
+          "hidden lg:flex h-full flex-col bg-card/80 backdrop-blur-xl border-r border-border transition-all duration-300",
           collapsed ? "w-20" : "w-64"
         )}
       >
@@ -305,7 +305,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
       {/* Mobile Sidebar Drawer */}
       <aside
         className={cn(
-          "lg:hidden fixed inset-y-0 left-0 z-50 w-72 flex flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out",
+          "lg:hidden fixed inset-y-0 left-0 z-50 w-72 flex flex-col bg-card shadow-2xl transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

@@ -27,8 +27,8 @@ export default function MessagesPage() {
             <Button variant="ghost" size="sm"><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-            <p className="text-gray-500">Messages taken by your AI receptionist</p>
+            <h1 className="text-2xl font-bold text-foreground">Messages</h1>
+            <p className="text-muted-foreground">Messages taken by your AI receptionist</p>
           </div>
         </div>
       </div>
@@ -59,14 +59,14 @@ export default function MessagesPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" /></div>
       ) : data?.messages ? (
         <MessageList messages={data.messages as any} onSelect={(id) => setSelectedMessageId(id)} />
       ) : (
-        <div className="rounded-lg border bg-white p-12 text-center">
-          <MessageSquare className="mx-auto h-12 w-12 text-gray-300" />
-          <h3 className="mt-3 text-lg font-medium text-gray-900">No messages</h3>
-          <p className="mt-1 text-sm text-gray-500">Messages from callers will appear here</p>
+        <div className="rounded-lg border bg-card p-12 text-center">
+          <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/70" />
+          <h3 className="mt-3 text-lg font-medium text-foreground">No messages</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Messages from callers will appear here</p>
         </div>
       )}
 

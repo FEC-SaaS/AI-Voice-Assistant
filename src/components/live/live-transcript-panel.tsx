@@ -98,13 +98,13 @@ export function LiveTranscriptPanel({ callId }: LiveTranscriptPanelProps) {
   if (!callId) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50">
-          <MessageSquare className="h-8 w-8 text-gray-400" />
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-secondary to-secondary/50">
+          <MessageSquare className="h-8 w-8 text-muted-foreground/70" />
         </div>
-        <h3 className="mt-4 text-sm font-medium text-gray-900">
+        <h3 className="mt-4 text-sm font-medium text-foreground">
           Select a call
         </h3>
-        <p className="mt-1 text-xs text-gray-500 max-w-[240px]">
+        <p className="mt-1 text-xs text-muted-foreground max-w-[240px]">
           Choose an active call from the list to view the live transcript.
         </p>
       </div>
@@ -116,8 +116,8 @@ export function LiveTranscriptPanel({ callId }: LiveTranscriptPanelProps) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          <p className="text-sm text-gray-500">Loading transcript...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
+          <p className="text-sm text-muted-foreground">Loading transcript...</p>
         </div>
       </div>
     );
@@ -127,13 +127,13 @@ export function LiveTranscriptPanel({ callId }: LiveTranscriptPanelProps) {
   if (isError) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-6 py-12 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10">
           <MessageSquare className="h-8 w-8 text-red-400" />
         </div>
-        <h3 className="mt-4 text-sm font-medium text-gray-900">
+        <h3 className="mt-4 text-sm font-medium text-foreground">
           Failed to load transcript
         </h3>
-        <p className="mt-1 text-xs text-gray-500 max-w-[240px]">
+        <p className="mt-1 text-xs text-muted-foreground max-w-[240px]">
           There was an error loading the live transcript. It will retry
           automatically.
         </p>
@@ -144,15 +144,15 @@ export function LiveTranscriptPanel({ callId }: LiveTranscriptPanelProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold text-gray-900">
+          <h3 className="text-sm font-semibold text-foreground">
             Live Transcript
           </h3>
         </div>
         {data?.status && (
-          <span className="text-xs text-gray-500 capitalize">
+          <span className="text-xs text-muted-foreground capitalize">
             {data.status}
           </span>
         )}
@@ -166,8 +166,8 @@ export function LiveTranscriptPanel({ callId }: LiveTranscriptPanelProps) {
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-300" />
-              <p className="mt-3 text-xs text-gray-500">
+              <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground/70" />
+              <p className="mt-3 text-xs text-muted-foreground">
                 Waiting for conversation...
               </p>
             </div>
@@ -189,8 +189,8 @@ export function LiveTranscriptPanel({ callId }: LiveTranscriptPanelProps) {
               >
                 {/* System messages */}
                 {isSystem ? (
-                  <div className="max-w-[85%] rounded-lg bg-gray-100 px-3 py-2">
-                    <p className="text-xs text-gray-600 whitespace-pre-wrap">
+                  <div className="max-w-[85%] rounded-lg bg-secondary px-3 py-2">
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap">
                       {message.content}
                     </p>
                   </div>
@@ -208,7 +208,7 @@ export function LiveTranscriptPanel({ callId }: LiveTranscriptPanelProps) {
                       className={cn(
                         "max-w-[75%] rounded-2xl px-3.5 py-2.5",
                         isBot
-                          ? "rounded-tl-sm bg-gray-100 text-gray-900"
+                          ? "rounded-tl-sm bg-secondary text-foreground"
                           : "rounded-tr-sm bg-primary text-primary-foreground"
                       )}
                     >
@@ -219,7 +219,7 @@ export function LiveTranscriptPanel({ callId }: LiveTranscriptPanelProps) {
                         <p
                           className={cn(
                             "mt-1 text-[10px]",
-                            isBot ? "text-gray-400" : "text-primary-foreground/70"
+                            isBot ? "text-muted-foreground/70" : "text-primary-foreground/70"
                           )}
                         >
                           {formatTranscriptTime(message.timestamp)}
@@ -229,8 +229,8 @@ export function LiveTranscriptPanel({ callId }: LiveTranscriptPanelProps) {
 
                     {/* User avatar on right */}
                     {!isBot && (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-200">
-                        <User className="h-3.5 w-3.5 text-gray-600" />
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary">
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                     )}
                   </>

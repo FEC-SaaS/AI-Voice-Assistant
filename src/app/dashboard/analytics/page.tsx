@@ -80,8 +80,8 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
+          <p className="text-muted-foreground">
             Track performance and insights across your AI agents
           </p>
         </div>
@@ -198,9 +198,9 @@ export default function AnalyticsPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : !callsByDay?.length || callsByDay.every((d) => d.count === 0) ? (
-              <div className="flex h-[300px] items-center justify-center text-gray-500">
+              <div className="flex h-[300px] items-center justify-center text-muted-foreground">
                 <div className="text-center">
-                  <BarChart3 className="mx-auto h-12 w-12 text-gray-300" />
+                  <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground/70" />
                   <p className="mt-4">No calls in this period</p>
                   <p className="text-sm">Make some calls to see trends</p>
                 </div>
@@ -223,7 +223,7 @@ export default function AnalyticsPage() {
                             minHeight: day.count > 0 ? "4px" : "0",
                           }}
                         />
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
                           {day.count}
                         </div>
                       </div>

@@ -12,15 +12,15 @@ export function LeadScoreBadge({ score, size = "sm" }: LeadScoreBadgeProps) {
 
   const getColorClasses = (score: number | null) => {
     if (score === null || score === undefined) {
-      return "bg-gray-100 text-gray-500 border-gray-200";
+      return "bg-secondary text-muted-foreground border-border";
     }
     if (score >= 70) {
-      return "bg-green-100 text-green-700 border-green-300";
+      return "bg-green-100 text-green-400 border-green-300";
     }
     if (score >= 40) {
       return "bg-amber-100 text-amber-700 border-amber-300";
     }
-    return "bg-red-100 text-red-700 border-red-300";
+    return "bg-red-100 text-red-400 border-red-300";
   };
 
   return (

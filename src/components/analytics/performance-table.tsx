@@ -37,9 +37,9 @@ export function PerformanceTable({ data, isLoading }: PerformanceTableProps) {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : !data?.length ? (
-          <div className="flex h-40 items-center justify-center text-gray-500">
+          <div className="flex h-40 items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <Users className="mx-auto h-12 w-12 text-gray-300" />
+              <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4">No agents yet</p>
               <p className="text-sm">Create an agent to see performance data</p>
             </div>
@@ -65,10 +65,10 @@ export function PerformanceTable({ data, isLoading }: PerformanceTableProps) {
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                           agent.successRate >= 70
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-green-100 text-green-400"
                             : agent.successRate >= 40
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-red-100 text-red-700"
+                            ? "bg-yellow-100 text-yellow-400"
+                            : "bg-red-100 text-red-400"
                         }`}
                       >
                         {agent.successRate}%
@@ -78,19 +78,19 @@ export function PerformanceTable({ data, isLoading }: PerformanceTableProps) {
                     <td className="py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {agent.sentimentCounts.positive > 0 && (
-                          <span className="flex items-center gap-1 text-xs text-green-600">
+                          <span className="flex items-center gap-1 text-xs text-green-400">
                             <ThumbsUp className="h-3 w-3" />
                             {agent.sentimentCounts.positive}
                           </span>
                         )}
                         {agent.sentimentCounts.neutral > 0 && (
-                          <span className="flex items-center gap-1 text-xs text-gray-500">
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Minus className="h-3 w-3" />
                             {agent.sentimentCounts.neutral}
                           </span>
                         )}
                         {agent.sentimentCounts.negative > 0 && (
-                          <span className="flex items-center gap-1 text-xs text-red-600">
+                          <span className="flex items-center gap-1 text-xs text-red-400">
                             <ThumbsDown className="h-3 w-3" />
                             {agent.sentimentCounts.negative}
                           </span>

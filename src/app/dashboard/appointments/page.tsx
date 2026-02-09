@@ -39,12 +39,12 @@ import {
 import { toast } from "sonner";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
-  scheduled: { label: "Scheduled", color: "bg-blue-100 text-blue-700", icon: Clock },
-  confirmed: { label: "Confirmed", color: "bg-green-100 text-green-700", icon: CheckCircle },
-  completed: { label: "Completed", color: "bg-gray-100 text-gray-700", icon: CheckCircle },
-  cancelled: { label: "Cancelled", color: "bg-red-100 text-red-700", icon: XCircle },
-  no_show: { label: "No Show", color: "bg-orange-100 text-orange-700", icon: AlertCircle },
-  rescheduled: { label: "Rescheduled", color: "bg-purple-100 text-purple-700", icon: Calendar },
+  scheduled: { label: "Scheduled", color: "bg-blue-500/10 text-blue-400", icon: Clock },
+  confirmed: { label: "Confirmed", color: "bg-green-500/10 text-green-400", icon: CheckCircle },
+  completed: { label: "Completed", color: "bg-secondary text-foreground/80", icon: CheckCircle },
+  cancelled: { label: "Cancelled", color: "bg-red-500/10 text-red-400", icon: XCircle },
+  no_show: { label: "No Show", color: "bg-orange-500/10 text-orange-400", icon: AlertCircle },
+  rescheduled: { label: "Rescheduled", color: "bg-purple-500/10 text-purple-400", icon: Calendar },
 };
 
 const MEETING_TYPE_CONFIG: Record<string, { label: string; icon: typeof Phone }> = {
@@ -210,7 +210,7 @@ function CalendarView({
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
             </div>
           ) : (
             <>
@@ -219,7 +219,7 @@ function CalendarView({
                 {dayNames.map((day) => (
                   <div
                     key={day}
-                    className="text-center text-sm font-medium text-gray-500 py-2"
+                    className="text-center text-sm font-medium text-muted-foreground py-2"
                   >
                     {day}
                   </div>
@@ -244,13 +244,13 @@ function CalendarView({
                         isSelected(day)
                           ? "border-primary bg-primary/5"
                           : isToday(day)
-                          ? "border-blue-300 bg-blue-50"
-                          : "border-transparent hover:bg-gray-50"
+                          ? "border-border bg-blue-500/10"
+                          : "border-transparent hover:bg-secondary"
                       }`}
                     >
                       <div
                         className={`text-sm font-medium ${
-                          isToday(day) ? "text-blue-600" : "text-gray-900"
+                          isToday(day) ? "text-blue-400" : "text-foreground"
                         }`}
                       >
                         {day.getDate()}
@@ -263,7 +263,7 @@ function CalendarView({
                               <div
                                 key={apt.id}
                                 className={`text-xs px-1 py-0.5 rounded truncate ${
-                                  statusConfig?.color || "bg-blue-100 text-blue-700"
+                                  statusConfig?.color || "bg-blue-500/10 text-blue-400"
                                 }`}
                               >
                                 {formatTime(apt.scheduledAt)}
@@ -271,7 +271,7 @@ function CalendarView({
                             );
                           })}
                           {dayAppointments.length > 2 && (
-                            <div className="text-xs text-gray-500 px-1">
+                            <div className="text-xs text-muted-foreground px-1">
                               +{dayAppointments.length - 2} more
                             </div>
                           )}
@@ -304,8 +304,8 @@ function CalendarView({
         <CardContent>
           {selectedDayAppointments.length === 0 ? (
             <div className="text-center py-8">
-              <Calendar className="mx-auto h-10 w-10 text-gray-300" />
-              <p className="mt-2 text-sm text-gray-500">No appointments</p>
+              <Calendar className="mx-auto h-10 w-10 text-muted-foreground/70" />
+              <p className="mt-2 text-sm text-muted-foreground">No appointments</p>
               <Button size="sm" className="mt-4" onClick={onCreateClick}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Appointment
@@ -321,7 +321,7 @@ function CalendarView({
                 .map((apt) => {
                   const statusConfig = STATUS_CONFIG[apt.status] || {
                     label: "Scheduled",
-                    color: "bg-blue-100 text-blue-700",
+                    color: "bg-blue-500/10 text-blue-400",
                   };
                   const meetingConfig = MEETING_TYPE_CONFIG[apt.meetingType] || {
                     icon: Phone,
@@ -333,21 +333,21 @@ function CalendarView({
                     <button
                       key={apt.id}
                       onClick={() => onAppointmentClick(apt)}
-                      className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-gray-50 transition-colors"
+                      className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-secondary transition-colors"
                     >
                       <div className="flex items-start gap-3">
                         <div className="rounded-md bg-primary/10 p-1.5">
                           <MeetingIcon className="h-4 w-4 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
+                          <p className="font-medium text-foreground truncate">
                             {apt.title}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             {formatTime(apt.scheduledAt)} - {apt.duration} min
                           </p>
                           {apt.attendeeName && (
-                            <p className="text-sm text-gray-500 truncate">
+                            <p className="text-sm text-muted-foreground truncate">
                               {apt.attendeeName}
                             </p>
                           )}
@@ -596,8 +596,8 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
-          <p className="text-gray-500">Manage scheduled meetings and appointments</p>
+          <h1 className="text-2xl font-bold text-foreground">Appointments</h1>
+          <p className="text-muted-foreground">Manage scheduled meetings and appointments</p>
         </div>
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
@@ -612,7 +612,7 @@ export default function AppointmentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold">{statsLoading ? "-" : stats?.upcoming || 0}</p>
-                <p className="text-sm text-gray-500">Upcoming (7 days)</p>
+                <p className="text-sm text-muted-foreground">Upcoming (7 days)</p>
               </div>
               <Calendar className="h-8 w-8 text-blue-500" />
             </div>
@@ -623,7 +623,7 @@ export default function AppointmentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold">{statsLoading ? "-" : stats?.confirmed || 0}</p>
-                <p className="text-sm text-gray-500">Confirmed</p>
+                <p className="text-sm text-muted-foreground">Confirmed</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-500" />
             </div>
@@ -634,7 +634,7 @@ export default function AppointmentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold">{statsLoading ? "-" : `${stats?.completionRate || 0}%`}</p>
-                <p className="text-sm text-gray-500">Completion Rate</p>
+                <p className="text-sm text-muted-foreground">Completion Rate</p>
               </div>
               <CheckCircle className="h-8 w-8 text-primary" />
             </div>
@@ -645,7 +645,7 @@ export default function AppointmentsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold">{statsLoading ? "-" : stats?.cancelled || 0}</p>
-                <p className="text-sm text-gray-500">Cancelled</p>
+                <p className="text-sm text-muted-foreground">Cancelled</p>
               </div>
               <XCircle className="h-8 w-8 text-red-500" />
             </div>
@@ -659,7 +659,7 @@ export default function AppointmentsPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
                 <Input
                   placeholder="Search appointments..."
                   value={searchQuery}
@@ -725,13 +725,13 @@ export default function AppointmentsPage() {
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
             </div>
           ) : filteredAppointments.length === 0 ? (
             <div className="py-12 text-center">
-              <Calendar className="mx-auto h-12 w-12 text-gray-300" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-900">No appointments</h3>
-              <p className="mt-2 text-gray-500">
+              <Calendar className="mx-auto h-12 w-12 text-muted-foreground/70" />
+              <h3 className="mt-4 text-lg font-semibold text-foreground">No appointments</h3>
+              <p className="mt-2 text-muted-foreground">
                 {statusFilter !== "all" ? "No appointments match your filter" : "Schedule your first appointment to get started"}
               </p>
               <Button className="mt-4" onClick={() => setCreateOpen(true)}>
@@ -744,7 +744,7 @@ export default function AppointmentsPage() {
               {filteredAppointments.map((appointment) => {
                 const statusConfig = STATUS_CONFIG[appointment.status] ?? {
                   label: "Scheduled",
-                  color: "bg-blue-100 text-blue-700",
+                  color: "bg-blue-500/10 text-blue-400",
                   icon: Clock,
                 };
                 const StatusIcon = statusConfig.icon;
@@ -758,12 +758,12 @@ export default function AppointmentsPage() {
                 return (
                   <div key={appointment.id} className="flex items-center justify-between py-4">
                     <div className="flex items-center gap-4">
-                      <div className={`rounded-lg p-3 ${isPast ? "bg-gray-100" : "bg-primary/10"}`}>
-                        <MeetingIcon className={`h-5 w-5 ${isPast ? "text-gray-400" : "text-primary"}`} />
+                      <div className={`rounded-lg p-3 ${isPast ? "bg-secondary" : "bg-primary/10"}`}>
+                        <MeetingIcon className={`h-5 w-5 ${isPast ? "text-muted-foreground/70" : "text-primary"}`} />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{appointment.title}</p>
-                        <div className="flex items-center gap-3 text-sm text-gray-500">
+                        <p className="font-medium text-foreground">{appointment.title}</p>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3.5 w-3.5" />
                             {formatDate(appointment.scheduledAt)}
@@ -774,7 +774,7 @@ export default function AppointmentsPage() {
                           </span>
                         </div>
                         {(appointment.attendeeName || appointment.contact) && (
-                          <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+                          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                             <User className="h-3.5 w-3.5" />
                             <span>
                               {appointment.attendeeName ||
@@ -846,7 +846,7 @@ export default function AppointmentsPage() {
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                className="text-red-600"
+                                className="text-red-400"
                                 onClick={() => setCancelId(appointment.id)}
                               >
                                 <XCircle className="mr-2 h-4 w-4" />
@@ -860,7 +860,7 @@ export default function AppointmentsPage() {
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                className="text-red-600"
+                                className="text-red-400"
                                 onClick={() => {
                                   if (confirm("Are you sure you want to permanently delete this appointment?")) {
                                     deleteAppointment.mutate({ id: appointment.id });
@@ -1132,23 +1132,23 @@ export default function AppointmentsPage() {
           {editAppointment && (
             <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
               {/* Appointment Summary */}
-              <div className="rounded-lg bg-gray-50 p-4 space-y-2">
+              <div className="rounded-lg bg-secondary p-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">{formatDate(editAppointment.scheduledAt)}</span>
-                  <Clock className="h-4 w-4 text-gray-500 ml-2" />
+                  <Clock className="h-4 w-4 text-muted-foreground ml-2" />
                   <span>{formatTime(editAppointment.scheduledAt)}</span>
-                  <span className="text-gray-500">({editAppointment.duration} min)</span>
+                  <span className="text-muted-foreground">({editAppointment.duration} min)</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  {editAppointment.meetingType === "phone" && <Phone className="h-4 w-4 text-gray-500" />}
-                  {editAppointment.meetingType === "video" && <Video className="h-4 w-4 text-gray-500" />}
-                  {editAppointment.meetingType === "in_person" && <MapPin className="h-4 w-4 text-gray-500" />}
-                  <span className="text-gray-600">
+                  {editAppointment.meetingType === "phone" && <Phone className="h-4 w-4 text-muted-foreground" />}
+                  {editAppointment.meetingType === "video" && <Video className="h-4 w-4 text-muted-foreground" />}
+                  {editAppointment.meetingType === "in_person" && <MapPin className="h-4 w-4 text-muted-foreground" />}
+                  <span className="text-muted-foreground">
                     {MEETING_TYPE_CONFIG[editAppointment.meetingType]?.label || "Meeting"}
                   </span>
                 </div>
-                <Badge className={STATUS_CONFIG[editAppointment.status]?.color || "bg-gray-100"}>
+                <Badge className={STATUS_CONFIG[editAppointment.status]?.color || "bg-secondary"}>
                   {STATUS_CONFIG[editAppointment.status]?.label || editAppointment.status}
                 </Badge>
               </div>
@@ -1168,7 +1168,7 @@ export default function AppointmentsPage() {
                   <h4 className="font-medium mb-3 flex items-center gap-2">
                     <User className="h-4 w-4" />
                     Attendee Information
-                    <span className="text-xs font-normal text-gray-500">(correct if AI got it wrong)</span>
+                    <span className="text-xs font-normal text-muted-foreground">(correct if AI got it wrong)</span>
                   </h4>
 
                   <div className="space-y-4">
@@ -1187,7 +1187,7 @@ export default function AppointmentsPage() {
                         <Mail className="h-4 w-4" />
                         Email
                         {!editFormData.attendeeEmail && (
-                          <span className="text-xs text-orange-600">(required to send confirmation)</span>
+                          <span className="text-xs text-orange-400">(required to send confirmation)</span>
                         )}
                       </Label>
                       <Input
@@ -1198,7 +1198,7 @@ export default function AppointmentsPage() {
                         onChange={(e) => setEditFormData({ ...editFormData, attendeeEmail: e.target.value })}
                       />
                       {editAppointment.attendeeEmail !== editFormData.attendeeEmail && editFormData.attendeeEmail && (
-                        <p className="text-xs text-blue-600">
+                        <p className="text-xs text-blue-400">
                           Email changed. Save changes, then use &quot;Resend Confirmation&quot; to send to the new email.
                         </p>
                       )}

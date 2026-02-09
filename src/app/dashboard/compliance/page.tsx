@@ -29,11 +29,11 @@ export default function CompliancePage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
           <Shield className="h-6 w-6" />
           Compliance Dashboard
         </h1>
-        <p className="text-gray-500">
+        <p className="text-muted-foreground">
           Monitor regulatory compliance, DNC lists, and audit trails
         </p>
       </div>

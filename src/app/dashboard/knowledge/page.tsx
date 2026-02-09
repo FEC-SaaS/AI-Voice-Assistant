@@ -100,8 +100,8 @@ export default function KnowledgePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Knowledge Base</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Knowledge Base</h1>
+          <p className="text-muted-foreground">
             Train your agents with your business information
           </p>
         </div>
@@ -116,20 +116,20 @@ export default function KnowledgePage() {
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
         </div>
       )}
 
       {/* Empty State */}
       {!isLoading && (!documents || documents.length === 0) && (
         <>
-          <div className="rounded-lg border bg-white">
+          <div className="rounded-lg border bg-card">
             <div className="p-8 text-center">
-              <BookOpen className="mx-auto h-12 w-12 text-gray-300" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-900">
+              <BookOpen className="mx-auto h-12 w-12 text-muted-foreground/70" />
+              <h3 className="mt-4 text-lg font-semibold text-foreground">
                 No knowledge documents yet
               </h3>
-              <p className="mt-2 text-gray-500">
+              <p className="mt-2 text-muted-foreground">
                 Add documents, URLs, or Q&A pairs to train your agents.
               </p>
             </div>
@@ -138,30 +138,30 @@ export default function KnowledgePage() {
           {/* Add Options */}
           <div className="grid gap-4 md:grid-cols-3">
             <Link href="/dashboard/knowledge/new?type=upload" className="group">
-              <div className="rounded-lg border bg-white p-6 transition-shadow hover:shadow-md">
+              <div className="rounded-lg border bg-card p-6 transition-shadow hover:shadow-md">
                 <FileText className="h-8 w-8 text-primary" />
                 <h3 className="mt-4 font-semibold">Upload Documents</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Upload PDFs, Word docs, or text files
                 </p>
               </div>
             </Link>
 
             <Link href="/dashboard/knowledge/new?type=url" className="group">
-              <div className="rounded-lg border bg-white p-6 transition-shadow hover:shadow-md">
+              <div className="rounded-lg border bg-card p-6 transition-shadow hover:shadow-md">
                 <Globe className="h-8 w-8 text-primary" />
                 <h3 className="mt-4 font-semibold">Import from URL</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Scrape content from your website or FAQ pages
                 </p>
               </div>
             </Link>
 
             <Link href="/dashboard/knowledge/new?type=manual" className="group">
-              <div className="rounded-lg border bg-white p-6 transition-shadow hover:shadow-md">
+              <div className="rounded-lg border bg-card p-6 transition-shadow hover:shadow-md">
                 <PenLine className="h-8 w-8 text-primary" />
                 <h3 className="mt-4 font-semibold">Add Q&A Manually</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Create custom question and answer pairs
                 </p>
               </div>
@@ -209,10 +209,10 @@ export default function KnowledgePage() {
                           <Icon className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-gray-900 truncate">
+                          <h3 className="font-medium text-foreground truncate">
                             {doc.name}
                           </h3>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             {TYPE_LABELS[doc.type] || doc.type}
                           </p>
                           <div className="mt-2 flex items-center gap-2">
@@ -261,7 +261,7 @@ export default function KnowledgePage() {
                             )}
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-red-600"
+                            className="text-red-400"
                             onClick={() => setDeleteId(doc.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -271,14 +271,14 @@ export default function KnowledgePage() {
                       </DropdownMenu>
                     </div>
                     {doc.content && (
-                      <p className="mt-3 text-sm text-gray-600 line-clamp-2">
+                      <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
                         {doc.content.substring(0, 150)}
                         {doc.content.length > 150 ? "..." : ""}
                       </p>
                     )}
                     {/* Agent Assignment */}
                     <div className="mt-3 flex items-center gap-2">
-                      <Bot className="h-4 w-4 text-gray-400" />
+                      <Bot className="h-4 w-4 text-muted-foreground/70" />
                       <select
                         className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         value={doc.agentId || ""}
@@ -292,7 +292,7 @@ export default function KnowledgePage() {
                         ))}
                       </select>
                     </div>
-                    <p className="mt-2 text-xs text-gray-400">
+                    <p className="mt-2 text-xs text-muted-foreground/70">
                       Added {new Date(doc.createdAt).toLocaleDateString()}
                     </p>
                   </CardContent>

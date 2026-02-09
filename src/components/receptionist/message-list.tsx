@@ -21,25 +21,25 @@ interface MessageListProps {
 }
 
 const urgencyBadge: Record<string, string> = {
-  low: "bg-gray-100 text-gray-600",
-  normal: "bg-blue-100 text-blue-700",
+  low: "bg-secondary text-muted-foreground",
+  normal: "bg-blue-100 text-blue-400",
   high: "bg-amber-100 text-amber-700",
-  urgent: "bg-red-100 text-red-700",
+  urgent: "bg-red-100 text-red-400",
 };
 
 const statusBadge: Record<string, string> = {
-  new: "bg-blue-100 text-blue-700",
-  read: "bg-gray-100 text-gray-600",
-  forwarded: "bg-purple-100 text-purple-700",
-  resolved: "bg-green-100 text-green-700",
+  new: "bg-blue-100 text-blue-400",
+  read: "bg-secondary text-muted-foreground",
+  forwarded: "bg-purple-100 text-purple-400",
+  resolved: "bg-green-100 text-green-400",
 };
 
 export function MessageList({ messages, onSelect }: MessageListProps) {
   if (messages.length === 0) {
     return (
-      <div className="rounded-lg border bg-white p-12 text-center">
-        <MessageSquare className="mx-auto h-10 w-10 text-gray-300" />
-        <p className="mt-2 text-sm text-gray-500">No messages yet</p>
+      <div className="rounded-lg border bg-card p-12 text-center">
+        <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground/50" />
+        <p className="mt-2 text-sm text-muted-foreground">No messages yet</p>
       </div>
     );
   }
@@ -54,14 +54,14 @@ export function MessageList({ messages, onSelect }: MessageListProps) {
           <div
             key={msg.id}
             onClick={() => onSelect?.(msg.id)}
-            className={`rounded-lg border bg-white p-4 transition-colors hover:border-primary/30 ${onSelect ? "cursor-pointer" : ""} ${msg.status === "new" ? "border-l-4 border-l-blue-500" : ""}`}
+            className={`rounded-lg border bg-card p-4 transition-colors hover:border-primary/30 ${onSelect ? "cursor-pointer" : ""} ${msg.status === "new" ? "border-l-4 border-l-blue-500" : ""}`}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-gray-900">{msg.callerName || "Unknown Caller"}</span>
+                  <span className="font-medium text-foreground">{msg.callerName || "Unknown Caller"}</span>
                   {msg.callerCompany && (
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Building2 className="h-3 w-3" />
                       {msg.callerCompany}
                     </span>
@@ -73,8 +73,8 @@ export function MessageList({ messages, onSelect }: MessageListProps) {
                     {msg.status}
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-gray-600 line-clamp-2">{msg.body}</p>
-                <div className="mt-2 flex items-center gap-3 text-xs text-gray-400">
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{msg.body}</p>
+                <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground/70">
                   {msg.department && <span>{msg.department.name}</span>}
                   {msg.staffMember && <span>for {msg.staffMember.name}</span>}
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{timeAgo}</span>

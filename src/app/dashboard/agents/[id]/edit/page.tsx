@@ -93,7 +93,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -108,14 +108,14 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Agent</h1>
-          <p className="text-gray-500">Update {agent?.name}</p>
+          <h1 className="text-2xl font-bold text-foreground">Edit Agent</h1>
+          <p className="text-muted-foreground">Update {agent?.name}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="rounded-lg border bg-white p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
+        <div className="rounded-lg border bg-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">Basic Information</h2>
           <div className="space-y-2">
             <Label htmlFor="name">Agent Name *</Label>
             <Input id="name" {...register("name")} />
@@ -135,8 +135,8 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        <div className="rounded-lg border bg-white p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">System Prompt *</h2>
+        <div className="rounded-lg border bg-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">System Prompt *</h2>
           <textarea
             className="flex min-h-[200px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             {...register("systemPrompt")}
@@ -144,8 +144,8 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
           {errors.systemPrompt && <p className="text-sm text-red-500">{errors.systemPrompt.message}</p>}
         </div>
 
-        <div className="rounded-lg border bg-white p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Voice Configuration</h2>
+        <div className="rounded-lg border bg-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">Voice Configuration</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="voiceProvider">Voice Provider</Label>
@@ -174,8 +174,8 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        <div className="rounded-lg border bg-white p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">AI Model</h2>
+        <div className="rounded-lg border bg-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">AI Model</h2>
           <select
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             {...register("model")}
@@ -186,12 +186,12 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
           </select>
         </div>
 
-        <div className="rounded-lg border bg-white p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Capabilities</h2>
+        <div className="rounded-lg border bg-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">Capabilities</h2>
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="enableAppointments" className="text-base">Enable Appointment Scheduling</Label>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Allow this agent to check availability and schedule appointments during calls
               </p>
             </div>
@@ -202,16 +202,16 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                 className="sr-only peer"
                 {...register("enableAppointments")}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-border/50" />
 
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="enableReceptionist" className="text-base">Enable Receptionist Mode</Label>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 AI receptionist that greets callers, looks up departments, transfers calls, and takes messages
               </p>
             </div>
@@ -222,7 +222,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                 className="sr-only peer"
                 {...register("enableReceptionist")}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
@@ -270,7 +270,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="rc-screening" className="text-sm">Enable Call Screening</Label>
-                      <p className="text-xs text-gray-500">Ask callers for their name and purpose before transferring</p>
+                      <p className="text-xs text-muted-foreground">Ask callers for their name and purpose before transferring</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -279,10 +279,10 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                         className="sr-only peer"
                         {...register("receptionistConfig.enableCallScreening")}
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                     </label>
                   </div>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-muted-foreground/70">
                     Manage departments at{" "}
                     <Link href="/dashboard/receptionist/departments" className="text-primary hover:underline">
                       Receptionist &rarr; Departments
@@ -293,12 +293,12 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
             </div>
           )}
 
-          <hr className="border-gray-100" />
+          <hr className="border-border/50" />
 
           <div className="flex items-center justify-between">
             <div>
               <Label htmlFor="enableMissedCallTextBack" className="text-base">Missed Call Text-Back</Label>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Automatically send an SMS when an inbound call is missed, and optionally auto-callback
               </p>
             </div>
@@ -309,7 +309,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                 className="sr-only peer"
                 {...register("enableMissedCallTextBack")}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
             </label>
           </div>
 
@@ -346,7 +346,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="mc-autoCallback" className="text-sm">Auto-Callback</Label>
-                      <p className="text-xs text-gray-500">Automatically call back missed callers after a delay</p>
+                      <p className="text-xs text-muted-foreground">Automatically call back missed callers after a delay</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -355,7 +355,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                         className="sr-only peer"
                         {...register("missedCallConfig.enableAutoCallback")}
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                     </label>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -383,7 +383,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                   <div className="flex items-center justify-between">
                     <div>
                       <Label htmlFor="mc-autoLead" className="text-sm">Auto-Create Lead</Label>
-                      <p className="text-xs text-gray-500">Automatically create a contact/lead from missed callers</p>
+                      <p className="text-xs text-muted-foreground">Automatically create a contact/lead from missed callers</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -392,7 +392,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                         className="sr-only peer"
                         {...register("missedCallConfig.autoCreateLead")}
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                     </label>
                   </div>
                 </div>

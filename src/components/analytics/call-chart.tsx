@@ -32,9 +32,9 @@ export function CallChart({ data, isLoading, days }: CallChartProps) {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : !data?.length || data.every((d) => d.count === 0) ? (
-          <div className="flex h-[300px] items-center justify-center text-gray-500">
+          <div className="flex h-[300px] items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <BarChart3 className="mx-auto h-12 w-12 text-gray-300" />
+              <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4">No calls in this period</p>
               <p className="text-sm">Make some calls to see trends</p>
             </div>

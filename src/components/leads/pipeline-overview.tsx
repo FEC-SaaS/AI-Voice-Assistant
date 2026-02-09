@@ -21,9 +21,9 @@ const BUCKETS = [
   {
     key: "unscored" as const,
     label: "Unscored",
-    color: "bg-gray-400",
-    lightColor: "bg-gray-100",
-    textColor: "text-gray-700",
+    color: "bg-muted-foreground/70",
+    lightColor: "bg-secondary",
+    textColor: "text-foreground/80",
   },
   {
     key: "cold" as const,

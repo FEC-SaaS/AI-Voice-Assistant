@@ -32,9 +32,9 @@ function getBarColor(score: number, maxScore: number): string {
 
 function getBarTextColor(score: number, maxScore: number): string {
   const pct = maxScore > 0 ? (score / maxScore) * 100 : 0;
-  if (pct >= 80) return "text-green-600";
-  if (pct >= 60) return "text-yellow-600";
-  return "text-red-600";
+  if (pct >= 80) return "text-green-400";
+  if (pct >= 60) return "text-yellow-400";
+  return "text-red-400";
 }
 
 export function ScoreBreakdown({ breakdown, isLoading }: ScoreBreakdownProps) {

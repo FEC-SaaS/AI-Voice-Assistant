@@ -142,10 +142,10 @@ function RescheduleAppointmentContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-secondary">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-gray-600">Loading appointment...</p>
+          <p className="mt-4 text-muted-foreground">Loading appointment...</p>
         </div>
       </div>
     );
@@ -157,8 +157,8 @@ function RescheduleAppointmentContent() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <XCircle className="h-12 w-12 text-red-500 mx-auto" />
-            <h2 className="mt-4 text-xl font-semibold text-gray-900">Error</h2>
-            <p className="mt-2 text-gray-600">{error}</p>
+            <h2 className="mt-4 text-xl font-semibold text-foreground">Error</h2>
+            <p className="mt-2 text-muted-foreground">{error}</p>
           </CardContent>
         </Card>
       </BrandedAppointmentLayout>
@@ -170,36 +170,36 @@ function RescheduleAppointmentContent() {
       <BrandedAppointmentLayout branding={branding}>
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <div className="rounded-full bg-blue-100 p-3 w-fit mx-auto">
-              <CheckCircle className="h-12 w-12 text-blue-600" />
+            <div className="rounded-full bg-blue-500/10 p-3 w-fit mx-auto">
+              <CheckCircle className="h-12 w-12 text-blue-400" />
             </div>
-            <h2 className="mt-4 text-xl font-semibold text-gray-900">
+            <h2 className="mt-4 text-xl font-semibold text-foreground">
               Appointment Rescheduled!
             </h2>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-muted-foreground">
               Your appointment has been rescheduled to a new time.
             </p>
 
             {previousDate && (
-              <div className="mt-4 p-3 bg-red-50 rounded-lg text-left">
-                <p className="text-sm text-gray-500 line-through">
+              <div className="mt-4 p-3 bg-red-500/10 rounded-lg text-left">
+                <p className="text-sm text-muted-foreground line-through">
                   Previous: {formatDate(previousDate)} at {formatTime(previousDate)}
                 </p>
               </div>
             )}
 
-            <div className="mt-4 p-4 bg-green-50 rounded-lg text-left border-l-4 border-green-500">
-              <h3 className="font-medium text-gray-900">{appointment.title}</h3>
-              <div className="mt-2 space-y-1 text-sm text-gray-600">
+            <div className="mt-4 p-4 bg-green-500/10 rounded-lg text-left border-l-4 border-green-500">
+              <h3 className="font-medium text-foreground">{appointment.title}</h3>
+              <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                 <p className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-green-600" />
-                  <span className="text-green-700 font-medium">
+                  <Calendar className="h-4 w-4 text-green-400" />
+                  <span className="text-green-400 font-medium">
                     {formatDate(appointment.scheduledAt)}
                   </span>
                 </p>
                 <p className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-green-600" />
-                  <span className="text-green-700 font-medium">
+                  <Clock className="h-4 w-4 text-green-400" />
+                  <span className="text-green-400 font-medium">
                     {formatTime(appointment.scheduledAt)} ({appointment.duration} min)
                   </span>
                 </p>
@@ -215,8 +215,8 @@ function RescheduleAppointmentContent() {
     <BrandedAppointmentLayout branding={branding}>
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <div className="rounded-full bg-blue-100 p-3 w-fit mx-auto">
-            <Calendar className="h-8 w-8 text-blue-600" />
+          <div className="rounded-full bg-blue-500/10 p-3 w-fit mx-auto">
+            <Calendar className="h-8 w-8 text-blue-400" />
           </div>
           <CardTitle className="mt-4">Reschedule Appointment</CardTitle>
           <CardDescription>
@@ -227,15 +227,15 @@ function RescheduleAppointmentContent() {
         {appointment && (
           <CardContent className="space-y-4">
             {/* Current Appointment */}
-            <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-              <p className="text-sm font-medium text-gray-500">Current Appointment</p>
+            <div className="p-4 bg-secondary rounded-lg space-y-3">
+              <p className="text-sm font-medium text-muted-foreground">Current Appointment</p>
               <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-gray-200 p-2">
+                <div className="rounded-lg bg-secondary p-2">
                   {getMeetingIcon(appointment.meetingType)}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{appointment.title}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="font-semibold text-foreground">{appointment.title}</h3>
+                  <p className="text-sm text-muted-foreground">
                     {formatDate(appointment.scheduledAt)} at {formatTime(appointment.scheduledAt)}
                   </p>
                 </div>
@@ -244,7 +244,7 @@ function RescheduleAppointmentContent() {
 
             {/* New Date/Time Selection */}
             <div className="border-t pt-4 space-y-4">
-              <p className="text-sm font-medium text-gray-900">Select New Date & Time</p>
+              <p className="text-sm font-medium text-foreground">Select New Date & Time</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -269,7 +269,7 @@ function RescheduleAppointmentContent() {
               </div>
 
               {error && (
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-400">{error}</p>
               )}
             </div>
 
@@ -302,10 +302,10 @@ export default function RescheduleAppointmentPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-secondary">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-            <p className="mt-4 text-gray-600">Loading...</p>
+            <p className="mt-4 text-muted-foreground">Loading...</p>
           </div>
         </div>
       }

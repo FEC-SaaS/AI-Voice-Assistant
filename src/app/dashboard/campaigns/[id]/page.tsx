@@ -31,23 +31,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-const DEFAULT_STATUS = { label: "Draft", color: "text-gray-600", bgColor: "bg-gray-100" };
-const DEFAULT_CONTACT_STATUS = { label: "Pending", color: "text-gray-600", icon: Clock };
+const DEFAULT_STATUS = { label: "Draft", color: "text-muted-foreground", bgColor: "bg-secondary" };
+const DEFAULT_CONTACT_STATUS = { label: "Pending", color: "text-muted-foreground", icon: Clock };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
   draft: DEFAULT_STATUS,
-  scheduled: { label: "Scheduled", color: "text-blue-600", bgColor: "bg-blue-100" },
-  running: { label: "Running", color: "text-green-600", bgColor: "bg-green-100" },
-  paused: { label: "Paused", color: "text-yellow-600", bgColor: "bg-yellow-100" },
-  completed: { label: "Completed", color: "text-purple-600", bgColor: "bg-purple-100" },
+  scheduled: { label: "Scheduled", color: "text-blue-400", bgColor: "bg-blue-500/100/10" },
+  running: { label: "Running", color: "text-green-400", bgColor: "bg-green-500/10" },
+  paused: { label: "Paused", color: "text-yellow-400", bgColor: "bg-yellow-500/10" },
+  completed: { label: "Completed", color: "text-purple-400", bgColor: "bg-purple-500/10" },
 };
 
 const CONTACT_STATUS: Record<string, { label: string; color: string; icon: typeof CheckCircle }> = {
   pending: DEFAULT_CONTACT_STATUS,
-  called: { label: "Called", color: "text-blue-600", icon: Phone },
-  completed: { label: "Completed", color: "text-green-600", icon: CheckCircle },
-  failed: { label: "Failed", color: "text-red-600", icon: XCircle },
-  dnc: { label: "DNC", color: "text-orange-600", icon: AlertCircle },
+  called: { label: "Called", color: "text-blue-400", icon: Phone },
+  completed: { label: "Completed", color: "text-green-400", icon: CheckCircle },
+  failed: { label: "Failed", color: "text-red-400", icon: XCircle },
+  dnc: { label: "DNC", color: "text-orange-400", icon: AlertCircle },
 };
 
 function formatDate(date: string | Date | null) {
@@ -262,7 +262,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -270,7 +270,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
   if (!campaign) {
     return (
       <div className="py-20 text-center">
-        <h2 className="text-xl font-semibold text-gray-900">Campaign not found</h2>
+        <h2 className="text-xl font-semibold text-foreground">Campaign not found</h2>
         <Link href="/dashboard/campaigns" className="mt-4 inline-block text-primary hover:underline">
           Back to Campaigns
         </Link>
@@ -295,13 +295,13 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{campaign.name}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{campaign.name}</h1>
               <span className={`rounded-full px-3 py-1 text-sm font-medium ${status.bgColor} ${status.color}`}>
                 {status.label}
               </span>
             </div>
             {campaign.description && (
-              <p className="mt-1 text-gray-500">{campaign.description}</p>
+              <p className="mt-1 text-muted-foreground">{campaign.description}</p>
             )}
           </div>
         </div>
@@ -353,29 +353,29 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg border bg-white p-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
             Total Contacts
           </div>
           <p className="mt-1 text-2xl font-bold">{stats?.contacts.total || 0}</p>
         </div>
-        <div className="rounded-lg border bg-white p-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Phone className="h-4 w-4" />
             Calls Made
           </div>
           <p className="mt-1 text-2xl font-bold">{stats?.calls.total || 0}</p>
         </div>
-        <div className="rounded-lg border bg-white p-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <TrendingUp className="h-4 w-4" />
             Progress
           </div>
           <p className="mt-1 text-2xl font-bold">{stats?.progress || 0}%</p>
         </div>
-        <div className="rounded-lg border bg-white p-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
             Total Duration
           </div>
@@ -388,11 +388,11 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
       {/* Campaign Details */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Info */}
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900">Campaign Details</h2>
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground">Campaign Details</h2>
           <div className="mt-4 space-y-4">
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">Agent</span>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Agent</span>
               <Link
                 href={`/dashboard/agents/${campaign.agent?.id}`}
                 className="mt-1 flex items-center gap-2 text-sm text-primary hover:underline"
@@ -402,21 +402,21 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               </Link>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">Calling Hours</span>
-              <div className="mt-1 flex items-center gap-2 text-sm text-gray-900">
-                <Clock className="h-4 w-4 text-gray-400" />
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Calling Hours</span>
+              <div className="mt-1 flex items-center gap-2 text-sm text-foreground">
+                <Clock className="h-4 w-4 text-muted-foreground/70" />
                 {callingHours?.start} - {callingHours?.end} ({campaign.timeZone})
               </div>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">Max Calls/Day</span>
-              <p className="mt-1 text-sm text-gray-900">{campaign.maxCallsPerDay}</p>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Max Calls/Day</span>
+              <p className="mt-1 text-sm text-foreground">{campaign.maxCallsPerDay}</p>
             </div>
             {campaign.scheduleStart && (
               <div>
-                <span className="text-xs font-medium uppercase text-gray-400">Schedule</span>
-                <div className="mt-1 flex items-center gap-2 text-sm text-gray-900">
-                  <Calendar className="h-4 w-4 text-gray-400" />
+                <span className="text-xs font-medium uppercase text-muted-foreground/70">Schedule</span>
+                <div className="mt-1 flex items-center gap-2 text-sm text-foreground">
+                  <Calendar className="h-4 w-4 text-muted-foreground/70" />
                   {formatDate(campaign.scheduleStart)}
                   {campaign.scheduleEnd && ` - ${formatDate(campaign.scheduleEnd)}`}
                 </div>
@@ -426,8 +426,8 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         </div>
 
         {/* Contact Status Breakdown */}
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900">Contact Status</h2>
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground">Contact Status</h2>
           <div className="mt-4 space-y-3">
             {Object.entries(CONTACT_STATUS).map(([key, config]) => {
               const count = stats?.contacts[key as keyof typeof stats.contacts] || 0;
@@ -440,10 +440,10 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   <Icon className={`h-4 w-4 ${config.color}`} />
                   <div className="flex-1">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">{config.label}</span>
+                      <span className="text-muted-foreground">{config.label}</span>
                       <span className="font-medium">{count}</span>
                     </div>
-                    <div className="mt-1 h-2 rounded-full bg-gray-100">
+                    <div className="mt-1 h-2 rounded-full bg-secondary">
                       <div
                         className="h-full rounded-full bg-primary transition-all"
                         style={{ width: `${percentage}%` }}
@@ -457,32 +457,32 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         </div>
 
         {/* Sentiment Breakdown */}
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Sentiment
           </h2>
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Positive</span>
-              <span className="text-sm font-medium text-green-600">{stats?.sentiment.positive || 0}</span>
+              <span className="text-sm text-muted-foreground">Positive</span>
+              <span className="text-sm font-medium text-green-400">{stats?.sentiment.positive || 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Neutral</span>
-              <span className="text-sm font-medium text-gray-600">{stats?.sentiment.neutral || 0}</span>
+              <span className="text-sm text-muted-foreground">Neutral</span>
+              <span className="text-sm font-medium text-muted-foreground">{stats?.sentiment.neutral || 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Negative</span>
-              <span className="text-sm font-medium text-red-600">{stats?.sentiment.negative || 0}</span>
+              <span className="text-sm text-muted-foreground">Negative</span>
+              <span className="text-sm font-medium text-red-400">{stats?.sentiment.negative || 0}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Contacts Section */}
-      <div className="rounded-lg border bg-white">
+      <div className="rounded-lg border bg-card">
         <div className="flex items-center justify-between border-b p-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-foreground">
             Contacts ({contactsData?.pagination.total || 0})
           </h2>
           <div className="flex gap-2">
@@ -532,9 +532,9 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
 
         {/* Assign Existing Contacts Panel */}
         {showAssignExisting && (
-          <div className="border-b bg-blue-50 p-4 space-y-3">
+          <div className="border-b bg-blue-500/10 p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">Assign Existing Contacts</h3>
+              <h3 className="text-sm font-semibold text-foreground">Assign Existing Contacts</h3>
               <Button variant="ghost" size="sm" onClick={() => {
                 setShowAssignExisting(false);
                 setSelectedContactIds(new Set());
@@ -544,7 +544,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               </Button>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
               <Input
                 placeholder="Search by name, phone, or email..."
                 value={assignSearch}
@@ -552,13 +552,13 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                 className="pl-9 text-sm"
               />
             </div>
-            <div className="max-h-60 overflow-y-auto rounded border bg-white">
+            <div className="max-h-60 overflow-y-auto rounded border bg-card">
               {loadingUnassigned ? (
                 <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/70" />
                 </div>
               ) : unassignedContacts?.contacts.length === 0 ? (
-                <p className="py-6 text-center text-sm text-gray-500">
+                <p className="py-6 text-center text-sm text-muted-foreground">
                   {assignSearch ? "No matching contacts found" : "No unassigned contacts available"}
                 </p>
               ) : (
@@ -567,8 +567,8 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   return (
                     <label
                       key={contact.id}
-                      className={`flex cursor-pointer items-center gap-3 border-b px-3 py-2 last:border-b-0 hover:bg-gray-50 ${
-                        isSelected ? "bg-blue-50" : ""
+                      className={`flex cursor-pointer items-center gap-3 border-b px-3 py-2 last:border-b-0 hover:bg-secondary ${
+                        isSelected ? "bg-blue-500/10" : ""
                       }`}
                     >
                       <input
@@ -583,18 +583,18 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                           }
                           setSelectedContactIds(next);
                         }}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-gray-900">
+                        <p className="truncate text-sm font-medium text-foreground">
                           {contact.firstName || contact.lastName
                             ? `${contact.firstName || ""} ${contact.lastName || ""}`.trim()
                             : "Unknown"}
                         </p>
-                        <p className="truncate text-xs text-gray-500">{contact.phoneNumber}</p>
+                        <p className="truncate text-xs text-muted-foreground">{contact.phoneNumber}</p>
                       </div>
                       {contact.company && (
-                        <span className="text-xs text-gray-400">{contact.company}</span>
+                        <span className="text-xs text-muted-foreground/70">{contact.company}</span>
                       )}
                     </label>
                   );
@@ -602,7 +602,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               )}
             </div>
             <div className="flex items-center justify-between">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {selectedContactIds.size} contact{selectedContactIds.size !== 1 ? "s" : ""} selected
               </p>
               <Button
@@ -628,7 +628,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
 
         {/* Add Contact Form */}
         {showAddContact && (
-          <div className="border-b bg-gray-50 p-4">
+          <div className="border-b bg-secondary p-4">
             <div className="flex items-end gap-4">
               <div className="flex-1">
                 <Label htmlFor="phone">Phone Number *</Label>
@@ -674,9 +674,9 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
         {/* Contacts List */}
         {contactsData?.contacts.length === 0 ? (
           <div className="p-8 text-center">
-            <Users className="mx-auto h-12 w-12 text-gray-300" />
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">No contacts yet</h3>
-            <p className="mt-2 text-sm text-gray-500">
+            <Users className="mx-auto h-12 w-12 text-muted-foreground/70" />
+            <h3 className="mt-4 text-lg font-semibold text-foreground">No contacts yet</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
               Add contacts manually or import a CSV file to get started.
             </p>
           </div>
@@ -687,18 +687,18 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               const StatusIcon = contactStatus.icon;
 
               return (
-                <div key={contact.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                <div key={contact.id} className="flex items-center justify-between px-4 py-3 hover:bg-secondary">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                      <Users className="h-5 w-5 text-gray-500" />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
+                      <Users className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-foreground">
                         {contact.firstName || contact.lastName
                           ? `${contact.firstName || ""} ${contact.lastName || ""}`.trim()
                           : "Unknown"}
                       </p>
-                      <p className="text-sm font-mono text-gray-500">{contact.phoneNumber}</p>
+                      <p className="text-sm font-mono text-muted-foreground">{contact.phoneNumber}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -707,7 +707,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                       {contactStatus.label}
                     </span>
                     {contact._count.calls > 0 && (
-                      <span className="text-sm text-gray-500">{contact._count.calls} calls</span>
+                      <span className="text-sm text-muted-foreground">{contact._count.calls} calls</span>
                     )}
                     <Button
                       variant="ghost"
@@ -718,7 +718,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                         }
                       }}
                     >
-                      <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-500" />
+                      <Trash2 className="h-4 w-4 text-muted-foreground/70 hover:text-red-500" />
                     </Button>
                   </div>
                 </div>

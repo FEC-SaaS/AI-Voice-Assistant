@@ -41,9 +41,9 @@ export function CoachingRecommendations({
       </CardHeader>
       <CardContent>
         {!hasData ? (
-          <div className="flex h-[200px] items-center justify-center text-gray-500">
+          <div className="flex h-[200px] items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <GraduationCap className="mx-auto h-12 w-12 text-gray-300" />
+              <GraduationCap className="mx-auto h-12 w-12 text-muted-foreground/70" />
               <p className="mt-4">No coaching recommendations yet</p>
               <p className="text-sm">
                 Recommendations will appear as more calls are analyzed

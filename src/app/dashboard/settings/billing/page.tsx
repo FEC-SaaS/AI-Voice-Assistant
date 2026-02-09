@@ -50,12 +50,12 @@ function UsageBar({ used, limit, label }: { used: number; limit: number; label: 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600">{label}</span>
+        <span className="text-muted-foreground">{label}</span>
         <span className="font-medium">
           {used.toLocaleString()} / {isUnlimited ? "Unlimited" : limit.toLocaleString()}
         </span>
       </div>
-      <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+      <div className="h-2 rounded-full bg-secondary overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${
             isAtLimit ? "bg-red-500" : isNearLimit ? "bg-yellow-500" : "bg-primary"
@@ -64,7 +64,7 @@ function UsageBar({ used, limit, label }: { used: number; limit: number; label: 
         />
       </div>
       {isAtLimit && (
-        <p className="text-xs text-red-600 flex items-center gap-1">
+        <p className="text-xs text-red-400 flex items-center gap-1">
           <AlertCircle className="h-3 w-3" />
           Limit reached — upgrade to continue
         </p>
@@ -76,18 +76,18 @@ function UsageBar({ used, limit, label }: { used: number; limit: number; label: 
 // ── Card brand icon helper ─────────────────────────────────────────────
 function PaymentMethodIcon({ type, brand }: { type: string; brand?: string }) {
   if (type === "paypal") {
-    return <Wallet className="h-5 w-5 text-blue-600" />;
+    return <Wallet className="h-5 w-5 text-blue-400" />;
   }
   if (type === "link") {
-    return <Zap className="h-5 w-5 text-green-600" />;
+    return <Zap className="h-5 w-5 text-green-400" />;
   }
   // Default: card icon
   const brandColors: Record<string, string> = {
-    visa: "text-blue-700",
-    mastercard: "text-orange-600",
+    visa: "text-blue-400",
+    mastercard: "text-orange-400",
     amex: "text-blue-500",
   };
-  return <CreditCard className={`h-5 w-5 ${brandColors[brand || ""] || "text-gray-600"}`} />;
+  return <CreditCard className={`h-5 w-5 ${brandColors[brand || ""] || "text-muted-foreground"}`} />;
 }
 
 function formatPaymentMethod(m: {
@@ -172,7 +172,7 @@ export default function BillingPage() {
   if (loadingSub || loadingUsage) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -186,8 +186,8 @@ export default function BillingPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Billing & Usage</h1>
-          <p className="text-gray-500">Manage your subscription, payment methods, and usage</p>
+          <h1 className="text-2xl font-bold text-foreground">Billing & Usage</h1>
+          <p className="text-muted-foreground">Manage your subscription, payment methods, and usage</p>
         </div>
         {isPaidPlan && (
           <Button variant="outline" onClick={handleManageBilling} disabled={createPortal.isPending}>
@@ -215,17 +215,17 @@ export default function BillingPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">{currentPlan?.name}</h3>
-                <p className="text-sm text-gray-500">{currentPlan?.description}</p>
+                <h3 className="text-2xl font-bold text-foreground">{currentPlan?.name}</h3>
+                <p className="text-sm text-muted-foreground">{currentPlan?.description}</p>
               </div>
               <div className="text-right">
                 {currentPlan?.price !== null ? (
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-3xl font-bold text-foreground">
                     ${currentPlan?.price}
-                    <span className="text-base font-normal text-gray-500">/mo</span>
+                    <span className="text-base font-normal text-muted-foreground">/mo</span>
                   </p>
                 ) : (
-                  <p className="text-lg text-gray-600">Custom pricing</p>
+                  <p className="text-lg text-muted-foreground">Custom pricing</p>
                 )}
               </div>
             </div>
@@ -242,7 +242,7 @@ export default function BillingPage() {
               </div>
             )}
             {!isPaidPlan && (
-              <p className="text-sm text-orange-600 flex items-center gap-1">
+              <p className="text-sm text-orange-400 flex items-center gap-1">
                 <AlertCircle className="h-4 w-4" />
                 Upgrade to unlock all features and higher limits
               </p>
@@ -276,10 +276,10 @@ export default function BillingPage() {
 
       {/* Overage Tracker */}
       {usage && usage.overage.minutes > 0 && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-border bg-orange-500/10">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <AlertCircle className="h-6 w-6 text-orange-600 shrink-0" />
+              <AlertCircle className="h-6 w-6 text-orange-400 shrink-0" />
               <div className="flex-1">
                 <h3 className="font-semibold text-orange-900">Overage Charges This Period</h3>
                 <p className="text-sm text-orange-800 mt-1">
@@ -311,7 +311,7 @@ export default function BillingPage() {
             <div className="space-y-2">
               {upcomingInvoice.lines.map((line, i) => (
                 <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">{line.description}</span>
+                  <span className="text-muted-foreground">{line.description}</span>
                   <span className="font-medium">${line.amount.toFixed(2)}</span>
                 </div>
               ))}
@@ -326,8 +326,8 @@ export default function BillingPage() {
 
       {/* Plan Selection */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Choose a Plan</h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <h2 className="text-xl font-semibold text-foreground mb-2">Choose a Plan</h2>
+        <p className="text-sm text-muted-foreground mb-4">
           Click a plan to select it. You&apos;ll be guided through secure payment setup.
         </p>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -343,7 +343,7 @@ export default function BillingPage() {
                 key={plan.id}
                 className={`relative cursor-pointer transition-all ${
                   isPopular ? "border-primary shadow-md" : ""
-                } ${isCurrentPlan ? "bg-gray-50 cursor-default" : "hover:shadow-lg hover:border-primary/50"} ${
+                } ${isCurrentPlan ? "bg-secondary cursor-default" : "hover:shadow-lg hover:border-primary/50"} ${
                   isSelected && !isCurrentPlan ? "ring-2 ring-primary border-primary" : ""
                 }`}
                 onClick={() => !isCurrentPlan && plan.priceId && handlePlanClick(plan.id)}
@@ -367,10 +367,10 @@ export default function BillingPage() {
                     {plan.price !== null ? (
                       <p className="text-3xl font-bold">
                         ${plan.price}
-                        <span className="text-sm font-normal text-gray-500">/mo</span>
+                        <span className="text-sm font-normal text-muted-foreground">/mo</span>
                       </p>
                     ) : (
-                      <p className="text-xl font-semibold text-gray-600">Contact Us</p>
+                      <p className="text-xl font-semibold text-muted-foreground">Contact Us</p>
                     )}
                   </div>
 
@@ -438,13 +438,13 @@ export default function BillingPage() {
             </CardHeader>
             <CardContent>
               {!paymentMethods || paymentMethods.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Wallet className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <Wallet className="mx-auto h-12 w-12 text-muted-foreground/70 mb-3" />
                   <p className="font-medium">No payment methods on file</p>
                   <p className="text-sm mt-1">
                     A payment method will be added when you subscribe to a plan
                   </p>
-                  <div className="flex items-center justify-center gap-3 mt-4 text-xs text-gray-400">
+                  <div className="flex items-center justify-center gap-3 mt-4 text-xs text-muted-foreground/70">
                     <span>Visa</span>
                     <span>Mastercard</span>
                     <span>Amex</span>
@@ -466,7 +466,7 @@ export default function BillingPage() {
                         <div>
                           <p className="font-medium text-sm">{formatPaymentMethod(method)}</p>
                           {method.card && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-muted-foreground">
                               Expires {method.card.expMonth}/{method.card.expYear}
                             </p>
                           )}
@@ -477,7 +477,7 @@ export default function BillingPage() {
                 </div>
               )}
               {/* Security note */}
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t text-xs text-gray-400">
+              <div className="flex items-center gap-2 mt-4 pt-4 border-t text-xs text-muted-foreground/70">
                 <Shield className="h-3.5 w-3.5" />
                 Payments are securely processed by Stripe. We never store your card details.
               </div>
@@ -496,8 +496,8 @@ export default function BillingPage() {
             </CardHeader>
             <CardContent>
               {!billingHistory || billingHistory.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground/70 mb-3" />
                   <p className="font-medium">No billing history yet</p>
                   <p className="text-sm mt-1">Invoices will appear here after your first payment</p>
                 </div>
@@ -566,10 +566,10 @@ export default function BillingPage() {
       </Tabs>
 
       {/* Overage Info */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-blue-500/10 border-border">
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
-            <FileText className="h-6 w-6 text-blue-600 shrink-0" />
+            <FileText className="h-6 w-6 text-blue-400 shrink-0" />
             <div className="space-y-2">
               <h3 className="font-semibold text-blue-900">About Overage Charges</h3>
               <p className="text-sm text-blue-800">
@@ -577,7 +577,7 @@ export default function BillingPage() {
                 <strong>$0.15/minute</strong>. Overage is tracked automatically and included
                 in your next invoice as a metered line item via Stripe.
               </p>
-              <div className="flex items-center gap-2 text-xs text-blue-700">
+              <div className="flex items-center gap-2 text-xs text-blue-400">
                 <Shield className="h-3.5 w-3.5" />
                 Accepted payment methods: Visa, Mastercard, Amex, PayPal, Apple Pay, Google Pay, Stripe Link
               </div>
@@ -605,16 +605,16 @@ export default function BillingPage() {
               {/* Plan comparison */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-lg border p-3">
-                  <p className="text-xs text-gray-500 mb-1">Current Plan</p>
+                  <p className="text-xs text-muted-foreground mb-1">Current Plan</p>
                   <p className="font-semibold">{currentPlan?.name}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {currentPlan?.price !== null ? `$${currentPlan?.price}/mo` : "Free"}
                   </p>
                 </div>
                 <div className="rounded-lg border border-primary p-3 bg-primary/5">
                   <p className="text-xs text-primary mb-1">New Plan</p>
                   <p className="font-semibold">{selectedPlan.name}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {selectedPlan.price !== null ? `$${selectedPlan.price}/mo` : "Custom"}
                   </p>
                 </div>
@@ -625,7 +625,7 @@ export default function BillingPage() {
                 <p className="text-sm font-medium mb-2">What&apos;s included:</p>
                 <ul className="space-y-1">
                   {selectedPlan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
+                    <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Check className="h-3.5 w-3.5 text-green-500" />
                       {feature}
                     </li>
@@ -634,12 +634,12 @@ export default function BillingPage() {
               </div>
 
               {/* Payment info */}
-              <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600 space-y-1">
+              <div className="rounded-lg bg-secondary p-3 text-sm text-muted-foreground space-y-1">
                 <p className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-gray-400" />
+                  <Shield className="h-4 w-4 text-muted-foreground/70" />
                   Secure checkout powered by Stripe
                 </p>
-                <p className="text-xs text-gray-500 pl-6">
+                <p className="text-xs text-muted-foreground pl-6">
                   You can pay with credit/debit card, PayPal, Apple Pay, Google Pay, or Link
                 </p>
               </div>

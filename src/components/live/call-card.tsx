@@ -48,28 +48,28 @@ function getStatusConfig(status: string) {
       return {
         label: "In Progress",
         dotColor: "bg-green-500",
-        badgeClass: "bg-green-50 text-green-700 border-green-200",
+        badgeClass: "bg-green-500/10 text-green-400 border-green-200",
         pulse: true,
       };
     case "ringing":
       return {
         label: "Ringing",
         dotColor: "bg-yellow-500",
-        badgeClass: "bg-yellow-50 text-yellow-700 border-yellow-200",
+        badgeClass: "bg-yellow-500/10 text-yellow-400 border-yellow-200",
         pulse: true,
       };
     case "queued":
       return {
         label: "Queued",
         dotColor: "bg-blue-500",
-        badgeClass: "bg-blue-50 text-blue-700 border-blue-200",
+        badgeClass: "bg-blue-500/10 text-blue-400 border-blue-200",
         pulse: false,
       };
     default:
       return {
         label: status,
-        dotColor: "bg-gray-500",
-        badgeClass: "bg-gray-50 text-gray-700 border-gray-200",
+        dotColor: "bg-muted-foreground",
+        badgeClass: "bg-secondary text-foreground/80 border-border",
         pulse: false,
       };
   }
@@ -103,7 +103,7 @@ export function CallCard({ call, isSelected, onClick }: CallCardProps) {
         "w-full text-left rounded-2xl border p-4 transition-all hover:shadow-md",
         isSelected
           ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-          : "border-gray-200/50 bg-white hover:border-gray-300"
+          : "border-border/50 bg-card hover:border-border"
       )}
     >
       {/* Top row: Agent + Status */}
@@ -112,24 +112,24 @@ export function CallCard({ call, isSelected, onClick }: CallCardProps) {
           <div
             className={cn(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-              call.direction === "inbound" ? "bg-blue-50" : "bg-green-50"
+              call.direction === "inbound" ? "bg-blue-500/10" : "bg-green-500/10"
             )}
           >
             {call.direction === "inbound" ? (
-              <PhoneIncoming className="h-4 w-4 text-blue-600" />
+              <PhoneIncoming className="h-4 w-4 text-blue-400" />
             ) : (
-              <PhoneOutgoing className="h-4 w-4 text-green-600" />
+              <PhoneOutgoing className="h-4 w-4 text-green-400" />
             )}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <Bot className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-              <p className="text-sm font-medium text-gray-900 truncate">
+              <Bot className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+              <p className="text-sm font-medium text-foreground truncate">
                 {call.agentName || "Unknown Agent"}
               </p>
             </div>
             {call.campaignName && (
-              <p className="text-xs text-gray-500 truncate mt-0.5">
+              <p className="text-xs text-muted-foreground truncate mt-0.5">
                 {call.campaignName}
               </p>
             )}
@@ -163,19 +163,19 @@ export function CallCard({ call, isSelected, onClick }: CallCardProps) {
       {/* Contact info */}
       <div className="mt-3 space-y-1">
         {call.contactName && (
-          <div className="flex items-center gap-1.5 text-sm text-gray-700">
-            <User className="h-3.5 w-3.5 text-gray-400" />
+          <div className="flex items-center gap-1.5 text-sm text-foreground/80">
+            <User className="h-3.5 w-3.5 text-muted-foreground/70" />
             <span className="truncate">{call.contactName}</span>
           </div>
         )}
         {call.contactCompany && (
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <Building2 className="h-3 w-3 text-gray-400" />
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Building2 className="h-3 w-3 text-muted-foreground/70" />
             <span className="truncate">{call.contactCompany}</span>
           </div>
         )}
         {call.contactPhone && (
-          <p className="text-xs text-gray-500 font-mono pl-5">
+          <p className="text-xs text-muted-foreground font-mono pl-5">
             {call.contactPhone}
           </p>
         )}
@@ -183,13 +183,13 @@ export function CallCard({ call, isSelected, onClick }: CallCardProps) {
 
       {/* Bottom row: Duration + Direction label */}
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-xs text-gray-500 capitalize">
+        <span className="text-xs text-muted-foreground capitalize">
           {call.direction}
         </span>
         <span
           className={cn(
             "text-sm font-mono font-medium tabular-nums",
-            call.status === "in-progress" ? "text-green-700" : "text-gray-600"
+            call.status === "in-progress" ? "text-green-400" : "text-muted-foreground"
           )}
         >
           {formatElapsedTime(elapsed)}

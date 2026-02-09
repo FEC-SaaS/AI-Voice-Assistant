@@ -111,21 +111,21 @@ const WEBHOOK_EVENTS = [
 
 function IntegrationCard({ integration }: { integration: Integration }) {
   const statusConfig = {
-    available: { label: "Available", color: "bg-green-100 text-green-700", icon: Check },
-    connected: { label: "Connected", color: "bg-blue-100 text-blue-700", icon: Check },
-    coming_soon: { label: "Coming Soon", color: "bg-gray-100 text-gray-600", icon: Clock },
+    available: { label: "Available", color: "bg-green-500/10 text-green-400", icon: Check },
+    connected: { label: "Connected", color: "bg-blue-500/10 text-blue-400", icon: Check },
+    coming_soon: { label: "Coming Soon", color: "bg-secondary text-muted-foreground", icon: Clock },
   };
 
   const status = statusConfig[integration.status];
   const StatusIcon = status.icon;
 
   return (
-    <div className="rounded-lg border bg-white p-5 hover:shadow-md transition-shadow">
+    <div className="rounded-lg border bg-card p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <span className="text-3xl">{integration.icon}</span>
           <div>
-            <h3 className="font-semibold text-gray-900">{integration.name}</h3>
+            <h3 className="font-semibold text-foreground">{integration.name}</h3>
             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${status.color}`}>
               <StatusIcon className="h-3 w-3" />
               {status.label}
@@ -133,7 +133,7 @@ function IntegrationCard({ integration }: { integration: Integration }) {
           </div>
         </div>
       </div>
-      <p className="mt-3 text-sm text-gray-600">{integration.description}</p>
+      <p className="mt-3 text-sm text-muted-foreground">{integration.description}</p>
       <div className="mt-4">
         {integration.status === "available" ? (
           <Button size="sm" variant="outline">
@@ -192,20 +192,20 @@ export default function IntegrationsPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
-        <p className="text-gray-500">Connect CallTone AI with your favorite tools and services</p>
+        <h1 className="text-2xl font-bold text-foreground">Integrations</h1>
+        <p className="text-muted-foreground">Connect CallTone AI with your favorite tools and services</p>
       </div>
 
       {/* Webhook Configuration */}
-      <div className="rounded-lg border bg-white p-6">
+      <div className="rounded-lg border bg-card p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
               <Webhook className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Webhooks</h2>
-              <p className="text-sm text-gray-500">Receive real-time call events via HTTP POST</p>
+              <h2 className="font-semibold text-foreground">Webhooks</h2>
+              <p className="text-sm text-muted-foreground">Receive real-time call events via HTTP POST</p>
             </div>
           </div>
           <Button
@@ -227,7 +227,7 @@ export default function IntegrationsPage() {
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 We&apos;ll send POST requests to this URL when events occur
               </p>
             </div>
@@ -248,7 +248,7 @@ export default function IntegrationsPage() {
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Use this secret to verify webhook signatures
               </p>
             </div>
@@ -268,11 +268,11 @@ export default function IntegrationsPage() {
                       <input
                         type="checkbox"
                         defaultChecked
-                        className="h-4 w-4 rounded border-gray-300"
+                        className="h-4 w-4 rounded border-border"
                       />
                       <div>
-                        <code className="text-sm font-medium text-gray-900">{evt.event}</code>
-                        <p className="text-xs text-gray-500">{evt.description}</p>
+                        <code className="text-sm font-medium text-foreground">{evt.event}</code>
+                        <p className="text-xs text-muted-foreground">{evt.description}</p>
                       </div>
                     </div>
                   </div>
@@ -298,15 +298,15 @@ export default function IntegrationsPage() {
       </div>
 
       {/* API Keys Card */}
-      <div className="rounded-lg border bg-white p-6">
+      <div className="rounded-lg border bg-card p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-              <Key className="h-5 w-5 text-blue-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+              <Key className="h-5 w-5 text-blue-400" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">API Keys</h2>
-              <p className="text-sm text-gray-500">Manage your API keys for custom integrations</p>
+              <h2 className="font-semibold text-foreground">API Keys</h2>
+              <p className="text-sm text-muted-foreground">Manage your API keys for custom integrations</p>
             </div>
           </div>
           <Button variant="outline" asChild>
@@ -328,7 +328,7 @@ export default function IntegrationsPage() {
 
         return (
           <div key={category.id}>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{category.label}</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">{category.label}</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {categoryIntegrations.map((integration) => (
                 <IntegrationCard key={integration.id} integration={integration} />
@@ -339,10 +339,10 @@ export default function IntegrationsPage() {
       })}
 
       {/* Request Integration */}
-      <div className="rounded-lg border border-dashed bg-gray-50 p-8 text-center">
-        <Plug className="mx-auto h-10 w-10 text-gray-400" />
-        <h3 className="mt-4 text-lg font-semibold text-gray-900">Need another integration?</h3>
-        <p className="mt-2 text-sm text-gray-500">
+      <div className="rounded-lg border border-dashed bg-secondary p-8 text-center">
+        <Plug className="mx-auto h-10 w-10 text-muted-foreground/70" />
+        <h3 className="mt-4 text-lg font-semibold text-foreground">Need another integration?</h3>
+        <p className="mt-2 text-sm text-muted-foreground">
           Let us know which tools you&apos;d like us to integrate with
         </p>
         <Button variant="outline" className="mt-4">

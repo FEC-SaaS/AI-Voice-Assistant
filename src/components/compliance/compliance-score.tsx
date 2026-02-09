@@ -18,23 +18,23 @@ function getScoreColor(score: number): {
   if (score >= 80) {
     return {
       stroke: "stroke-green-500",
-      text: "text-green-600",
-      bg: "bg-green-50",
+      text: "text-green-400",
+      bg: "bg-green-500/10",
       label: "Excellent",
     };
   }
   if (score >= 60) {
     return {
       stroke: "stroke-yellow-500",
-      text: "text-yellow-600",
-      bg: "bg-yellow-50",
+      text: "text-yellow-400",
+      bg: "bg-yellow-500/10",
       label: "Needs Improvement",
     };
   }
   return {
     stroke: "stroke-red-500",
-    text: "text-red-600",
-    bg: "bg-red-50",
+    text: "text-red-400",
+    bg: "bg-red-500/10",
     label: "At Risk",
   };
 }

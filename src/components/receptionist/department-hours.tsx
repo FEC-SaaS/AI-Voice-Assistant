@@ -51,7 +51,7 @@ export function DepartmentHours({ value, onChange }: DepartmentHoursProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium text-gray-700">Timezone</label>
+        <label className="text-sm font-medium text-foreground/80">Timezone</label>
         <select
           value={value.timezone || "America/New_York"}
           onChange={(e) => onChange({ ...value, timezone: e.target.value })}
@@ -74,9 +74,9 @@ export function DepartmentHours({ value, onChange }: DepartmentHoursProps) {
             <div key={key} className="flex items-center gap-3">
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" checked={isOpen} onChange={() => toggleDay(key)} className="sr-only peer" />
-                <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-green-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                <div className="w-9 h-5 bg-secondary rounded-full peer peer-checked:bg-green-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
               </label>
-              <span className="w-24 text-sm font-medium text-gray-700">{label}</span>
+              <span className="w-24 text-sm font-medium text-foreground/80">{label}</span>
               {isOpen ? (
                 <div className="flex items-center gap-2">
                   <Input
@@ -85,7 +85,7 @@ export function DepartmentHours({ value, onChange }: DepartmentHoursProps) {
                     onChange={(e) => updateTime(key, "start", e.target.value)}
                     className="w-32 h-8 text-sm"
                   />
-                  <span className="text-gray-400">to</span>
+                  <span className="text-muted-foreground/70">to</span>
                   <Input
                     type="time"
                     value={daySchedule?.end || "17:00"}
@@ -94,7 +94,7 @@ export function DepartmentHours({ value, onChange }: DepartmentHoursProps) {
                   />
                 </div>
               ) : (
-                <span className="text-sm text-gray-400">Closed</span>
+                <span className="text-sm text-muted-foreground/70">Closed</span>
               )}
             </div>
           );

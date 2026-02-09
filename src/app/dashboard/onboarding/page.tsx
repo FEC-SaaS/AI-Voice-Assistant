@@ -324,7 +324,7 @@ export default function OnboardingPage() {
   if (!isLoaded) {
     return (
       <div className="flex min-h-[80vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -343,7 +343,7 @@ export default function OnboardingPage() {
                       ? "border-primary bg-primary text-white"
                       : currentStep === step.id
                       ? "border-primary bg-primary/10 text-primary ring-4 ring-primary/20"
-                      : "border-gray-300 text-gray-400"
+                      : "border-border text-muted-foreground/70"
                   }`}
                 >
                   {currentStep > step.id ? (
@@ -354,7 +354,7 @@ export default function OnboardingPage() {
                 </div>
                 <span
                   className={`mt-2 text-[10px] sm:text-xs text-center leading-tight ${
-                    currentStep >= step.id ? "text-primary font-medium" : "text-gray-400"
+                    currentStep >= step.id ? "text-primary font-medium" : "text-muted-foreground/70"
                   }`}
                 >
                   {step.title}
@@ -363,7 +363,7 @@ export default function OnboardingPage() {
               {index < STEPS.length - 1 && (
                 <div
                   className={`mx-1 sm:mx-2 h-0.5 w-8 sm:w-16 transition-colors duration-300 ${
-                    currentStep > step.id ? "bg-primary" : "bg-gray-200"
+                    currentStep > step.id ? "bg-primary" : "bg-secondary"
                   }`}
                 />
               )}
@@ -390,7 +390,7 @@ export default function OnboardingPage() {
               </p>
             </div>
             <CardContent className="p-6 sm:p-8">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <h2 className="text-lg font-semibold text-foreground mb-4">
                 Here&apos;s what we&apos;ll set up together:
               </h2>
               <div className="space-y-3">
@@ -426,14 +426,14 @@ export default function OnboardingPage() {
                 ].map((item) => (
                   <div
                     key={item.step}
-                    className="flex items-start gap-4 rounded-xl border border-gray-100 bg-gray-50/50 p-4 transition-all hover:border-primary/20"
+                    className="flex items-start gap-4 rounded-xl border border-border/50 bg-background p-4 transition-all hover:border-primary/20"
                   >
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 flex-shrink-0">
                       <item.icon className="h-5 w-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-gray-900">{item.title}</h3>
+                        <h3 className="font-medium text-foreground">{item.title}</h3>
                         {item.required ? (
                           <Badge variant="default" className="text-[10px] py-0">
                             Required
@@ -444,7 +444,7 @@ export default function OnboardingPage() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500 mt-0.5">{item.desc}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">{item.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -484,18 +484,18 @@ export default function OnboardingPage() {
                       <button
                         key={template.id}
                         onClick={() => handleSelectTemplate(template.id)}
-                        className="flex items-start gap-4 rounded-xl border-2 border-gray-100 p-5 text-left transition-all hover:border-primary hover:shadow-lg hover:-translate-y-0.5 group"
+                        className="flex items-start gap-4 rounded-xl border-2 border-border/50 p-5 text-left transition-all hover:border-primary hover:shadow-lg hover:-translate-y-0.5 group"
                       >
                         <div className={`rounded-xl ${template.color} p-3 shadow-lg`}>
                           <Icon className="h-6 w-6 text-white" />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
+                          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                             {template.title}
                           </h3>
-                          <p className="text-sm text-gray-500 mt-1">{template.description}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{template.description}</p>
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-300 group-hover:text-primary mt-1 transition-colors" />
+                        <ChevronRight className="h-5 w-5 text-muted-foreground/70 group-hover:text-primary mt-1 transition-colors" />
                       </button>
                     );
                   })}
@@ -517,7 +517,7 @@ export default function OnboardingPage() {
               <CardContent className="space-y-5">
                 <div>
                   <Label htmlFor="agentName">Agent Name *</Label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-muted-foreground mb-2">
                     A friendly name to identify this agent in your dashboard
                   </p>
                   <Input
@@ -529,7 +529,7 @@ export default function OnboardingPage() {
                 </div>
                 <div>
                   <Label htmlFor="systemPrompt">System Prompt *</Label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-muted-foreground mb-2">
                     This defines your agent&apos;s personality, tone, and what it should do on
                     calls. Be specific about the behavior you want.
                   </p>
@@ -543,7 +543,7 @@ export default function OnboardingPage() {
                 </div>
                 <div>
                   <Label htmlFor="firstMessage">First Message</Label>
-                  <p className="text-xs text-gray-500 mb-2">
+                  <p className="text-xs text-muted-foreground mb-2">
                     The opening line your agent says when it answers or places a call.
                     Leave blank for a default greeting.
                   </p>
@@ -610,15 +610,15 @@ export default function OnboardingPage() {
               {/* Already provisioned — show success */}
               {createdPhoneNumber ? (
                 <div className="space-y-4">
-                  <div className="rounded-xl border-2 border-green-200 bg-green-50 p-5">
+                  <div className="rounded-xl border-2 border-border bg-green-500/10 p-5">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                        <CheckCircle className="h-6 w-6 text-green-600" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
+                        <CheckCircle className="h-6 w-6 text-green-400" />
                       </div>
                       <div>
                         <p className="font-semibold text-green-900">Phone Number Ready!</p>
                         <p className="text-lg font-mono text-green-800">{createdPhoneNumber}</p>
-                        <p className="text-sm text-green-700 mt-0.5">
+                        <p className="text-sm text-green-400 mt-0.5">
                           Assigned to <span className="font-medium">{agentName}</span>
                         </p>
                       </div>
@@ -640,15 +640,15 @@ export default function OnboardingPage() {
                       className={`flex-1 flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
                         provisionMethod === "search"
                           ? "border-primary bg-primary/5"
-                          : "border-gray-200 hover:border-gray-300"
+                          : "border-border hover:border-border"
                       }`}
                     >
-                      <div className={`rounded-lg p-2 ${provisionMethod === "search" ? "bg-primary/10" : "bg-gray-100"}`}>
-                        <Search className={`h-5 w-5 ${provisionMethod === "search" ? "text-primary" : "text-gray-500"}`} />
+                      <div className={`rounded-lg p-2 ${provisionMethod === "search" ? "bg-primary/10" : "bg-secondary"}`}>
+                        <Search className={`h-5 w-5 ${provisionMethod === "search" ? "text-primary" : "text-muted-foreground"}`} />
                       </div>
                       <div>
                         <p className="font-medium text-sm">Search & Buy</p>
-                        <p className="text-xs text-gray-500">Get a new number instantly</p>
+                        <p className="text-xs text-muted-foreground">Get a new number instantly</p>
                       </div>
                     </button>
                     <button
@@ -656,15 +656,15 @@ export default function OnboardingPage() {
                       className={`flex-1 flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
                         provisionMethod === "import"
                           ? "border-primary bg-primary/5"
-                          : "border-gray-200 hover:border-gray-300"
+                          : "border-border hover:border-border"
                       }`}
                     >
-                      <div className={`rounded-lg p-2 ${provisionMethod === "import" ? "bg-primary/10" : "bg-gray-100"}`}>
-                        <Globe className={`h-5 w-5 ${provisionMethod === "import" ? "text-primary" : "text-gray-500"}`} />
+                      <div className={`rounded-lg p-2 ${provisionMethod === "import" ? "bg-primary/10" : "bg-secondary"}`}>
+                        <Globe className={`h-5 w-5 ${provisionMethod === "import" ? "text-primary" : "text-muted-foreground"}`} />
                       </div>
                       <div>
                         <p className="font-medium text-sm">Import from Twilio</p>
-                        <p className="text-xs text-gray-500">Use your existing number</p>
+                        <p className="text-xs text-muted-foreground">Use your existing number</p>
                       </div>
                     </button>
                   </div>
@@ -672,7 +672,7 @@ export default function OnboardingPage() {
                   {/* Search & Buy Flow */}
                   {provisionMethod === "search" && (
                     <div className="space-y-4">
-                      <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+                      <div className="rounded-lg bg-blue-500/10 border border-border p-3">
                         <p className="text-sm text-blue-800">
                           Search for available phone numbers by country and type. Select one to
                           purchase and it will be automatically assigned to your agent.
@@ -740,7 +740,7 @@ export default function OnboardingPage() {
                         <div className="space-y-2">
                           <Label>Select a Number</Label>
                           {pricing && (
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-muted-foreground">
                               Monthly cost: ${pricing.monthlySaaS.toFixed(2)}/mo
                             </p>
                           )}
@@ -752,14 +752,14 @@ export default function OnboardingPage() {
                                 className={`flex items-center justify-between rounded-lg border-2 p-3 text-left transition-all ${
                                   selectedNumber === num.phone_number
                                     ? "border-primary bg-primary/5"
-                                    : "border-gray-200 hover:border-gray-300"
+                                    : "border-border hover:border-border"
                                 }`}
                               >
                                 <div className="flex items-center gap-3">
-                                  <Hash className="h-4 w-4 text-gray-400" />
+                                  <Hash className="h-4 w-4 text-muted-foreground/70" />
                                   <span className="font-mono font-medium">{num.phone_number}</span>
                                 </div>
-                                <span className="text-sm text-gray-500">
+                                <span className="text-sm text-muted-foreground">
                                   {num.locality && `${num.locality}, `}{num.region}
                                 </span>
                               </button>
@@ -790,7 +790,7 @@ export default function OnboardingPage() {
                   {/* Import Twilio Flow */}
                   {provisionMethod === "import" && (
                     <div className="space-y-4">
-                      <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+                      <div className="rounded-lg bg-blue-500/10 border border-border p-3">
                         <p className="text-sm text-blue-800">
                           Already have a Twilio number? Import it here. You&apos;ll need your
                           Twilio Account SID, Auth Token, and the phone number in E.164 format
@@ -852,7 +852,7 @@ export default function OnboardingPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground/70">
                 <Shield className="h-4 w-4" />
                 <span>This step is required</span>
               </div>
@@ -880,7 +880,7 @@ export default function OnboardingPage() {
             <CardContent className="space-y-5">
               <div>
                 <Label htmlFor="knowledgeName">Document Name</Label>
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   A label to identify this knowledge (e.g., &quot;Business Overview&quot;, &quot;FAQ&quot;, &quot;Services&quot;)
                 </p>
                 <Input
@@ -892,11 +892,11 @@ export default function OnboardingPage() {
               </div>
               <div>
                 <Label htmlFor="knowledgeContent">Business Information</Label>
-                <p className="text-xs text-gray-500 mb-2">
+                <p className="text-xs text-muted-foreground mb-2">
                   Paste or type any information you want your agent to know. Include
                   details like:
                 </p>
-                <ul className="text-xs text-gray-500 mb-3 ml-4 list-disc space-y-0.5">
+                <ul className="text-xs text-muted-foreground mb-3 ml-4 list-disc space-y-0.5">
                   <li>Business name, address, and hours of operation</li>
                   <li>Products or services you offer</li>
                   <li>Pricing information</li>
@@ -912,7 +912,7 @@ export default function OnboardingPage() {
                 />
               </div>
 
-              <div className="rounded-lg bg-amber-50 border border-amber-200 p-3">
+              <div className="rounded-lg bg-amber-500/10 border border-border p-3">
                 <div className="flex gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                   <p className="text-sm text-amber-800">
@@ -970,28 +970,28 @@ export default function OnboardingPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Agent Summary */}
-              <div className="rounded-xl border-2 border-gray-100 bg-gray-50/50 p-5">
-                <h3 className="font-semibold text-gray-900 mb-3">Your Agent Summary</h3>
+              <div className="rounded-xl border-2 border-border/50 bg-background p-5">
+                <h3 className="font-semibold text-foreground mb-3">Your Agent Summary</h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                       <Bot className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{agentName}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-medium text-foreground">{agentName}</p>
+                      <p className="text-sm text-muted-foreground">
                         {selectedTemplate ? AGENT_TEMPLATES.find(t => t.id === selectedTemplate)?.title : "Custom"} Agent
                       </p>
                     </div>
                   </div>
                   {createdPhoneNumber && (
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100">
-                        <Phone className="h-5 w-5 text-green-600" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/10">
+                        <Phone className="h-5 w-5 text-green-400" />
                       </div>
                       <div>
-                        <p className="font-mono font-medium text-gray-900">{createdPhoneNumber}</p>
-                        <p className="text-sm text-gray-500">Assigned phone number</p>
+                        <p className="font-mono font-medium text-foreground">{createdPhoneNumber}</p>
+                        <p className="text-sm text-muted-foreground">Assigned phone number</p>
                       </div>
                     </div>
                   )}
@@ -1005,8 +1005,8 @@ export default function OnboardingPage() {
                     <PhoneCall className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">How to Test</h3>
-                    <ol className="mt-2 space-y-2 text-sm text-gray-700">
+                    <h3 className="font-semibold text-foreground">How to Test</h3>
+                    <ol className="mt-2 space-y-2 text-sm text-foreground/80">
                       <li className="flex items-start gap-2">
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-xs font-bold flex-shrink-0 mt-0.5">1</span>
                         <span>Pick up your phone and dial <span className="font-mono font-semibold">{createdPhoneNumber || "your agent's number"}</span></span>
@@ -1028,9 +1028,9 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
+              <div className="rounded-lg bg-blue-500/10 border border-border p-3">
                 <div className="flex gap-2">
-                  <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
                   <p className="text-sm text-blue-800">
                     It may take a few seconds for a newly provisioned number to become active.
                     If the call doesn&apos;t connect, wait a moment and try again.
@@ -1076,33 +1076,33 @@ export default function OnboardingPage() {
             {/* Setup Summary */}
             <div className="space-y-3">
               <div className="flex items-center gap-3 rounded-lg border p-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                  <Check className="h-4 w-4 text-green-600" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10">
+                  <Check className="h-4 w-4 text-green-400" />
                 </div>
                 <div>
                   <p className="font-medium text-sm">AI Agent Created</p>
-                  <p className="text-xs text-gray-500">{agentName}</p>
+                  <p className="text-xs text-muted-foreground">{agentName}</p>
                 </div>
               </div>
               {createdPhoneNumber && (
                 <div className="flex items-center gap-3 rounded-lg border p-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                    <Check className="h-4 w-4 text-green-600" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10">
+                    <Check className="h-4 w-4 text-green-400" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">Phone Number Assigned</p>
-                    <p className="text-xs text-gray-500 font-mono">{createdPhoneNumber}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{createdPhoneNumber}</p>
                   </div>
                 </div>
               )}
               {knowledgeContent && (
                 <div className="flex items-center gap-3 rounded-lg border p-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                    <Check className="h-4 w-4 text-green-600" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10">
+                    <Check className="h-4 w-4 text-green-400" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">Knowledge Base Added</p>
-                    <p className="text-xs text-gray-500">{knowledgeName}</p>
+                    <p className="text-xs text-muted-foreground">{knowledgeName}</p>
                   </div>
                 </div>
               )}
@@ -1110,33 +1110,33 @@ export default function OnboardingPage() {
 
             {/* What's Next */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Explore What&apos;s Next</h3>
+              <h3 className="font-semibold text-foreground mb-3">Explore What&apos;s Next</h3>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-gray-200 p-4 hover:border-primary/30 transition-colors">
+                <div className="rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
                   <Mic className="h-6 w-6 text-primary mb-2" />
                   <h4 className="font-medium text-sm">Launch a Campaign</h4>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Start automated outbound calling campaigns to reach your contacts
                   </p>
                 </div>
-                <div className="rounded-xl border border-gray-200 p-4 hover:border-primary/30 transition-colors">
+                <div className="rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
                   <BookOpen className="h-6 w-6 text-primary mb-2" />
                   <h4 className="font-medium text-sm">Add More Knowledge</h4>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Upload documents or add more business info to make your agent smarter
                   </p>
                 </div>
-                <div className="rounded-xl border border-gray-200 p-4 hover:border-primary/30 transition-colors">
+                <div className="rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
                   <Bot className="h-6 w-6 text-primary mb-2" />
                   <h4 className="font-medium text-sm">Create More Agents</h4>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Build specialized agents for different departments or use cases
                   </p>
                 </div>
-                <div className="rounded-xl border border-gray-200 p-4 hover:border-primary/30 transition-colors">
+                <div className="rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
                   <Shield className="h-6 w-6 text-primary mb-2" />
                   <h4 className="font-medium text-sm">Configure Settings</h4>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Set up team members, billing, integrations, and compliance
                   </p>
                 </div>

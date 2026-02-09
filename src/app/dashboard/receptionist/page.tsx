@@ -21,7 +21,7 @@ export default function ReceptionistDashboardPage() {
   if (statsLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -30,8 +30,8 @@ export default function ReceptionistDashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Receptionist</h1>
-          <p className="text-gray-500">Manage your AI receptionist, departments, and messages</p>
+          <h1 className="text-2xl font-bold text-foreground">Receptionist</h1>
+          <p className="text-muted-foreground">Manage your AI receptionist, departments, and messages</p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/receptionist/departments">
@@ -51,30 +51,30 @@ export default function ReceptionistDashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900">New Messages</h2>
+            <h2 className="text-lg font-semibold text-foreground">New Messages</h2>
             <Link href="/dashboard/receptionist/messages" className="text-sm text-primary hover:underline">View All</Link>
           </div>
           {messagesData?.messages ? (
             <MessageList messages={messagesData.messages as any} onSelect={(id) => setSelectedMessageId(id)} />
           ) : (
-            <div className="rounded-lg border bg-white p-8 text-center">
-              <MessageSquare className="mx-auto h-10 w-10 text-gray-300" />
-              <p className="mt-2 text-sm text-gray-500">No new messages</p>
+            <div className="rounded-lg border bg-card p-8 text-center">
+              <MessageSquare className="mx-auto h-10 w-10 text-muted-foreground/70" />
+              <p className="mt-2 text-sm text-muted-foreground">No new messages</p>
             </div>
           )}
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-900">Staff Availability</h2>
+            <h2 className="text-lg font-semibold text-foreground">Staff Availability</h2>
             <Link href="/dashboard/receptionist/staff" className="text-sm text-primary hover:underline">Manage</Link>
           </div>
           {staff ? (
             <StaffAvailability staff={staff as any} onUpdate={() => refetchStaff()} />
           ) : (
-            <div className="rounded-lg border bg-white p-8 text-center">
-              <Users className="mx-auto h-10 w-10 text-gray-300" />
-              <p className="mt-2 text-sm text-gray-500">No staff members</p>
+            <div className="rounded-lg border bg-card p-8 text-center">
+              <Users className="mx-auto h-10 w-10 text-muted-foreground/70" />
+              <p className="mt-2 text-sm text-muted-foreground">No staff members</p>
             </div>
           )}
         </div>

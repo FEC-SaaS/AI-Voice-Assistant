@@ -15,9 +15,9 @@ export default function LeadsPage() {
       <div>
         <div className="flex items-center gap-2">
           <Target className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold text-gray-900">Lead Pipeline</h1>
+          <h1 className="text-2xl font-bold text-foreground">Lead Pipeline</h1>
         </div>
-        <p className="mt-1 text-gray-500">
+        <p className="mt-1 text-muted-foreground">
           AI-powered lead scoring and pipeline management
         </p>
       </div>

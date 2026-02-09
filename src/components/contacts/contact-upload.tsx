@@ -376,23 +376,23 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                   isDragActive
                     ? "border-primary bg-primary/5"
                     : parseError
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-300 hover:border-gray-400"
+                    ? "border-red-300 bg-red-500/10"
+                    : "border-border hover:border-border"
                 }`}
               >
                 <input {...getInputProps()} />
-                <Upload className={`mx-auto h-12 w-12 ${parseError ? "text-red-400" : "text-gray-400"}`} />
-                <p className="mt-2 text-sm text-gray-600">
+                <Upload className={`mx-auto h-12 w-12 ${parseError ? "text-red-400" : "text-muted-foreground/70"}`} />
+                <p className="mt-2 text-sm text-muted-foreground">
                   {isDragActive
                     ? "Drop the CSV file here..."
                     : "Drag and drop a CSV file, or click to browse"}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Supported format: .csv (max 10,000 rows)
                 </p>
               </div>
               {parseError && (
-                <div className="flex items-center gap-2 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                <div className="flex items-center gap-2 rounded-md bg-red-500/10 border border-red-200 p-3 text-sm text-red-400">
                   <AlertCircle className="h-4 w-4 flex-shrink-0" />
                   <span>{parseError}</span>
                 </div>
@@ -402,7 +402,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
 
           {step === "mapping" && (
             <div className="mt-4 space-y-4">
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <FileText className="h-4 w-4" />
                 {file?.name} ({csvData.length} rows)
               </div>
@@ -521,13 +521,13 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
 
           {step === "preview" && (
             <div className="mt-4 space-y-4">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Preview of first 5 contacts. All {csvData.length} rows will be imported.
               </p>
 
               <div className="max-h-60 overflow-auto rounded border">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-secondary">
                     <tr>
                       <th className="px-3 py-2 text-left">Phone</th>
                       <th className="px-3 py-2 text-left">Name</th>
@@ -556,7 +556,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                     <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <div>
                       <p className="font-medium">Before importing:</p>
-                      <ul className="mt-1 list-inside list-disc text-gray-600">
+                      <ul className="mt-1 list-inside list-disc text-muted-foreground">
                         <li>Duplicate phone numbers will be skipped</li>
                         <li>Numbers on your DNC list will be excluded</li>
                         <li>Invalid phone numbers will be skipped</li>
@@ -579,7 +579,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
 
           {step === "result" && result && (
             <div className="mt-4 space-y-4">
-              <div className="flex items-center gap-2 text-green-600">
+              <div className="flex items-center gap-2 text-green-400">
                 <CheckCircle className="h-5 w-5" />
                 <span className="font-medium">Import Complete</span>
               </div>
@@ -587,16 +587,16 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
               <div className="grid grid-cols-2 gap-4">
                 <Card>
                   <CardContent className="pt-4">
-                    <div className="text-2xl font-bold text-green-600">{result.created}</div>
-                    <div className="text-sm text-gray-500">Contacts imported</div>
+                    <div className="text-2xl font-bold text-green-400">{result.created}</div>
+                    <div className="text-sm text-muted-foreground">Contacts imported</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-4">
-                    <div className="text-2xl font-bold text-gray-400">
+                    <div className="text-2xl font-bold text-muted-foreground/70">
                       {result.skippedDuplicate + result.skippedDNC + result.skippedInvalid}
                     </div>
-                    <div className="text-sm text-gray-500">Skipped</div>
+                    <div className="text-sm text-muted-foreground">Skipped</div>
                   </CardContent>
                 </Card>
               </div>
@@ -604,7 +604,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
               {(result.skippedDuplicate > 0 ||
                 result.skippedDNC > 0 ||
                 result.skippedInvalid > 0) && (
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   <p>Skipped reasons:</p>
                   <ul className="list-inside list-disc">
                     {result.skippedDuplicate > 0 && (
@@ -619,7 +619,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
               )}
 
               {result.errors.length > 0 && (
-                <div className="max-h-32 overflow-auto rounded border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                <div className="max-h-32 overflow-auto rounded border border-red-200 bg-red-500/10 p-3 text-sm text-red-400">
                   {result.errors.slice(0, 10).map((err, i) => (
                     <p key={i}>{err}</p>
                   ))}

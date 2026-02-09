@@ -56,9 +56,9 @@ export function SentimentChart({ data, isLoading }: SentimentChartProps) {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : total === 0 ? (
-          <div className="flex h-[300px] items-center justify-center text-gray-500">
+          <div className="flex h-[300px] items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <TrendingUp className="mx-auto h-12 w-12 text-gray-300" />
+              <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4">No sentiment data yet</p>
               <p className="text-sm">Sentiment analysis will appear here</p>
             </div>

@@ -25,14 +25,14 @@ export default function DepartmentDetailPage({ params }: { params: { id: string 
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+      <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" /></div>
     );
   }
 
   if (!dept) {
     return (
       <div className="py-20 text-center">
-        <h2 className="text-xl font-semibold text-gray-900">Department not found</h2>
+        <h2 className="text-xl font-semibold text-foreground">Department not found</h2>
         <Link href="/dashboard/receptionist/departments" className="mt-4 inline-block text-primary hover:underline">Back to Departments</Link>
       </div>
     );
@@ -46,13 +46,13 @@ export default function DepartmentDetailPage({ params }: { params: { id: string 
             <Button variant="ghost" size="sm"><ArrowLeft className="mr-2 h-4 w-4" />Back</Button>
           </Link>
           <div className="flex items-center gap-3">
-            <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${(dept as any).isOpen ? "bg-green-100" : "bg-gray-100"}`}>
-              <Building2 className={`h-6 w-6 ${(dept as any).isOpen ? "text-green-600" : "text-gray-400"}`} />
+            <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${(dept as any).isOpen ? "bg-green-500/10" : "bg-secondary"}`}>
+              <Building2 className={`h-6 w-6 ${(dept as any).isOpen ? "text-green-400" : "text-muted-foreground/70"}`} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{dept.name}</h1>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <span className={`font-medium ${(dept as any).isOpen ? "text-green-600" : "text-gray-400"}`}>
+              <h1 className="text-2xl font-bold text-foreground">{dept.name}</h1>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className={`font-medium ${(dept as any).isOpen ? "text-green-400" : "text-muted-foreground/70"}`}>
                   {(dept as any).isOpen ? "Open" : "Closed"}
                 </span>
                 {dept.description && <>&middot; {dept.description}</>}
@@ -66,36 +66,36 @@ export default function DepartmentDetailPage({ params }: { params: { id: string 
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-lg border bg-white p-6">
+        <div className="rounded-lg border bg-card p-6">
           <h2 className="text-lg font-semibold mb-3">Department Info</h2>
           <div className="space-y-2 text-sm">
-            {dept.phoneNumber && <p><span className="text-gray-500">Phone:</span> {dept.phoneNumber}</p>}
-            {dept.extension && <p><span className="text-gray-500">Extension:</span> {dept.extension}</p>}
-            {dept.email && <p><span className="text-gray-500">Email:</span> {dept.email}</p>}
-            <p><span className="text-gray-500">Staff members:</span> {dept.staffMembers.length}</p>
+            {dept.phoneNumber && <p><span className="text-muted-foreground">Phone:</span> {dept.phoneNumber}</p>}
+            {dept.extension && <p><span className="text-muted-foreground">Extension:</span> {dept.extension}</p>}
+            {dept.email && <p><span className="text-muted-foreground">Email:</span> {dept.email}</p>}
+            <p><span className="text-muted-foreground">Staff members:</span> {dept.staffMembers.length}</p>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-white p-6">
+        <div className="rounded-lg border bg-card p-6">
           <h2 className="text-lg font-semibold mb-3">Staff Members</h2>
           {dept.staffMembers.length > 0 ? (
             <div className="space-y-2">
               {dept.staffMembers.map((staff) => (
-                <div key={staff.id} className="flex items-center justify-between rounded-lg bg-gray-50 p-3">
+                <div key={staff.id} className="flex items-center justify-between rounded-lg bg-secondary p-3">
                   <div className="flex items-center gap-3">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-full ${staff.isAvailable ? "bg-green-100" : "bg-gray-100"}`}>
-                      <User className={`h-4 w-4 ${staff.isAvailable ? "text-green-600" : "text-gray-400"}`} />
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-full ${staff.isAvailable ? "bg-green-500/10" : "bg-secondary"}`}>
+                      <User className={`h-4 w-4 ${staff.isAvailable ? "text-green-400" : "text-muted-foreground/70"}`} />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 text-sm">{staff.name}</p>
-                      <p className="text-xs text-gray-500">{staff.role || "Staff"}</p>
+                      <p className="font-medium text-foreground text-sm">{staff.name}</p>
+                      <p className="text-xs text-muted-foreground">{staff.role || "Staff"}</p>
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => { setEditingStaff(staff); setShowStaffForm(true); }} className="rounded p-1 hover:bg-gray-200">
-                      <Edit className="h-3.5 w-3.5 text-gray-400" />
+                    <button onClick={() => { setEditingStaff(staff); setShowStaffForm(true); }} className="rounded p-1 hover:bg-secondary/80">
+                      <Edit className="h-3.5 w-3.5 text-muted-foreground/70" />
                     </button>
-                    <button onClick={() => { if (confirm("Remove this staff member?")) deleteStaff.mutate({ id: staff.id }); }} className="rounded p-1 hover:bg-red-50">
+                    <button onClick={() => { if (confirm("Remove this staff member?")) deleteStaff.mutate({ id: staff.id }); }} className="rounded p-1 hover:bg-red-500/10">
                       <Trash2 className="h-3.5 w-3.5 text-red-400" />
                     </button>
                   </div>
@@ -104,7 +104,7 @@ export default function DepartmentDetailPage({ params }: { params: { id: string 
             </div>
           ) : (
             <div className="text-center py-4">
-              <p className="text-sm text-gray-500">No staff in this department</p>
+              <p className="text-sm text-muted-foreground">No staff in this department</p>
               <Button size="sm" variant="outline" className="mt-2" onClick={() => setShowStaffForm(true)}>
                 <Plus className="mr-1 h-3 w-3" />Add Staff
               </Button>

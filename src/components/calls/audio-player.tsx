@@ -86,7 +86,7 @@ export function AudioPlayer({ src }: AudioPlayerProps) {
       </span>
 
       <div
-        className="relative h-2 flex-1 cursor-pointer rounded-full bg-gray-200"
+        className="relative h-2 flex-1 cursor-pointer rounded-full bg-secondary"
         onClick={handleSeek}
       >
         <div

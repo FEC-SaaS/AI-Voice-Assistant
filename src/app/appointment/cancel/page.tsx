@@ -119,10 +119,10 @@ function CancelAppointmentContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-secondary">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="mt-4 text-gray-600">Loading appointment...</p>
+          <p className="mt-4 text-muted-foreground">Loading appointment...</p>
         </div>
       </div>
     );
@@ -134,8 +134,8 @@ function CancelAppointmentContent() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <XCircle className="h-12 w-12 text-red-500 mx-auto" />
-            <h2 className="mt-4 text-xl font-semibold text-gray-900">Error</h2>
-            <p className="mt-2 text-gray-600">{error}</p>
+            <h2 className="mt-4 text-xl font-semibold text-foreground">Error</h2>
+            <p className="mt-2 text-muted-foreground">{error}</p>
           </CardContent>
         </Card>
       </BrandedAppointmentLayout>
@@ -147,20 +147,20 @@ function CancelAppointmentContent() {
       <BrandedAppointmentLayout branding={branding}>
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <div className="rounded-full bg-red-100 p-3 w-fit mx-auto">
-              <XCircle className="h-12 w-12 text-red-600" />
+            <div className="rounded-full bg-red-500/10 p-3 w-fit mx-auto">
+              <XCircle className="h-12 w-12 text-red-400" />
             </div>
-            <h2 className="mt-4 text-xl font-semibold text-gray-900">
+            <h2 className="mt-4 text-xl font-semibold text-foreground">
               Appointment Cancelled
             </h2>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-muted-foreground">
               Your appointment has been cancelled. A confirmation email has been sent.
             </p>
 
             {appointment && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg text-left">
-                <h3 className="font-medium text-gray-900 line-through">{appointment.title}</h3>
-                <div className="mt-2 space-y-1 text-sm text-gray-400">
+              <div className="mt-6 p-4 bg-secondary rounded-lg text-left">
+                <h3 className="font-medium text-foreground line-through">{appointment.title}</h3>
+                <div className="mt-2 space-y-1 text-sm text-muted-foreground/70">
                   <p className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     {formatDate(appointment.scheduledAt)}
@@ -182,8 +182,8 @@ function CancelAppointmentContent() {
     <BrandedAppointmentLayout branding={branding}>
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <div className="rounded-full bg-red-100 p-3 w-fit mx-auto">
-            <XCircle className="h-8 w-8 text-red-600" />
+          <div className="rounded-full bg-red-500/10 p-3 w-fit mx-auto">
+            <XCircle className="h-8 w-8 text-red-400" />
           </div>
           <CardTitle className="mt-4">Cancel Appointment</CardTitle>
           <CardDescription>
@@ -193,25 +193,25 @@ function CancelAppointmentContent() {
 
         {appointment && (
           <CardContent className="space-y-4">
-            <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+            <div className="p-4 bg-secondary rounded-lg space-y-3">
               <div className="flex items-start gap-3">
-                <div className="rounded-lg bg-red-100 p-2">
+                <div className="rounded-lg bg-red-500/10 p-2">
                   {getMeetingIcon(appointment.meetingType)}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{appointment.title}</h3>
-                  <p className="text-sm text-gray-500">
+                  <h3 className="font-semibold text-foreground">{appointment.title}</h3>
+                  <p className="text-sm text-muted-foreground">
                     {appointment.attendeeName || "Customer"}
                   </p>
                 </div>
               </div>
 
               <div className="border-t pt-3 space-y-2">
-                <p className="flex items-center gap-2 text-sm text-gray-600">
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   {formatDate(appointment.scheduledAt)}
                 </p>
-                <p className="flex items-center gap-2 text-sm text-gray-600">
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />
                   {formatTime(appointment.scheduledAt)} ({appointment.duration} minutes)
                 </p>
@@ -259,10 +259,10 @@ export default function CancelAppointmentPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-secondary">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-            <p className="mt-4 text-gray-600">Loading...</p>
+            <p className="mt-4 text-muted-foreground">Loading...</p>
           </div>
         </div>
       }

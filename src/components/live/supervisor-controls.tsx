@@ -92,21 +92,21 @@ export function SupervisorControls({
   }
 
   return (
-    <div className="border-t border-gray-200 bg-gray-50/50 p-4 space-y-3">
+    <div className="border-t border-border bg-background p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center gap-2">
         <ShieldAlert className="h-4 w-4 text-amber-600" />
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Supervisor Controls
         </h4>
       </div>
 
       {/* Barge In */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+        <label className="text-xs font-medium text-foreground/80 flex items-center gap-1.5">
           <Megaphone className="h-3 w-3" />
           Barge In
-          <span className="text-gray-400 font-normal">
+          <span className="text-muted-foreground/70 font-normal">
             -- speak directly to the caller
           </span>
         </label>
@@ -141,10 +141,10 @@ export function SupervisorControls({
 
       {/* Whisper */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+        <label className="text-xs font-medium text-foreground/80 flex items-center gap-1.5">
           <EarOff className="h-3 w-3" />
           Whisper
-          <span className="text-gray-400 font-normal">
+          <span className="text-muted-foreground/70 font-normal">
             -- only the agent hears this
           </span>
         </label>

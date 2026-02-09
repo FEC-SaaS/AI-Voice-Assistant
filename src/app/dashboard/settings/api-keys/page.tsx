@@ -97,8 +97,8 @@ export default function ApiKeysPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">API Keys</h1>
-          <p className="text-gray-500">Manage API keys for external integrations</p>
+          <h1 className="text-2xl font-bold text-foreground">API Keys</h1>
+          <p className="text-muted-foreground">Manage API keys for external integrations</p>
         </div>
         {isAdmin && (
           <Button onClick={() => setCreateOpen(true)}>
@@ -109,13 +109,13 @@ export default function ApiKeysPage() {
       </div>
 
       {/* Warning */}
-      <Card className="border-yellow-200 bg-yellow-50">
+      <Card className="border-border bg-yellow-500/10">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0" />
+            <AlertTriangle className="h-5 w-5 text-yellow-400 shrink-0" />
             <div>
-              <h4 className="font-medium text-yellow-800">Keep your API keys secure</h4>
-              <p className="text-sm text-yellow-700 mt-1">
+              <h4 className="font-medium text-foreground">Keep your API keys secure</h4>
+              <p className="text-sm text-yellow-400 mt-1">
                 API keys provide full access to your organization. Never share them publicly
                 or commit them to version control. Rotate keys regularly for security.
               </p>
@@ -135,13 +135,13 @@ export default function ApiKeysPage() {
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/70" />
             </div>
           ) : !apiKeys || apiKeys.length === 0 ? (
             <div className="py-8 text-center">
-              <Key className="mx-auto h-12 w-12 text-gray-300" />
-              <h3 className="mt-4 text-lg font-semibold text-gray-900">No API keys yet</h3>
-              <p className="mt-2 text-gray-500">Create an API key to get started with the API</p>
+              <Key className="mx-auto h-12 w-12 text-muted-foreground/70" />
+              <h3 className="mt-4 text-lg font-semibold text-foreground">No API keys yet</h3>
+              <p className="mt-2 text-muted-foreground">Create an API key to get started with the API</p>
               {isAdmin && (
                 <Button className="mt-4" onClick={() => setCreateOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
@@ -154,13 +154,13 @@ export default function ApiKeysPage() {
               {apiKeys.map((key) => (
                 <div key={key.id} className="flex items-center justify-between py-4">
                   <div className="flex items-center gap-4">
-                    <div className="rounded-lg bg-gray-100 p-2">
-                      <Key className="h-5 w-5 text-gray-600" />
+                    <div className="rounded-lg bg-secondary p-2">
+                      <Key className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{key.name}</p>
+                      <p className="font-medium text-foreground">{key.name}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <code className="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                        <code className="text-sm text-muted-foreground bg-secondary px-2 py-0.5 rounded">
                           {visibleKeys.has(key.id) ? key.keyPrefix : "vxf_••••••••••••"}
                         </code>
                         <Button
@@ -175,7 +175,7 @@ export default function ApiKeysPage() {
                           )}
                         </Button>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-400 mt-1">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground/70 mt-1">
                         <span>Created {formatDate(key.createdAt)}</span>
                         {key.lastUsedAt && (
                           <span className="flex items-center gap-1">
@@ -199,7 +199,7 @@ export default function ApiKeysPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-400 hover:text-red-400 hover:bg-red-500/10"
                         onClick={() => setDeleteId(key.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -221,23 +221,23 @@ export default function ApiKeysPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <h4 className="font-medium text-gray-900">Base URL</h4>
-            <code className="mt-1 block rounded bg-gray-100 p-3 text-sm">
+            <h4 className="font-medium text-foreground">Base URL</h4>
+            <code className="mt-1 block rounded bg-secondary p-3 text-sm">
               {process.env.NEXT_PUBLIC_APP_URL || "https://app.calltone.ai"}/api/v1
             </code>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Authentication</h4>
-            <p className="text-sm text-gray-500 mt-1">
+            <h4 className="font-medium text-foreground">Authentication</h4>
+            <p className="text-sm text-muted-foreground mt-1">
               Include your API key in the Authorization header:
             </p>
-            <code className="mt-2 block rounded bg-gray-100 p-3 text-sm overflow-x-auto">
+            <code className="mt-2 block rounded bg-secondary p-3 text-sm overflow-x-auto">
               Authorization: Bearer vxf_your_api_key_here
             </code>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900">Example Request</h4>
-            <pre className="mt-2 rounded bg-gray-900 p-3 text-sm text-gray-100 overflow-x-auto">
+            <h4 className="font-medium text-foreground">Example Request</h4>
+            <pre className="mt-2 rounded bg-secondary p-3 text-sm text-foreground/90 overflow-x-auto">
 {`curl -X GET \\
   ${process.env.NEXT_PUBLIC_APP_URL || "https://app.calltone.ai"}/api/v1/agents \\
   -H "Authorization: Bearer vxf_your_api_key_here" \\
@@ -246,7 +246,7 @@ export default function ApiKeysPage() {
           </div>
           <div className="pt-2">
             <Badge variant="secondary">Available Endpoints</Badge>
-            <ul className="mt-2 space-y-1 text-sm text-gray-600">
+            <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               <li><code className="text-primary">GET /agents</code> - List all agents</li>
               <li><code className="text-primary">POST /agents</code> - Create a new agent</li>
               <li><code className="text-primary">GET /calls</code> - List call history</li>
@@ -277,13 +277,13 @@ export default function ApiKeysPage() {
 
           {createdKey ? (
             <div className="space-y-4">
-              <div className="rounded-lg bg-green-50 border border-green-200 p-4">
-                <div className="flex items-center gap-2 text-green-700 mb-2">
+              <div className="rounded-lg bg-green-500/10 border border-border p-4">
+                <div className="flex items-center gap-2 text-green-400 mb-2">
                   <CheckCircle className="h-5 w-5" />
                   <span className="font-medium">API Key Created</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded bg-white border p-2 text-sm font-mono break-all">
+                  <code className="flex-1 rounded bg-card border p-2 text-sm font-mono break-all">
                     {createdKey}
                   </code>
                   <Button size="sm" onClick={() => handleCopy(createdKey)}>
@@ -291,7 +291,7 @@ export default function ApiKeysPage() {
                   </Button>
                 </div>
               </div>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Make sure to copy your API key now. For security reasons, we don&apos;t store the full key
                 and you won&apos;t be able to see it again.
               </p>

@@ -32,17 +32,17 @@ function formatDate(date: string | Date) {
 }
 
 const STATUS_MAP: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
-  completed: { icon: CheckCircle, color: "text-green-600 bg-green-50", label: "Completed" },
-  failed: { icon: XCircle, color: "text-red-600 bg-red-50", label: "Failed" },
-  "no-answer": { icon: AlertCircle, color: "text-yellow-600 bg-yellow-50", label: "No Answer" },
-  queued: { icon: Clock, color: "text-blue-600 bg-blue-50", label: "Queued" },
-  "in-progress": { icon: Phone, color: "text-blue-600 bg-blue-50", label: "In Progress" },
+  completed: { icon: CheckCircle, color: "text-green-400 bg-green-500/100/10", label: "Completed" },
+  failed: { icon: XCircle, color: "text-red-400 bg-red-500/100/10", label: "Failed" },
+  "no-answer": { icon: AlertCircle, color: "text-yellow-400 bg-yellow-500/10", label: "No Answer" },
+  queued: { icon: Clock, color: "text-blue-400 bg-blue-500/100/10", label: "Queued" },
+  "in-progress": { icon: Phone, color: "text-blue-400 bg-blue-500/100/10", label: "In Progress" },
 };
 
 const SENTIMENT_MAP: Record<string, string> = {
-  positive: "bg-green-100 text-green-700",
-  neutral: "bg-gray-100 text-gray-700",
-  negative: "bg-red-100 text-red-700",
+  positive: "bg-green-500/100/10 text-green-400",
+  neutral: "bg-secondary text-foreground/80",
+  negative: "bg-red-500/100/10 text-red-400",
 };
 
 export default function CallDetailPage({ params }: { params: { id: string } }) {
@@ -86,7 +86,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -94,7 +94,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
   if (!call) {
     return (
       <div className="py-20 text-center">
-        <h2 className="text-xl font-semibold text-gray-900">Call not found</h2>
+        <h2 className="text-xl font-semibold text-foreground">Call not found</h2>
         <Link href="/dashboard/calls" className="mt-4 inline-block text-primary hover:underline">
           Back to Call Logs
         </Link>
@@ -102,7 +102,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
     );
   }
 
-  const status = (call.status && STATUS_MAP[call.status]) || { icon: AlertCircle, color: "text-gray-600 bg-gray-50", label: call.status || "unknown" };
+  const status = (call.status && STATUS_MAP[call.status]) || { icon: AlertCircle, color: "text-muted-foreground bg-secondary", label: call.status || "unknown" };
   const StatusIcon = status.icon;
 
   // Parse transcript if it's a JSON string
@@ -146,8 +146,8 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             <PhoneOutgoing className="h-6 w-6 text-green-500" />
           )}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Call Details</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-foreground">Call Details</h1>
+            <p className="text-sm text-muted-foreground">
               {call.direction === "inbound" ? "Inbound" : "Outbound"} call &middot; {formatDate(call.createdAt)}
             </p>
           </div>
@@ -156,11 +156,11 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
 
       {/* Call Info Grid */}
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-lg border bg-white p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Call Information</h2>
+        <div className="rounded-lg border bg-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">Call Information</h2>
           <div className="space-y-3">
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">Status</span>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Status</span>
               <div className="mt-1">
                 <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${status.color}`}>
                   <StatusIcon className="h-3.5 w-3.5" />
@@ -169,29 +169,29 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               </div>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">To Number</span>
-              <p className="text-sm font-mono text-gray-900">{call.toNumber || "—"}</p>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">To Number</span>
+              <p className="text-sm font-mono text-foreground">{call.toNumber || "—"}</p>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">From Number</span>
-              <p className="text-sm font-mono text-gray-900">{call.fromNumber || "—"}</p>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">From Number</span>
+              <p className="text-sm font-mono text-foreground">{call.fromNumber || "—"}</p>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">Duration</span>
-              <p className="text-sm text-gray-900">{formatDuration(call.durationSeconds)}</p>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Duration</span>
+              <p className="text-sm text-foreground">{formatDuration(call.durationSeconds)}</p>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">Vapi Call ID</span>
-              <p className="text-sm font-mono text-gray-500">{call.vapiCallId || "—"}</p>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Vapi Call ID</span>
+              <p className="text-sm font-mono text-muted-foreground">{call.vapiCallId || "—"}</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg border bg-white p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Context</h2>
+        <div className="rounded-lg border bg-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">Context</h2>
           <div className="space-y-3">
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">Agent</span>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Agent</span>
               {call.agent ? (
                 <Link
                   href={`/dashboard/agents/${call.agent.id}`}
@@ -201,12 +201,12 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
                   {call.agent.name}
                 </Link>
               ) : (
-                <p className="text-sm text-gray-500">—</p>
+                <p className="text-sm text-muted-foreground">—</p>
               )}
             </div>
             {call.campaign && (
               <div>
-                <span className="text-xs font-medium uppercase text-gray-400">Campaign</span>
+                <span className="text-xs font-medium uppercase text-muted-foreground/70">Campaign</span>
                 <Link
                   href={`/dashboard/campaigns/${call.campaign.id}`}
                   className="mt-1 block text-sm text-primary hover:underline"
@@ -217,37 +217,37 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             )}
             {call.contact && (
               <div>
-                <span className="text-xs font-medium uppercase text-gray-400">Contact</span>
-                <p className="text-sm text-gray-900">
+                <span className="text-xs font-medium uppercase text-muted-foreground/70">Contact</span>
+                <p className="text-sm text-foreground">
                   {call.contact.firstName} {call.contact.lastName}
                   {call.contact.company && (
-                    <span className="text-gray-500"> &middot; {call.contact.company}</span>
+                    <span className="text-muted-foreground"> &middot; {call.contact.company}</span>
                   )}
                 </p>
               </div>
             )}
             {call.sentiment && (
               <div>
-                <span className="text-xs font-medium uppercase text-gray-400">Sentiment</span>
+                <span className="text-xs font-medium uppercase text-muted-foreground/70">Sentiment</span>
                 <div className="mt-1">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${SENTIMENT_MAP[call.sentiment] || "bg-gray-100 text-gray-700"}`}>
+                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${SENTIMENT_MAP[call.sentiment] || "bg-secondary text-foreground/80"}`}>
                     {call.sentiment}
                   </span>
                 </div>
               </div>
             )}
             <div>
-              <span className="text-xs font-medium uppercase text-gray-400">Created</span>
-              <p className="text-sm text-gray-900">{formatDate(call.createdAt)}</p>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Created</span>
+              <p className="text-sm text-foreground">{formatDate(call.createdAt)}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* AI Analysis Section */}
-      <div className="rounded-lg border bg-white p-6">
+      <div className="rounded-lg border bg-card p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             AI Analysis
           </h2>
@@ -271,28 +271,28 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             {/* Summary */}
             {call.summary && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Summary</h3>
-                <p className="text-sm text-gray-700">{call.summary}</p>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Summary</h3>
+                <p className="text-sm text-foreground/80">{call.summary}</p>
               </div>
             )}
 
             {/* Metrics Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Sentiment */}
-              <div className="rounded-lg bg-gray-50 p-4">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="rounded-lg bg-secondary p-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   {call.sentiment === "positive" ? (
                     <ThumbsUp className="h-4 w-4 text-green-500" />
                   ) : call.sentiment === "negative" ? (
                     <ThumbsDown className="h-4 w-4 text-red-500" />
                   ) : (
-                    <TrendingUp className="h-4 w-4 text-gray-500" />
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   )}
                   Sentiment
                 </div>
                 <p className={`mt-1 text-lg font-semibold capitalize ${
-                  call.sentiment === "positive" ? "text-green-600" :
-                  call.sentiment === "negative" ? "text-red-600" : "text-gray-600"
+                  call.sentiment === "positive" ? "text-green-400" :
+                  call.sentiment === "negative" ? "text-red-400" : "text-muted-foreground"
                 }`}>
                   {call.sentiment}
                 </p>
@@ -300,14 +300,14 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
 
               {/* Lead Score */}
               {call.leadScore !== null && (
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="rounded-lg bg-secondary p-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Target className="h-4 w-4" />
                     Lead Score
                   </div>
                   <p className={`mt-1 text-lg font-semibold ${
-                    call.leadScore >= 70 ? "text-green-600" :
-                    call.leadScore >= 40 ? "text-yellow-600" : "text-red-600"
+                    call.leadScore >= 70 ? "text-green-400" :
+                    call.leadScore >= 40 ? "text-yellow-400" : "text-red-400"
                   }`}>
                     {call.leadScore}/100
                   </p>
@@ -316,12 +316,12 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
 
               {/* Opt-Out Warning */}
               {analysisData?.optOutDetected && (
-                <div className="rounded-lg bg-red-50 p-4 col-span-2">
-                  <div className="flex items-center gap-2 text-sm text-red-600">
+                <div className="rounded-lg bg-red-500/10 p-4 col-span-2">
+                  <div className="flex items-center gap-2 text-sm text-red-400">
                     <AlertTriangle className="h-4 w-4" />
                     <span className="font-medium">Opt-Out Detected</span>
                   </div>
-                  <p className="mt-1 text-sm text-red-700">
+                  <p className="mt-1 text-sm text-red-400">
                     Customer requested to be added to DNC list
                   </p>
                 </div>
@@ -331,13 +331,13 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             {/* Key Points */}
             {analysisData?.keyPoints && analysisData.keyPoints.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                   <ListChecks className="h-4 w-4" />
                   Key Points
                 </h3>
                 <ul className="space-y-1">
                   {analysisData.keyPoints.map((point, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                    <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
                       <span className="text-primary mt-1">•</span>
                       {point}
                     </li>
@@ -349,13 +349,13 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             {/* Buying Signals */}
             {analysisData?.buyingSignals && analysisData.buyingSignals.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                   <ThumbsUp className="h-4 w-4 text-green-500" />
                   Buying Signals
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {analysisData.buyingSignals.map((signal, i) => (
-                    <span key={i} className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                    <span key={i} className="inline-flex items-center rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-400">
                       {signal}
                     </span>
                   ))}
@@ -366,13 +366,13 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             {/* Objections */}
             {analysisData?.objections && analysisData.objections.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-500" />
                   Objections Raised
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {analysisData.objections.map((objection, i) => (
-                    <span key={i} className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+                    <span key={i} className="inline-flex items-center rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
                       {objection}
                     </span>
                   ))}
@@ -383,13 +383,13 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             {/* Action Items */}
             {analysisData?.actionItems && analysisData.actionItems.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-blue-500" />
                   Action Items
                 </h3>
                 <ul className="space-y-1">
                   {analysisData.actionItems.map((item, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                    <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
                       <span className="text-blue-500 mt-0.5">
                         <CheckCircle className="h-3.5 w-3.5" />
                       </span>
@@ -404,26 +404,26 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             {(analysisData?.closeProbability != null || analysisData?.nextBestAction) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {analysisData?.closeProbability != null && (
-                  <div className="rounded-lg bg-gray-50 p-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="rounded-lg bg-secondary p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Target className="h-4 w-4" />
                       Close Probability
                     </div>
                     <p className={`mt-1 text-lg font-semibold ${
-                      analysisData.closeProbability >= 60 ? "text-green-600" :
-                      analysisData.closeProbability >= 30 ? "text-yellow-600" : "text-red-600"
+                      analysisData.closeProbability >= 60 ? "text-green-400" :
+                      analysisData.closeProbability >= 30 ? "text-yellow-400" : "text-red-400"
                     }`}>
                       {analysisData.closeProbability}%
                     </p>
                   </div>
                 )}
                 {analysisData?.nextBestAction && (
-                  <div className="rounded-lg bg-blue-50 p-4">
-                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <div className="rounded-lg bg-blue-500/10 p-4">
+                    <div className="flex items-center gap-2 text-sm text-blue-400">
                       <Lightbulb className="h-4 w-4" />
                       Next Best Action
                     </div>
-                    <p className="mt-1 text-sm text-blue-800 font-medium">
+                    <p className="mt-1 text-sm text-blue-400 font-medium">
                       {analysisData.nextBestAction}
                     </p>
                   </div>
@@ -434,13 +434,13 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             {/* Competitor Mentions */}
             {analysisData?.competitorMentions && analysisData.competitorMentions.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                   <Users className="h-4 w-4 text-purple-500" />
                   Competitor Mentions
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {analysisData.competitorMentions.map((comp, i) => (
-                    <span key={i} className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700">
+                    <span key={i} className="inline-flex items-center rounded-full bg-purple-500/10 px-3 py-1 text-xs font-medium text-purple-400">
                       {comp}
                     </span>
                   ))}
@@ -451,7 +451,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             {/* Objection Categories with Suggested Responses */}
             {analysisData?.objectionCategories && analysisData.objectionCategories.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-amber-500" />
                   Objection Analysis
                 </h3>
@@ -459,13 +459,13 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
                   {analysisData.objectionCategories.map((oc, i) => (
                     <div key={i} className="rounded-lg border p-3">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                        <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-400">
                           {oc.category}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700">{oc.objection}</p>
-                      <div className="mt-2 rounded bg-green-50 p-2">
-                        <p className="text-xs text-green-700">
+                      <p className="text-sm text-foreground/80">{oc.objection}</p>
+                      <div className="mt-2 rounded bg-green-500/10 p-2">
+                        <p className="text-xs text-green-400">
                           <span className="font-medium">Suggested response:</span> {oc.suggestedResponse}
                         </p>
                       </div>
@@ -478,13 +478,13 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             {/* Coaching Recommendations */}
             {analysisData?.coachingRecommendations && analysisData.coachingRecommendations.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                   <Brain className="h-4 w-4 text-indigo-500" />
                   Coaching Recommendations
                 </h3>
                 <ul className="space-y-1">
                   {analysisData.coachingRecommendations.map((rec, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                    <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
                       <span className="text-indigo-500 mt-0.5">
                         <Lightbulb className="h-3.5 w-3.5" />
                       </span>
@@ -496,7 +496,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             )}
 
             {analysisData?.analyzedAt && (
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground/70">
                 Analyzed on {new Date(analysisData.analyzedAt).toLocaleString()}
               </p>
             )}
@@ -505,8 +505,8 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
           <div className="mt-4 text-center py-8">
             {call.transcript ? (
               <div>
-                <Sparkles className="mx-auto h-12 w-12 text-gray-300" />
-                <p className="mt-2 text-sm text-gray-500">
+                <Sparkles className="mx-auto h-12 w-12 text-muted-foreground/70" />
+                <p className="mt-2 text-sm text-muted-foreground">
                   This call has not been analyzed yet.
                 </p>
                 <Button
@@ -523,8 +523,8 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               </div>
             ) : (
               <div>
-                <AlertCircle className="mx-auto h-12 w-12 text-gray-300" />
-                <p className="mt-2 text-sm text-gray-500">
+                <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground/70" />
+                <p className="mt-2 text-sm text-muted-foreground">
                   No transcript available to analyze.
                 </p>
               </div>
@@ -535,8 +535,8 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
 
       {/* Audio Player */}
       {call.recordingUrl && (
-        <div className="rounded-lg border bg-white p-6">
-          <h2 className="text-lg font-semibold text-gray-900">Recording</h2>
+        <div className="rounded-lg border bg-card p-6">
+          <h2 className="text-lg font-semibold text-foreground">Recording</h2>
           <div className="mt-4 flex items-center gap-4">
             <Button variant="outline" size="sm" onClick={toggleAudio}>
               {isPlaying ? (
@@ -557,8 +557,8 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
       )}
 
       {/* Transcript */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="text-lg font-semibold text-gray-900">Transcript</h2>
+      <div className="rounded-lg border bg-card p-6">
+        <h2 className="text-lg font-semibold text-foreground">Transcript</h2>
         {transcriptMessages.length > 0 ? (
           <div className="mt-4 space-y-3">
             {transcriptMessages.map((msg, i) => {
@@ -566,22 +566,22 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               return (
                 <div key={i} className={`flex gap-3 ${isAssistant ? "" : "flex-row-reverse"}`}>
                   <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                    isAssistant ? "bg-primary/10" : "bg-gray-100"
+                    isAssistant ? "bg-primary/10" : "bg-secondary"
                   }`}>
                     {isAssistant ? (
                       <Bot className="h-4 w-4 text-primary" />
                     ) : (
-                      <User className="h-4 w-4 text-gray-500" />
+                      <User className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
                   <div className={`max-w-[75%] rounded-lg px-4 py-2 text-sm ${
                     isAssistant
-                      ? "bg-primary/5 text-gray-900"
-                      : "bg-gray-100 text-gray-900"
+                      ? "bg-primary/5 text-foreground"
+                      : "bg-secondary text-foreground"
                   }`}>
                     <p className="whitespace-pre-wrap">{msg.content}</p>
                     {msg.timestamp != null && (
-                      <p className="mt-1 text-xs text-gray-400">
+                      <p className="mt-1 text-xs text-muted-foreground/70">
                         {Math.floor(msg.timestamp / 60)}:{String(Math.floor(msg.timestamp % 60)).padStart(2, "0")}
                       </p>
                     )}
@@ -591,7 +591,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             })}
           </div>
         ) : (
-          <p className="mt-4 text-sm text-gray-500">
+          <p className="mt-4 text-sm text-muted-foreground">
             No transcript available for this call.
           </p>
         )}

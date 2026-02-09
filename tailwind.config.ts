@@ -51,6 +51,16 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        surface: {
+          DEFAULT: "#111114",
+          raised: "#1A1A1F",
+          overlay: "#222228",
+        },
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-primary": "linear-gradient(135deg, #818CF8, #A78BFA, #C084FC)",
+        "gradient-surface": "linear-gradient(180deg, #111114 0%, #09090B 100%)",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -69,10 +79,25 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        fadeIn: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        slideUp: {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        glowPulse: {
+          "0%, 100%": { boxShadow: "0 0 20px rgba(129,140,248,0.15)" },
+          "50%": { boxShadow: "0 0 30px rgba(129,140,248,0.3)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fadeIn 0.5s ease-out",
+        "slide-up": "slideUp 0.4s ease-out",
+        "glow-pulse": "glowPulse 2s ease-in-out infinite",
       },
     },
   },

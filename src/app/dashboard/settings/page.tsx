@@ -134,7 +134,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -143,8 +143,8 @@ export default function SettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500">
+        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
+        <p className="text-muted-foreground">
           Manage your organization settings and preferences
         </p>
       </div>
@@ -160,7 +160,7 @@ export default function SettingsPage() {
                 "block rounded-md px-3 py-2 text-sm font-medium",
                 pathname === item.href
                   ? "bg-primary/10 text-primary"
-                  : "text-gray-600 hover:bg-gray-100"
+                  : "text-muted-foreground hover:bg-secondary"
               )}
             >
               {item.title}
@@ -202,9 +202,9 @@ export default function SettingsPage() {
                 <Input
                   value={currentUser?.organization?.id || ""}
                   disabled
-                  className="font-mono text-sm bg-gray-50"
+                  className="font-mono text-sm bg-secondary"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Use this ID for API integrations
                 </p>
               </div>
@@ -242,7 +242,7 @@ export default function SettingsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Used for campaign scheduling and calling hours
                 </p>
               </div>
@@ -261,7 +261,7 @@ export default function SettingsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   TCPA requires calls between 8am-9pm local time
                 </p>
               </div>
@@ -275,7 +275,7 @@ export default function SettingsPage() {
                   value={aiDisclosure}
                   onChange={(e) => setAiDisclosure(e.target.value)}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Required disclosure at the start of each call (FTC compliance)
                 </p>
               </div>
@@ -292,18 +292,18 @@ export default function SettingsPage() {
           </Card>
 
           {/* Danger Zone */}
-          <Card className="border-red-200">
+          <Card className="border-border">
             <CardHeader>
-              <CardTitle className="text-red-600">Danger Zone</CardTitle>
+              <CardTitle className="text-red-400">Danger Zone</CardTitle>
               <CardDescription>
                 Irreversible actions for your organization
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-4">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-red-500/10 p-4">
                 <div>
                   <h4 className="font-medium text-red-900">Delete Organization</h4>
-                  <p className="text-sm text-red-700">
+                  <p className="text-sm text-red-400">
                     Permanently delete your organization and all its data
                   </p>
                 </div>

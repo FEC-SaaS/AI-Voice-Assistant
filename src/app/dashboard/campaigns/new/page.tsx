@@ -102,19 +102,19 @@ export default function NewCampaignPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Create Campaign</h1>
-          <p className="text-gray-500">Set up a new outbound calling campaign</p>
+          <h1 className="text-2xl font-bold text-foreground">Create Campaign</h1>
+          <p className="text-muted-foreground">Set up a new outbound calling campaign</p>
         </div>
       </div>
 
       {/* No Agents Warning */}
       {hasNoAgents && (
-        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+        <div className="rounded-lg border border-yellow-200 bg-yellow-500/10 p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+            <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
             <div>
               <h3 className="font-medium text-yellow-800">No AI agents available</h3>
-              <p className="mt-1 text-sm text-yellow-700">
+              <p className="mt-1 text-sm text-yellow-400">
                 You need to create an AI agent before you can create a campaign.
               </p>
               <Link href="/dashboard/agents/new">
@@ -131,10 +131,10 @@ export default function NewCampaignPage() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Info */}
-        <div className="rounded-lg border bg-white p-6">
+        <div className="rounded-lg border bg-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Megaphone className="h-5 w-5 text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
+            <Megaphone className="h-5 w-5 text-muted-foreground/70" />
+            <h2 className="text-lg font-semibold text-foreground">Basic Information</h2>
           </div>
 
           <div className="space-y-4">
@@ -167,7 +167,7 @@ export default function NewCampaignPage() {
                 id="agentId"
                 value={formData.agentId}
                 onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 block w-full rounded-md border border-border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 disabled={agentsLoading || hasNoAgents}
               >
                 <option value="">Select an agent...</option>
@@ -177,7 +177,7 @@ export default function NewCampaignPage() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 The AI agent that will make calls for this campaign
               </p>
             </div>
@@ -185,10 +185,10 @@ export default function NewCampaignPage() {
         </div>
 
         {/* Schedule */}
-        <div className="rounded-lg border bg-white p-6">
+        <div className="rounded-lg border bg-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Calendar className="h-5 w-5 text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-900">Schedule (Optional)</h2>
+            <Calendar className="h-5 w-5 text-muted-foreground/70" />
+            <h2 className="text-lg font-semibold text-foreground">Schedule (Optional)</h2>
           </div>
 
           <div className="space-y-4">
@@ -214,17 +214,17 @@ export default function NewCampaignPage() {
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Leave blank to start manually and run indefinitely until stopped
             </p>
           </div>
         </div>
 
         {/* Calling Settings */}
-        <div className="rounded-lg border bg-white p-6">
+        <div className="rounded-lg border bg-card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Settings2 className="h-5 w-5 text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-900">Calling Settings</h2>
+            <Settings2 className="h-5 w-5 text-muted-foreground/70" />
+            <h2 className="text-lg font-semibold text-foreground">Calling Settings</h2>
           </div>
 
           <div className="space-y-4">
@@ -234,7 +234,7 @@ export default function NewCampaignPage() {
                 id="timeZone"
                 value={formData.timeZone}
                 onChange={(e) => setFormData({ ...formData, timeZone: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 block w-full rounded-md border border-border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 {TIMEZONES.map((tz) => (
                   <option key={tz.value} value={tz.value}>
@@ -246,12 +246,12 @@ export default function NewCampaignPage() {
 
             <div>
               <Label className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-gray-400" />
+                <Clock className="h-4 w-4 text-muted-foreground/70" />
                 Calling Hours
               </Label>
               <div className="mt-1 grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="callingHoursStart" className="text-xs text-gray-500">
+                  <Label htmlFor="callingHoursStart" className="text-xs text-muted-foreground">
                     Start Time
                   </Label>
                   <Input
@@ -263,7 +263,7 @@ export default function NewCampaignPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="callingHoursEnd" className="text-xs text-gray-500">
+                  <Label htmlFor="callingHoursEnd" className="text-xs text-muted-foreground">
                     End Time
                   </Label>
                   <Input
@@ -275,7 +275,7 @@ export default function NewCampaignPage() {
                   />
                 </div>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Calls will only be made during these hours in the selected timezone
               </p>
             </div>
@@ -291,7 +291,7 @@ export default function NewCampaignPage() {
                 onChange={(e) => setFormData({ ...formData, maxCallsPerDay: parseInt(e.target.value) || 100 })}
                 className="mt-1 w-32"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Limit daily outbound calls to stay within budget and comply with regulations
               </p>
             </div>
@@ -322,9 +322,9 @@ export default function NewCampaignPage() {
       </form>
 
       {/* Help */}
-      <div className="rounded-lg border bg-gray-50 p-4">
-        <h3 className="font-medium text-gray-900">Next Steps</h3>
-        <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-gray-600">
+      <div className="rounded-lg border bg-secondary p-4">
+        <h3 className="font-medium text-foreground">Next Steps</h3>
+        <ol className="mt-2 list-inside list-decimal space-y-1 text-sm text-muted-foreground">
           <li>Create the campaign with basic settings</li>
           <li>Add contacts manually or import from CSV</li>
           <li>Review and start the campaign</li>

@@ -26,7 +26,7 @@ export default function DashboardLayout({
   return (
     <TRPCProvider>
       <BrandingProvider>
-        <div className="flex h-screen overflow-hidden bg-gray-50/50">
+        <div className="flex h-screen overflow-hidden bg-background">
           <Sidebar
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}

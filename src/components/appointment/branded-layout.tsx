@@ -27,7 +27,7 @@ export function BrandedAppointmentLayout({
   }
 
   return (
-    <div style={style} className="min-h-screen flex flex-col bg-gray-50">
+    <div style={style} className="min-h-screen flex flex-col bg-secondary">
       {/* Header with logo */}
       {branding?.logoUrl && (
         <div className="flex justify-center pt-6 pb-2">
@@ -47,7 +47,7 @@ export function BrandedAppointmentLayout({
       {/* Footer */}
       {branding && !branding.poweredByHidden && (
         <div className="pb-4 text-center">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted-foreground/70">
             Powered by CallTone AI
           </p>
         </div>

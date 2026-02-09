@@ -171,8 +171,8 @@ export default function NewKnowledgePage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Add Knowledge</h1>
-          <p className="text-gray-500">Train your AI agents with your business information</p>
+          <h1 className="text-2xl font-bold text-foreground">Add Knowledge</h1>
+          <p className="text-muted-foreground">Train your AI agents with your business information</p>
         </div>
       </div>
 
@@ -228,7 +228,7 @@ A: You can reach our support team at support@example.com or call 1-800-EXAMPLE."
                   value={manualContent}
                   onChange={(e) => setManualContent(e.target.value)}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Tip: Use Q: and A: format for clear question/answer pairs, or just add plain text.
                 </p>
               </div>
@@ -275,7 +275,7 @@ A: You can reach our support team at support@example.com or call 1-800-EXAMPLE."
                   value={sourceUrl}
                   onChange={(e) => setSourceUrl(e.target.value)}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Enter the full URL including https://
                 </p>
               </div>

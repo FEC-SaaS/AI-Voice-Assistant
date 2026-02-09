@@ -137,10 +137,10 @@ export function DocumentUpload({
           isDragOver
             ? "border-primary bg-primary/5"
             : error
-              ? "border-red-300 bg-red-50"
+              ? "border-red-300 bg-red-500/10"
               : selectedFile
-                ? "border-green-300 bg-green-50"
-                : "border-gray-300 hover:border-gray-400"
+                ? "border-green-300 bg-green-500/10"
+                : "border-border hover:border-muted-foreground/70"
         }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -149,14 +149,14 @@ export function DocumentUpload({
         {selectedFile ? (
           <div className="flex flex-col items-center">
             <FileText className="h-12 w-12 text-green-500" />
-            <p className="mt-2 text-sm font-medium text-gray-900">
+            <p className="mt-2 text-sm font-medium text-foreground">
               {selectedFile.name}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               {(selectedFile.size / 1024).toFixed(1)} KB
             </p>
             {busy ? (
-              <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+              <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {isUploading ? "Uploading..." : "Processing..."}
               </div>
@@ -173,11 +173,11 @@ export function DocumentUpload({
           </div>
         ) : (
           <>
-            <Upload className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-600">
+            <Upload className="mx-auto h-12 w-12 text-muted-foreground/70" />
+            <p className="mt-2 text-sm text-muted-foreground">
               Drag and drop a file, or click to browse
             </p>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               Supported: PDF, DOCX, TXT, CSV (max 10MB)
             </p>
             <Button
@@ -201,9 +201,9 @@ export function DocumentUpload({
       </div>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-500/10 p-3">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
-          <p className="text-sm text-red-700">{error}</p>
+          <p className="text-sm text-red-400">{error}</p>
         </div>
       )}
     </div>

@@ -8,8 +8,8 @@ export default function ContactsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Contacts</h1>
+          <p className="text-muted-foreground">
             Manage your contact database for outbound campaigns
           </p>
         </div>

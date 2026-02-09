@@ -16,8 +16,8 @@ export default function Error({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center">
-      <h2 className="text-2xl font-bold text-gray-900">Something went wrong!</h2>
-      <p className="mt-2 text-gray-600">
+      <h2 className="text-2xl font-bold text-foreground">Something went wrong!</h2>
+      <p className="mt-2 text-muted-foreground">
         An error occurred while loading this page.
       </p>
       <Button onClick={reset} className="mt-6">

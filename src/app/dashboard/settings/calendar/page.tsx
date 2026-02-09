@@ -117,7 +117,7 @@ export default function CalendarSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/70" />
       </div>
     );
   }
@@ -127,8 +127,8 @@ export default function CalendarSettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Calendar Settings</h1>
-          <p className="text-gray-500">Configure your availability and booking preferences</p>
+          <h1 className="text-2xl font-bold text-foreground">Calendar Settings</h1>
+          <p className="text-muted-foreground">Configure your availability and booking preferences</p>
         </div>
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving ? (
@@ -332,7 +332,7 @@ export default function CalendarSettingsPage() {
                 <SelectItem value="90">3 months</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               How far in advance can appointments be scheduled
             </p>
           </div>
@@ -353,12 +353,12 @@ export default function CalendarSettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-green-100 p-2">
-                <Phone className="h-5 w-5 text-green-600" />
+              <div className="rounded-lg bg-green-500/10 p-2">
+                <Phone className="h-5 w-5 text-green-400" />
               </div>
               <div>
                 <p className="font-medium">Phone Calls</p>
-                <p className="text-sm text-gray-500">Schedule phone call appointments</p>
+                <p className="text-sm text-muted-foreground">Schedule phone call appointments</p>
               </div>
             </div>
             <Switch
@@ -369,12 +369,12 @@ export default function CalendarSettingsPage() {
 
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-blue-100 p-2">
-                <Video className="h-5 w-5 text-blue-600" />
+              <div className="rounded-lg bg-blue-500/10 p-2">
+                <Video className="h-5 w-5 text-blue-400" />
               </div>
               <div>
                 <p className="font-medium">Video Calls</p>
-                <p className="text-sm text-gray-500">Schedule video conferencing meetings</p>
+                <p className="text-sm text-muted-foreground">Schedule video conferencing meetings</p>
               </div>
             </div>
             <Switch
@@ -385,12 +385,12 @@ export default function CalendarSettingsPage() {
 
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-purple-100 p-2">
-                <MapPin className="h-5 w-5 text-purple-600" />
+              <div className="rounded-lg bg-purple-500/10 p-2">
+                <MapPin className="h-5 w-5 text-purple-400" />
               </div>
               <div>
                 <p className="font-medium">In-Person Meetings</p>
-                <p className="text-sm text-gray-500">Schedule face-to-face meetings</p>
+                <p className="text-sm text-muted-foreground">Schedule face-to-face meetings</p>
               </div>
             </div>
             <Switch
@@ -416,7 +416,7 @@ export default function CalendarSettingsPage() {
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div>
               <p className="font-medium">Confirmation Emails</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Send confirmation email when an appointment is booked
               </p>
             </div>
@@ -429,7 +429,7 @@ export default function CalendarSettingsPage() {
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="flex-1">
               <p className="font-medium">Reminder Emails</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Send reminder email before appointments
               </p>
             </div>

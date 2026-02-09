@@ -49,9 +49,9 @@ export function CompetitorChart({ competitors }: CompetitorChartProps) {
       </CardHeader>
       <CardContent>
         {!hasData ? (
-          <div className="flex h-[300px] items-center justify-center text-gray-500">
+          <div className="flex h-[300px] items-center justify-center text-muted-foreground">
             <div className="text-center">
-              <Users className="mx-auto h-12 w-12 text-gray-300" />
+              <Users className="mx-auto h-12 w-12 text-muted-foreground/70" />
               <p className="mt-4">No competitor data yet</p>
               <p className="text-sm">
                 Competitor mentions will appear as calls are analyzed

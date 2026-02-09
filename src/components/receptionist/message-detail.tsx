@@ -32,26 +32,26 @@ export function MessageDetail({ messageId, onClose, onUpdate }: MessageDetailPro
   if (isLoading || !msg) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="rounded-lg bg-white p-8">Loading...</div>
+        <div className="rounded-lg bg-card p-8">Loading...</div>
       </div>
     );
   }
 
   const urgencyColors: Record<string, string> = {
-    low: "bg-gray-100 text-gray-600",
-    normal: "bg-blue-100 text-blue-700",
+    low: "bg-secondary text-muted-foreground",
+    normal: "bg-blue-100 text-blue-400",
     high: "bg-amber-100 text-amber-700",
-    urgent: "bg-red-100 text-red-700",
+    urgent: "bg-red-100 text-red-400",
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-lg rounded-lg bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <button onClick={onClose} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+          <button onClick={onClose} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Back
           </button>
-          <button onClick={onClose} className="rounded-lg p-1 hover:bg-gray-100">
+          <button onClick={onClose} className="rounded-lg p-1 hover:bg-secondary">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -61,31 +61,31 @@ export function MessageDetail({ messageId, onClose, onUpdate }: MessageDetailPro
             <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${urgencyColors[msg.urgency]}`}>
               {msg.urgency} priority
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground/70">
               {new Date(msg.createdAt).toLocaleString()}
             </span>
           </div>
 
-          <div className="rounded-lg bg-gray-50 p-4 space-y-2">
+          <div className="rounded-lg bg-secondary p-4 space-y-2">
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="text-gray-500">From:</span> <span className="font-medium">{msg.callerName || "Unknown"}</span></div>
-              {msg.callerPhone && <div><span className="text-gray-500">Phone:</span> {msg.callerPhone}</div>}
-              {msg.callerEmail && <div><span className="text-gray-500">Email:</span> {msg.callerEmail}</div>}
-              {msg.callerCompany && <div><span className="text-gray-500">Company:</span> {msg.callerCompany}</div>}
-              {msg.department && <div><span className="text-gray-500">Department:</span> {msg.department.name}</div>}
-              {msg.staffMember && <div><span className="text-gray-500">For:</span> {msg.staffMember.name}</div>}
+              <div><span className="text-muted-foreground">From:</span> <span className="font-medium">{msg.callerName || "Unknown"}</span></div>
+              {msg.callerPhone && <div><span className="text-muted-foreground">Phone:</span> {msg.callerPhone}</div>}
+              {msg.callerEmail && <div><span className="text-muted-foreground">Email:</span> {msg.callerEmail}</div>}
+              {msg.callerCompany && <div><span className="text-muted-foreground">Company:</span> {msg.callerCompany}</div>}
+              {msg.department && <div><span className="text-muted-foreground">Department:</span> {msg.department.name}</div>}
+              {msg.staffMember && <div><span className="text-muted-foreground">For:</span> {msg.staffMember.name}</div>}
             </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Message</h3>
-            <p className="text-sm text-gray-900 whitespace-pre-wrap bg-white border rounded-lg p-4">{msg.body}</p>
+            <h3 className="text-sm font-medium text-muted-foreground mb-2">Message</h3>
+            <p className="text-sm text-foreground whitespace-pre-wrap bg-card border rounded-lg p-4">{msg.body}</p>
           </div>
 
           {msg.notes && (
             <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Notes</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{msg.notes}</p>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Notes</h3>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{msg.notes}</p>
             </div>
           )}
 
