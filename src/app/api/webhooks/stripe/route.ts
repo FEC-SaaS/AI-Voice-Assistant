@@ -13,6 +13,19 @@ const getDb = async () => {
   return db;
 };
 
+function resolvePlanId(subscription: Stripe.Subscription): string {
+  // Find the non-metered (licensed) price item to determine the plan
+  const licensedItem = subscription.items.data.find(
+    (item) => item.price.recurring?.usage_type !== "metered"
+  );
+  const priceId = licensedItem?.price.id;
+
+  if (priceId === process.env.STRIPE_STARTER_PRICE_ID) return "starter";
+  if (priceId === process.env.STRIPE_PROFESSIONAL_PRICE_ID) return "professional";
+  if (priceId === process.env.STRIPE_BUSINESS_PRICE_ID) return "business";
+  return "free-trial";
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = headers().get("Stripe-Signature") as string;
@@ -45,24 +58,12 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
 
-        // Find organization by Stripe customer ID
         const org = await db.organization.findFirst({
           where: { stripeCustomerId: customerId },
         });
 
         if (org) {
-          // Get the price ID to determine the plan
-          const priceId = subscription.items.data[0]?.price.id;
-          let planId = "free-trial";
-
-          // Map price IDs to plan IDs
-          if (priceId === process.env.STRIPE_STARTER_PRICE_ID) {
-            planId = "starter";
-          } else if (priceId === process.env.STRIPE_PROFESSIONAL_PRICE_ID) {
-            planId = "professional";
-          } else if (priceId === process.env.STRIPE_BUSINESS_PRICE_ID) {
-            planId = "business";
-          }
+          const planId = resolvePlanId(subscription);
 
           await db.organization.update({
             where: { id: org.id },
@@ -71,6 +72,8 @@ export async function POST(req: NextRequest) {
               planId,
             },
           });
+
+          console.log(`[Stripe Webhook] Org ${org.id} plan set to ${planId}`);
         }
         break;
       }
@@ -79,7 +82,6 @@ export async function POST(req: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
 
-        // Downgrade to free trial on cancellation
         await db.organization.updateMany({
           where: { stripeCustomerId: customerId },
           data: {
@@ -92,15 +94,13 @@ export async function POST(req: NextRequest) {
 
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log(`Payment succeeded for invoice: ${invoice.id}`);
-        // Could send a receipt email here
+        console.log(`[Stripe Webhook] Payment succeeded for invoice: ${invoice.id}`);
         break;
       }
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log(`Payment failed for invoice: ${invoice.id}`);
-        // Could send a notification email here
+        console.log(`[Stripe Webhook] Payment failed for invoice: ${invoice.id}`);
         break;
       }
 

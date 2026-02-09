@@ -57,19 +57,40 @@ export async function createBillingPortalSession(
   });
 }
 
-// Create checkout session
+// Create checkout session with all payment methods and optional metered overage
 export async function createCheckoutSession(
   customerId: string,
   priceId: string,
   successUrl: string,
   cancelUrl: string
 ): Promise<Stripe.Checkout.Session> {
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+    { price: priceId, quantity: 1 },
+  ];
+
+  // Add metered overage line item if configured
+  const overagePriceId = process.env.STRIPE_OVERAGE_PRICE_ID;
+  if (overagePriceId) {
+    lineItems.push({ price: overagePriceId });
+  }
+
   return stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: lineItems,
     success_url: successUrl,
     cancel_url: cancelUrl,
+    payment_method_types: [
+      "card",
+      "paypal",
+      "link",
+    ],
+    allow_promotion_codes: true,
+    billing_address_collection: "required",
+    tax_id_collection: { enabled: true },
+    subscription_data: {
+      metadata: { customerId },
+    },
   });
 }
 
@@ -83,4 +104,40 @@ export async function reportUsage(
     timestamp: Math.floor(Date.now() / 1000),
     action: "increment",
   });
+}
+
+// Get customer payment methods
+export async function getPaymentMethods(
+  customerId: string
+): Promise<Stripe.PaymentMethod[]> {
+  const methods = await stripe.paymentMethods.list({
+    customer: customerId,
+    limit: 10,
+  });
+  return methods.data;
+}
+
+// Get customer invoices
+export async function getInvoices(
+  customerId: string,
+  limit: number = 12
+): Promise<Stripe.Invoice[]> {
+  const invoices = await stripe.invoices.list({
+    customer: customerId,
+    limit,
+  });
+  return invoices.data;
+}
+
+// Get upcoming invoice (shows pending charges including metered usage)
+export async function getUpcomingInvoice(
+  customerId: string
+): Promise<Stripe.UpcomingInvoice | null> {
+  try {
+    return await stripe.invoices.retrieveUpcoming({
+      customer: customerId,
+    });
+  } catch {
+    return null;
+  }
 }
