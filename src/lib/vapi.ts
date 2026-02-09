@@ -171,6 +171,11 @@ export async function createAssistant(config: AssistantConfig): Promise<VapiAssi
     },
     voice: voiceConfig,
     firstMessage: config.firstMessage || "Hello, how can I help you today?",
+    // Enable live call monitoring and control (for whisper/barge-in features)
+    monitorPlan: {
+      listenEnabled: true,
+      controlEnabled: true,
+    },
   };
 
   // Add server URL for tool/function webhooks
@@ -250,6 +255,12 @@ export async function updateAssistant(
     body.serverUrlSecret = config.serverUrlSecret;
   }
 
+  // Always ensure monitorPlan is enabled for live call control
+  body.monitorPlan = {
+    listenEnabled: true,
+    controlEnabled: true,
+  };
+
   return vapiRequest<VapiAssistant>({
     method: "PATCH",
     path: `/assistant/${assistantId}`,
@@ -325,6 +336,40 @@ export async function getCall(callId: string): Promise<VapiCall> {
     method: "GET",
     path: `/call/${callId}`,
   });
+}
+
+// Get the control URL for a live call, then send a control command
+export async function sendCallControl(
+  vapiCallId: string,
+  command: Record<string, unknown>
+): Promise<void> {
+  // Fetch call details to get the monitor.controlUrl
+  const callDetails = await vapiRequest<{
+    id: string;
+    monitor?: { controlUrl?: string; listenUrl?: string };
+  }>({
+    method: "GET",
+    path: `/call/${vapiCallId}`,
+  });
+
+  const controlUrl = callDetails.monitor?.controlUrl;
+  if (!controlUrl) {
+    throw new Error(
+      "Call does not have a control URL. Ensure the assistant has monitorPlan.controlEnabled set to true."
+    );
+  }
+
+  // POST the command to the controlUrl
+  const response = await fetch(controlUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(command),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Call control failed: ${response.status} - ${error}`);
+  }
 }
 
 // Phone number types

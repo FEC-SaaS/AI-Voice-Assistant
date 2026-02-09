@@ -2,26 +2,9 @@ import { z } from "zod";
 import { router, protectedProcedure, managerProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { createLogger } from "@/lib/logger";
+import { sendCallControl } from "@/lib/vapi";
 
 const log = createLogger("Live Calls");
-
-const VAPI_API_URL = "https://api.vapi.ai";
-
-async function vapiPost(path: string, body: unknown) {
-  const res = await fetch(`${VAPI_API_URL}${path}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.VAPI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Vapi API error: ${res.status} - ${text}`);
-  }
-  return res.json();
-}
 
 export const liveCallsRouter = router({
   getActiveCalls: protectedProcedure.query(async ({ ctx }) => {
@@ -146,8 +129,10 @@ export const liveCallsRouter = router({
       }
 
       try {
-        await vapiPost(`/call/${call.vapiCallId}/speak`, {
-          message: input.message,
+        await sendCallControl(call.vapiCallId, {
+          type: "say",
+          content: input.message,
+          endCallAfterSpoken: false,
         });
         log.info(`Barge-in sent to call ${call.vapiCallId}`);
         return { success: true };
@@ -185,8 +170,15 @@ export const liveCallsRouter = router({
       }
 
       try {
-        await vapiPost(`/call/${call.vapiCallId}/speak`, {
-          message: `[Coaching] ${input.message}`,
+        // Use add-message with system role to whisper coaching to the AI
+        // (only the assistant sees system messages, not the customer)
+        await sendCallControl(call.vapiCallId, {
+          type: "add-message",
+          message: {
+            role: "system",
+            content: `[Coaching from supervisor]: ${input.message}`,
+          },
+          triggerResponseEnabled: true,
         });
         log.info(`Whisper sent to call ${call.vapiCallId}`);
         return { success: true };
@@ -219,16 +211,9 @@ export const liveCallsRouter = router({
       }
 
       try {
-        const res = await fetch(`${VAPI_API_URL}/call/${call.vapiCallId}/stop`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.VAPI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
+        await sendCallControl(call.vapiCallId, {
+          type: "end-call",
         });
-        if (!res.ok) {
-          throw new Error(`Vapi returned ${res.status}`);
-        }
         log.info(`Ended call ${call.vapiCallId}`);
         return { success: true };
       } catch (error) {

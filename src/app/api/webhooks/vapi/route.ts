@@ -126,10 +126,20 @@ function normalizeTranscript(transcript: string | any[] | undefined): string | u
   if (typeof transcript === "string") return transcript;
   if (Array.isArray(transcript)) {
     return transcript
+      .filter((msg) => {
+        // Filter out system messages (contain knowledge base, prompts, etc.)
+        const role = (msg.role || "").toLowerCase();
+        return role !== "system";
+      })
       .map((msg) => {
         const role = msg.role || "unknown";
         const text = msg.message || msg.content || msg.text || "";
         return `${role}: ${text}`;
+      })
+      .filter((line) => {
+        // Filter out empty lines
+        const parts = line.split(": ");
+        return parts.length > 1 && parts.slice(1).join(": ").trim().length > 0;
       })
       .join("\n");
   }
@@ -1521,14 +1531,25 @@ export async function POST(req: NextRequest) {
           // Try to find existing record (handles outbound calls where vapiCallId might not be set)
           const existingStatusId = await findExistingCallRecord();
           if (existingStatusId) {
-            await db.call.update({
+            // Check if the call is already in a terminal state — don't overwrite
+            // completed/failed/no-answer with stale status-update events
+            const existingStatusRecord = await db.call.findUnique({
               where: { id: existingStatusId },
-              data: {
-                vapiCallId: call.id,
-                status: mappedStatus,
-                ...(newStatus === "in-progress" && !call.startedAt ? { startedAt: new Date() } : {}),
-              },
+              select: { status: true },
             });
+            const terminalStatuses = ["completed", "failed", "no-answer"];
+            if (existingStatusRecord?.status && terminalStatuses.includes(existingStatusRecord.status)) {
+              log.info(`Status update: skipping ${mappedStatus} — call ${existingStatusId} already in terminal status ${existingStatusRecord.status}`);
+            } else {
+              await db.call.update({
+                where: { id: existingStatusId },
+                data: {
+                  vapiCallId: call.id,
+                  status: mappedStatus,
+                  ...(newStatus === "in-progress" && !call.startedAt ? { startedAt: new Date() } : {}),
+                },
+              });
+            }
           } else if (
             // No existing record found — this is likely an inbound call arriving
             // via Vapi server message (Vapi doesn't send call-started for server messages).
