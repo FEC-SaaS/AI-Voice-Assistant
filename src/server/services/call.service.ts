@@ -104,11 +104,13 @@ export async function initiateCall(input: InitiateCallInput) {
     // Build outbound-specific overrides for the assistant
     const contactName = input.metadata?.contactName;
     const businessName = agent.organization.name;
-    // Avoid redundant "X calling from X" when agent name = business name
-    const agentDisplayName = agent.name !== businessName ? agent.name : null;
+    // Always use the agent's configured name
+    const agentName = agent.name;
+    // Avoid redundant "X from X" when agent name = business name
+    const showFromBusiness = agentName.toLowerCase() !== businessName.toLowerCase();
     const outboundFirstMessage = contactName
-      ? `Hi ${contactName}, this is${agentDisplayName ? ` ${agentDisplayName} from` : ""} ${businessName}. Do you have a moment to talk?`
-      : `Hi there, this is${agentDisplayName ? ` ${agentDisplayName} from` : ""} ${businessName} calling. Do you have a moment to talk?`;
+      ? `Hi ${contactName}, this is ${agentName}${showFromBusiness ? ` from ${businessName}` : ""}. Do you have a moment to talk?`
+      : `Hi there, this is ${agentName}${showFromBusiness ? ` from ${businessName}` : ""} calling. Do you have a moment to talk?`;
 
     const vapiCall = await createCall({
       assistantId: agent.vapiAssistantId,
@@ -135,7 +137,7 @@ export async function initiateCall(input: InitiateCallInput) {
 
 IMPORTANT CONTEXT — OUTBOUND CALL:
 You are calling on behalf of ${businessName}. YOU initiated this call, the customer did NOT call you.
-${agentDisplayName ? `Your name is ${agentDisplayName}.` : `You are a representative of ${businessName}. If asked your name, choose a natural-sounding first name and use it consistently throughout the call.`}
+Your name is ${agentName}. ALWAYS use this name when introducing yourself or when asked your name. NEVER use any other name.
 
 CALL GUIDELINES:
 1. OPENING: Introduce yourself and the business naturally. State the purpose of your call clearly and concisely within the first 15 seconds.

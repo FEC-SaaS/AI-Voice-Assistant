@@ -1434,16 +1434,35 @@ export async function POST(req: NextRequest) {
       }
 
       case "transcript":
-      case "transcript.partial": {
+      case "transcript.partial":
+      case "conversation-update": {
         // Update transcript mid-call for live monitoring
-        const partialText = normalizeTranscript(call.transcript);
+        // Vapi sends transcript in multiple formats depending on event type
+        let partialText = normalizeTranscript(call.transcript);
+        if (!partialText && message?.artifact?.messages) {
+          partialText = normalizeTranscript(message.artifact.messages);
+        }
+        if (!partialText && message?.artifact?.transcript) {
+          partialText = normalizeTranscript(message.artifact.transcript);
+        }
         if (partialText) {
-          await db.call.update({
-            where: { vapiCallId: call.id },
-            data: { transcript: partialText },
-          }).catch(() => {
-            // Call record may not exist yet
-          });
+          // Use findExistingCallRecord to handle cases where vapiCallId isn't linked yet
+          const existingTranscriptId = await findExistingCallRecord();
+          if (existingTranscriptId) {
+            await db.call.update({
+              where: { id: existingTranscriptId },
+              data: { vapiCallId: call.id, transcript: partialText },
+            }).catch(() => {
+              log.warn(`Transcript update failed for record ${existingTranscriptId}`);
+            });
+          } else {
+            await db.call.update({
+              where: { vapiCallId: call.id },
+              data: { transcript: partialText },
+            }).catch(() => {
+              // Call record may not exist yet
+            });
+          }
         }
         break;
       }
@@ -1455,15 +1474,24 @@ export async function POST(req: NextRequest) {
           || normalizeTranscript(message?.artifact?.transcript)
           || normalizeTranscript(message?.artifact?.messages);
         if (completeText) {
-          const updatedCall = await db.call.update({
-            where: { vapiCallId: call.id },
-            data: { transcript: completeText },
-          });
+          const existingCompleteId = await findExistingCallRecord();
+          let updatedCallRecord;
+          if (existingCompleteId) {
+            updatedCallRecord = await db.call.update({
+              where: { id: existingCompleteId },
+              data: { vapiCallId: call.id, transcript: completeText },
+            });
+          } else {
+            updatedCallRecord = await db.call.update({
+              where: { vapiCallId: call.id },
+              data: { transcript: completeText },
+            }).catch(() => null);
+          }
 
           // Trigger analysis now that we have the full transcript
-          if (updatedCall.status === "completed") {
+          if (updatedCallRecord && updatedCallRecord.status === "completed") {
             getAnalyzeCall().then((analyzeCall) => {
-              analyzeCall(updatedCall.id).catch((error) => {
+              analyzeCall(updatedCallRecord.id).catch((error) => {
                 log.error("Call analysis failed:", error);
               });
             });
@@ -1501,6 +1529,42 @@ export async function POST(req: NextRequest) {
                 ...(newStatus === "in-progress" && !call.startedAt ? { startedAt: new Date() } : {}),
               },
             });
+          } else if (
+            // No existing record found — this is likely an inbound call arriving
+            // via Vapi server message (Vapi doesn't send call-started for server messages).
+            // Create the record now so inbound calls appear on the dashboard.
+            (newStatus === "ringing" || newStatus === "in-progress" || newStatus === "forwarding") &&
+            organizationId
+          ) {
+            const inboundAgentId = agent?.id || undefined;
+            // Also try to resolve agent from phone number if not found via assistantId
+            let resolvedAgentId = inboundAgentId;
+            if (!resolvedAgentId && call.phoneNumberId) {
+              const phoneWithAgent = await db.phoneNumber.findFirst({
+                where: { vapiPhoneId: call.phoneNumberId },
+                select: { agentId: true },
+              });
+              resolvedAgentId = phoneWithAgent?.agentId || undefined;
+            }
+
+            try {
+              await db.call.create({
+                data: {
+                  vapiCallId: call.id,
+                  organizationId,
+                  agentId: resolvedAgentId,
+                  direction: callDirection,
+                  status: mappedStatus,
+                  fromNumber: callDirection === "inbound" ? call.customer?.number : call.metadata?.fromNumber,
+                  toNumber: callDirection === "inbound" ? call.metadata?.fromNumber : call.customer?.number,
+                  startedAt: newStatus === "in-progress" ? new Date() : undefined,
+                },
+              });
+              log.info(`Status update: created new ${callDirection} record for ${call.id}`);
+            } catch (createError) {
+              // Might fail with unique constraint if record was created concurrently
+              log.warn(`Status update: failed to create record for ${call.id}`, createError);
+            }
           } else {
             // Fallback: try direct update by vapiCallId
             await db.call.update({
