@@ -105,6 +105,7 @@ model PhoneNumber {
   twilioSid      String?      // Twilio phone number SID (for SaaS-managed numbers)
   number         String
   friendlyName   String?
+  callerIdName   String?      // Business name displayed on caller ID (CNAM)
   type           String       @default("local") // local, toll_free, mobile
   provider       String       @default("twilio-managed") // twilio-managed, twilio-imported, vapi
   countryCode    String?      // ISO country code (US, GB, GH, etc.)

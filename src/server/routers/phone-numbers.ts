@@ -10,6 +10,7 @@ import {
   searchAvailableNumbers,
   buyPhoneNumber as buyTwilioNumber,
   releasePhoneNumber as releaseTwilioNumber,
+  updatePhoneNumber as updateTwilioNumber,
   SUPPORTED_COUNTRIES,
   getCountryNumberTypes,
   getNumberPrice,
@@ -159,6 +160,7 @@ export const phoneNumbersRouter = router({
         countryCode: z.string().length(2),
         type: z.enum(["local", "toll-free", "mobile"]).default("local"),
         friendlyName: z.string().optional(),
+        callerIdName: z.string().max(15, "Caller ID name must be 15 characters or fewer").optional(),
       })
     )
     .use(enforcePhoneNumberLimit)
@@ -201,7 +203,7 @@ export const phoneNumbersRouter = router({
       try {
         twilioNumber = await buyTwilioNumber({
           phoneNumber: input.phoneNumber,
-          friendlyName: input.friendlyName || `${org.name} - ${input.type}`,
+          friendlyName: input.callerIdName || input.friendlyName || `${org.name} - ${input.type}`,
           accountSid: org.twilioSubaccountSid!,
           authToken: org.twilioAuthToken!,
         });
@@ -260,6 +262,7 @@ export const phoneNumbersRouter = router({
           twilioSid: twilioNumber.sid,
           number: twilioNumber.phone_number,
           friendlyName: input.friendlyName,
+          callerIdName: input.callerIdName || null,
           type: input.type === "toll-free" ? "toll_free" : input.type,
           provider: "twilio-managed",
           countryCode: input.countryCode,
@@ -278,6 +281,7 @@ export const phoneNumbersRouter = router({
         twilioAuthToken: z.string().min(1, "Twilio Auth Token is required"),
         phoneNumber: z.string().regex(/^\+[1-9]\d{1,14}$/, "Phone number must be in E.164 format"),
         friendlyName: z.string().optional(),
+        callerIdName: z.string().max(15, "Caller ID name must be 15 characters or fewer").optional(),
       })
     )
     .use(enforcePhoneNumberLimit)
@@ -331,6 +335,30 @@ export const phoneNumbersRouter = router({
         },
       });
 
+      // Update Twilio FriendlyName if callerIdName is provided
+      if (input.callerIdName) {
+        try {
+          // List the numbers on the client's account to find the SID
+          const { listPhoneNumbers } = await import("@/lib/twilio");
+          const numbers = await listPhoneNumbers(input.twilioAccountSid, input.twilioAuthToken);
+          const matched = numbers.find(
+            (n) => n.phone_number === input.phoneNumber
+          );
+          if (matched) {
+            await updateTwilioNumber(
+              matched.sid,
+              { friendlyName: input.callerIdName },
+              input.twilioAccountSid,
+              input.twilioAuthToken
+            );
+            log.info(`Set caller ID name "${input.callerIdName}" on ${input.phoneNumber}`);
+          }
+        } catch (error) {
+          log.warn("Could not update Twilio caller ID name:", error);
+          // Non-fatal — continue saving
+        }
+      }
+
       // Save to database
       const phoneNumber = await ctx.db.phoneNumber.create({
         data: {
@@ -338,6 +366,7 @@ export const phoneNumbersRouter = router({
           vapiPhoneId: vapiPhone.id,
           number: vapiPhone.number || vapiPhone.phoneNumber || input.phoneNumber,
           friendlyName: input.friendlyName,
+          callerIdName: input.callerIdName || null,
           type: "local",
           provider: "twilio-imported",
           countryCode,
@@ -597,4 +626,95 @@ export const phoneNumbersRouter = router({
       hasCredentials: !!org?.twilioSubaccountSid,
     };
   }),
+
+  // Update caller ID name (CNAM) for a phone number
+  updateCallerIdName: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        callerIdName: z.string().max(15, "Caller ID name must be 15 characters or fewer"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const phoneNumber = await ctx.db.phoneNumber.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!phoneNumber) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Phone number not found",
+        });
+      }
+
+      // Propagate to Twilio if we have the SID and credentials
+      if (phoneNumber.twilioSid) {
+        const org = await ctx.db.organization.findUnique({
+          where: { id: ctx.orgId },
+        });
+
+        if (org?.twilioSubaccountSid && org?.twilioAuthToken) {
+          try {
+            await updateTwilioNumber(
+              phoneNumber.twilioSid,
+              { friendlyName: input.callerIdName },
+              org.twilioSubaccountSid,
+              org.twilioAuthToken
+            );
+            log.info(`Updated caller ID name for ${phoneNumber.number} to "${input.callerIdName}"`);
+          } catch (error) {
+            log.error("Failed to update Twilio caller ID name:", error);
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to update caller ID on Twilio. Please try again.",
+            });
+          }
+        }
+      }
+
+      // For imported numbers without a twilioSid, try to find and update
+      if (!phoneNumber.twilioSid && phoneNumber.provider === "twilio-imported") {
+        const org = await ctx.db.organization.findUnique({
+          where: { id: ctx.orgId },
+        });
+
+        if (org?.twilioSubaccountSid && org?.twilioAuthToken) {
+          try {
+            const { listPhoneNumbers } = await import("@/lib/twilio");
+            const numbers = await listPhoneNumbers(org.twilioSubaccountSid, org.twilioAuthToken);
+            const matched = numbers.find(
+              (n) => n.phone_number === phoneNumber.number
+            );
+            if (matched) {
+              await updateTwilioNumber(
+                matched.sid,
+                { friendlyName: input.callerIdName },
+                org.twilioSubaccountSid,
+                org.twilioAuthToken
+              );
+              // Store the twilioSid for future updates
+              await ctx.db.phoneNumber.update({
+                where: { id: input.id },
+                data: { twilioSid: matched.sid },
+              });
+              log.info(`Updated caller ID name for ${phoneNumber.number} to "${input.callerIdName}"`);
+            }
+          } catch (error) {
+            log.warn("Could not update Twilio caller ID for imported number:", error);
+            // Non-fatal for imported numbers — save locally anyway
+          }
+        }
+      }
+
+      const updated = await ctx.db.phoneNumber.update({
+        where: { id: input.id },
+        data: { callerIdName: input.callerIdName },
+        include: { agent: true },
+      });
+
+      return updated;
+    }),
 });

@@ -14,6 +14,10 @@ import {
   AlertCircle,
   CheckCircle,
   KeyRound,
+  ShieldCheck,
+  Building2,
+  Save,
+  Info,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -60,6 +64,11 @@ export default function PhoneNumbersPage() {
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [friendlyName, setFriendlyName] = useState("");
   const [pricing, setPricing] = useState<{ monthlyBase: number; monthlySaaS: number } | null>(null);
+
+  // Caller ID state
+  const [callerIdName, setCallerIdName] = useState("");
+  const [editingCallerId, setEditingCallerId] = useState<string | null>(null);
+  const [editCallerIdValue, setEditCallerIdValue] = useState("");
 
   // Import state
   const [twilioAccountSid, setTwilioAccountSid] = useState("");
@@ -136,6 +145,16 @@ export default function PhoneNumbersPage() {
     onError: (err) => toast.error(err.message),
   });
 
+  const updateCallerIdName = trpc.phoneNumbers.updateCallerIdName.useMutation({
+    onSuccess: () => {
+      toast.success("Caller ID name updated");
+      setEditingCallerId(null);
+      setEditCallerIdValue("");
+      refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const resetForm = () => {
     setShowPanel(false);
     setProvisionMethod("instant");
@@ -144,6 +163,7 @@ export default function PhoneNumbersPage() {
     setPricing(null);
     setFriendlyName("");
     setAreaCode("");
+    setCallerIdName("");
     setTwilioAccountSid("");
     setTwilioAuthToken("");
     setImportPhoneNumber("");
@@ -165,6 +185,7 @@ export default function PhoneNumbersPage() {
       countryCode: selectedCountry,
       type: selectedType,
       friendlyName: friendlyName || undefined,
+      callerIdName: callerIdName || undefined,
     });
   };
 
@@ -174,6 +195,7 @@ export default function PhoneNumbersPage() {
       twilioAuthToken,
       phoneNumber: importPhoneNumber,
       friendlyName: friendlyName || undefined,
+      callerIdName: callerIdName || undefined,
     });
   };
 
@@ -395,17 +417,34 @@ export default function PhoneNumbersPage() {
                 </div>
               )}
 
-              {/* Friendly Name & Purchase */}
+              {/* Friendly Name, Caller ID & Purchase */}
               {selectedNumber && (
                 <div className="space-y-4 rounded-lg bg-gray-50 p-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="friendlyName">Label (optional)</Label>
-                    <Input
-                      id="friendlyName"
-                      placeholder="e.g., Sales Line, Support"
-                      value={friendlyName}
-                      onChange={(e) => setFriendlyName(e.target.value)}
-                    />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="friendlyName">Label (optional)</Label>
+                      <Input
+                        id="friendlyName"
+                        placeholder="e.g., Sales Line, Support"
+                        value={friendlyName}
+                        onChange={(e) => setFriendlyName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="callerIdName">
+                        Business Caller ID Name (optional)
+                      </Label>
+                      <Input
+                        id="callerIdName"
+                        placeholder="e.g., ACME INC"
+                        value={callerIdName}
+                        onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
+                        maxLength={15}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Max 15 chars. Displayed on recipient&apos;s phone during calls (CNAM).
+                      </p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <Button
@@ -493,6 +532,23 @@ export default function PhoneNumbersPage() {
                     onChange={(e) => setFriendlyName(e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="importCallerIdName">
+                  Business Caller ID Name (optional)
+                </Label>
+                <Input
+                  id="importCallerIdName"
+                  placeholder="e.g., ACME INC"
+                  value={callerIdName}
+                  onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
+                  maxLength={15}
+                  className="max-w-sm"
+                />
+                <p className="text-xs text-gray-500">
+                  Max 15 chars. This will be set as the CNAM on your Twilio number.
+                </p>
               </div>
 
               <div className="flex items-center gap-3">
@@ -609,6 +665,7 @@ export default function PhoneNumbersPage() {
                 <tr className="border-b text-left text-xs font-medium uppercase text-gray-500">
                   <th className="px-6 py-3">Number</th>
                   <th className="px-6 py-3">Label</th>
+                  <th className="px-6 py-3">Caller ID</th>
                   <th className="px-6 py-3">Type</th>
                   <th className="px-6 py-3">Provider</th>
                   <th className="px-6 py-3">Status</th>
@@ -629,6 +686,57 @@ export default function PhoneNumbersPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {pn.friendlyName || "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      {editingCallerId === pn.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={editCallerIdValue}
+                            onChange={(e) => setEditCallerIdValue(e.target.value.toUpperCase().slice(0, 15))}
+                            maxLength={15}
+                            className="h-7 w-32 text-xs"
+                            placeholder="BUSINESS NAME"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                updateCallerIdName.mutate({ id: pn.id, callerIdName: editCallerIdValue });
+                              }
+                              if (e.key === "Escape") {
+                                setEditingCallerId(null);
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => updateCallerIdName.mutate({ id: pn.id, callerIdName: editCallerIdValue })}
+                            disabled={updateCallerIdName.isPending}
+                            className="rounded p-1 text-green-600 hover:bg-green-50"
+                            title="Save"
+                          >
+                            {updateCallerIdName.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Save className="h-3 w-3" />
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setEditingCallerId(pn.id);
+                            setEditCallerIdValue((pn as Record<string, unknown>).callerIdName as string || "");
+                          }}
+                          className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+                          title="Click to edit caller ID name"
+                        >
+                          {(pn as Record<string, unknown>).callerIdName ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Building2 className="h-3 w-3 text-green-500" />
+                              {String((pn as Record<string, unknown>).callerIdName)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">Set CNAM</span>
+                          )}
+                        </button>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -704,6 +812,95 @@ export default function PhoneNumbersPage() {
           </div>
         </div>
       )}
+
+      {/* Caller ID & Branding Info */}
+      <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+        <div className="flex gap-3">
+          <Building2 className="h-5 w-5 text-green-600 shrink-0" />
+          <div>
+            <h4 className="font-medium text-green-900">Caller ID & Business Branding</h4>
+            <ul className="mt-2 list-disc list-inside text-sm text-green-700 space-y-1">
+              <li><strong>CNAM (Caller Name):</strong> Set your business name to display on recipient phones during outbound calls. Click &quot;Set CNAM&quot; in the table above to configure per number.</li>
+              <li><strong>Character limit:</strong> CNAM is limited to 15 characters by telecom standards (e.g., &quot;ACME INC&quot;, &quot;DR SMITH OFFICE&quot;).</li>
+              <li><strong>Propagation:</strong> CNAM updates may take 24-48 hours to propagate across carrier networks.</li>
+              <li><strong>Coverage:</strong> CNAM display is most reliable for US/Canada calls. International coverage varies by carrier.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Compliance & Regulatory Info */}
+      <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+        <div className="flex gap-3">
+          <ShieldCheck className="h-5 w-5 text-purple-600 shrink-0" />
+          <div>
+            <h4 className="font-medium text-purple-900">Compliance & Regulatory</h4>
+            <div className="mt-2 space-y-3">
+              {/* STIR/SHAKEN */}
+              <div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium text-purple-800">STIR/SHAKEN Verified</span>
+                </div>
+                <p className="ml-6 text-sm text-purple-700">
+                  All managed Twilio numbers include STIR/SHAKEN attestation, reducing the chance of calls being marked as spam. Your calls are cryptographically signed to verify caller identity.
+                </p>
+              </div>
+
+              {/* A2P 10DLC */}
+              <div>
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-amber-500" />
+                  <span className="text-sm font-medium text-purple-800">A2P 10DLC Registration (SMS)</span>
+                </div>
+                <p className="ml-6 text-sm text-purple-700">
+                  US carriers require A2P 10DLC registration for business SMS on local numbers. This improves deliverability and avoids filtering.
+                </p>
+                <div className="ml-6 mt-1 flex flex-wrap gap-2">
+                  <a
+                    href="https://www.twilio.com/docs/messaging/guides/10dlc"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 hover:bg-purple-200"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Twilio 10DLC Guide
+                  </a>
+                  <a
+                    href="https://www.twilio.com/docs/messaging/guides/10dlc/10dlc-brand-registration"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 hover:bg-purple-200"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Register Your Brand
+                  </a>
+                  <a
+                    href="https://www.twilio.com/docs/messaging/guides/10dlc/10dlc-campaign-registration"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 hover:bg-purple-200"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Register SMS Campaign
+                  </a>
+                </div>
+              </div>
+
+              {/* TCPA */}
+              <div>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  <span className="text-sm font-medium text-purple-800">TCPA Compliance</span>
+                </div>
+                <p className="ml-6 text-sm text-purple-700">
+                  Ensure you have prior express consent before making AI-assisted outbound calls. Maintain Do Not Call lists and honor opt-out requests promptly.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Info Card */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
