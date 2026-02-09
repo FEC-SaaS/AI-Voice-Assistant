@@ -38,7 +38,7 @@ export function NextActionCard({ action, contactName }: NextActionCardProps) {
         <p
           className={cn(
             "text-sm",
-            action ? "text-purple-900" : "text-muted-foreground/70 italic"
+            action ? "text-purple-400" : "text-muted-foreground/70 italic"
           )}
         >
           {action || "No recommended action"}

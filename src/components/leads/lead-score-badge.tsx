@@ -18,7 +18,7 @@ export function LeadScoreBadge({ score, size = "sm" }: LeadScoreBadgeProps) {
       return "bg-green-100 text-green-400 border-green-300";
     }
     if (score >= 40) {
-      return "bg-amber-100 text-amber-700 border-amber-300";
+      return "bg-amber-500/10 text-amber-400 border-amber-500/30";
     }
     return "bg-red-100 text-red-400 border-red-300";
   };

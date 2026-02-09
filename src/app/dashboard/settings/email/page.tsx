@@ -436,7 +436,7 @@ export default function EmailSettingsPage() {
                     <div className="rounded-lg bg-green-500/10 border border-border p-4 flex items-start gap-3">
                       <CheckCircle2 className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
                       <div className="text-sm">
-                        <p className="font-medium text-green-800">Domain Verified</p>
+                        <p className="font-medium text-green-400">Domain Verified</p>
                         <p className="text-green-400 mt-1">
                           Your domain is verified and ready to use. Emails will be sent from{" "}
                           <strong>noreply@{domainData.domain.name}</strong>
@@ -450,7 +450,7 @@ export default function EmailSettingsPage() {
                 <div className="space-y-4">
                   <div className="rounded-lg bg-blue-500/10 p-4 flex items-start gap-3">
                     <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-blue-800">
+                    <div className="text-sm text-blue-400">
                       <p className="font-medium">Setting Up a Custom Domain</p>
                       <p className="mt-1">
                         We recommend using a subdomain like <strong>mail.yourbusiness.com</strong> or{" "}

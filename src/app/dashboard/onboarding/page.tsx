@@ -616,8 +616,8 @@ export default function OnboardingPage() {
                         <CheckCircle className="h-6 w-6 text-green-400" />
                       </div>
                       <div>
-                        <p className="font-semibold text-green-900">Phone Number Ready!</p>
-                        <p className="text-lg font-mono text-green-800">{createdPhoneNumber}</p>
+                        <p className="font-semibold text-green-400">Phone Number Ready!</p>
+                        <p className="text-lg font-mono text-green-400">{createdPhoneNumber}</p>
                         <p className="text-sm text-green-400 mt-0.5">
                           Assigned to <span className="font-medium">{agentName}</span>
                         </p>
@@ -673,7 +673,7 @@ export default function OnboardingPage() {
                   {provisionMethod === "search" && (
                     <div className="space-y-4">
                       <div className="rounded-lg bg-blue-500/10 border border-border p-3">
-                        <p className="text-sm text-blue-800">
+                        <p className="text-sm text-blue-400">
                           Search for available phone numbers by country and type. Select one to
                           purchase and it will be automatically assigned to your agent.
                         </p>
@@ -791,7 +791,7 @@ export default function OnboardingPage() {
                   {provisionMethod === "import" && (
                     <div className="space-y-4">
                       <div className="rounded-lg bg-blue-500/10 border border-border p-3">
-                        <p className="text-sm text-blue-800">
+                        <p className="text-sm text-blue-400">
                           Already have a Twilio number? Import it here. You&apos;ll need your
                           Twilio Account SID, Auth Token, and the phone number in E.164 format
                           (e.g., +14155551234).
@@ -914,8 +914,8 @@ export default function OnboardingPage() {
 
               <div className="rounded-lg bg-amber-500/10 border border-border p-3">
                 <div className="flex gap-2">
-                  <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-amber-800">
+                  <AlertCircle className="h-4 w-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-amber-400">
                     The more detailed your knowledge base, the better your agent can answer
                     caller questions. You can add more documents anytime from the Knowledge Base
                     section.
@@ -1031,7 +1031,7 @@ export default function OnboardingPage() {
               <div className="rounded-lg bg-blue-500/10 border border-border p-3">
                 <div className="flex gap-2">
                   <AlertCircle className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-blue-800">
+                  <p className="text-sm text-blue-400">
                     It may take a few seconds for a newly provisioned number to become active.
                     If the call doesn&apos;t connect, wait a moment and try again.
                   </p>

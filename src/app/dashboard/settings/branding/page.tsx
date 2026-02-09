@@ -498,14 +498,14 @@ export default function BrandingSettingsPage() {
               />
             </div>
           ) : (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
               <div className="flex items-start gap-3">
                 <Crown className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-amber-900">
+                  <p className="font-medium text-amber-400">
                     Business Plan Required
                   </p>
-                  <p className="text-sm text-amber-700 mt-1">
+                  <p className="text-sm text-amber-400 mt-1">
                     Upgrade to the Business plan or higher to remove
                     &quot;Powered by CallTone AI&quot; branding from your
                     dashboard and public pages.

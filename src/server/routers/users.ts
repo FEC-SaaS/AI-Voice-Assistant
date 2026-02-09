@@ -315,14 +315,64 @@ export const usersRouter = router({
         });
       }
 
-      // For now, we'll just extend the expiration
-      // In production, you might want to create a new Clerk invitation
-      await ctx.db.pendingInvitation.update({
-        where: { id: input.invitationId },
-        data: {
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        },
+      // Revoke the old Clerk invitation and create a new one
+      const org = await ctx.db.organization.findUnique({
+        where: { id: ctx.orgId },
+        select: { clerkOrgId: true },
       });
+
+      if (org?.clerkOrgId) {
+        try {
+          const clerk = await clerkClient();
+
+          // Revoke old Clerk invitation if it exists
+          if (invitation.clerkInvitationId) {
+            try {
+              await clerk.organizations.revokeOrganizationInvitation({
+                organizationId: org.clerkOrgId,
+                invitationId: invitation.clerkInvitationId,
+                requestingUserId: ctx.userId,
+              });
+            } catch {
+              // Old invitation may have already expired in Clerk — continue
+            }
+          }
+
+          // Create a fresh Clerk invitation
+          const newClerkInvitation = await clerk.organizations.createOrganizationInvitation({
+            organizationId: org.clerkOrgId,
+            emailAddress: invitation.email,
+            role: "org:member",
+            inviterUserId: ctx.userId,
+          });
+
+          // Update our DB record with new Clerk ID and extended expiration
+          await ctx.db.pendingInvitation.update({
+            where: { id: input.invitationId },
+            data: {
+              clerkInvitationId: newClerkInvitation.id,
+              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            },
+          });
+        } catch (error) {
+          log.error("Failed to resend invitation via Clerk:", error);
+          // Fall back to just extending expiration
+          await ctx.db.pendingInvitation.update({
+            where: { id: input.invitationId },
+            data: {
+              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            },
+          });
+        }
+      } else {
+        // No Clerk org — just extend expiration
+        await ctx.db.pendingInvitation.update({
+          where: { id: input.invitationId },
+          data: {
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+        });
+      }
 
       return { success: true };
     }),

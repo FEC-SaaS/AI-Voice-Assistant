@@ -58,14 +58,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Case Study": "bg-green-500/10 text-green-400",
   Business: "bg-orange-500/10 text-orange-400",
   Technology: "bg-indigo-500/10 text-indigo-400",
-  "Best Practices": "bg-teal-100 text-teal-700",
+  "Best Practices": "bg-teal-500/10 text-teal-400",
 };
 
 export default function BlogPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-secondary to-white py-16">
+      <section className="bg-gradient-to-b from-secondary to-background py-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Blog & Resources
@@ -125,21 +125,21 @@ export default function BlogPage() {
           {/* Newsletter CTA */}
           <div className="mx-auto mt-16 max-w-2xl rounded-2xl bg-gray-900 p-8 text-center text-white md:p-12">
             <h2 className="text-2xl font-bold">Stay Updated</h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-gray-400">
               Get the latest insights on AI voice technology and automation delivered to your inbox.
             </p>
             <div className="mt-6 flex gap-3 sm:mx-auto sm:max-w-md">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 rounded-lg border-0 bg-card/10 px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-white/30"
+                className="flex-1 rounded-lg border-0 bg-card/10 px-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/30"
               />
-              <button className="inline-flex items-center gap-1 rounded-lg bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary transition-colors">
+              <button className="inline-flex items-center gap-1 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 transition-colors">
                 Subscribe
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground/70">
+            <p className="mt-3 text-xs text-gray-500">
               No spam. Unsubscribe anytime.
             </p>
           </div>

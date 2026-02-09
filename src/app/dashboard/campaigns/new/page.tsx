@@ -113,7 +113,7 @@ export default function NewCampaignPage() {
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
             <div>
-              <h3 className="font-medium text-yellow-800">No AI agents available</h3>
+              <h3 className="font-medium text-yellow-400">No AI agents available</h3>
               <p className="mt-1 text-sm text-yellow-400">
                 You need to create an AI agent before you can create a campaign.
               </p>

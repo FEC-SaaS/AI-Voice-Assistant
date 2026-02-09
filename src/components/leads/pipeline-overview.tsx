@@ -29,22 +29,22 @@ const BUCKETS = [
     key: "cold" as const,
     label: "Cold",
     color: "bg-red-500",
-    lightColor: "bg-red-100",
-    textColor: "text-red-700",
+    lightColor: "bg-red-500/10",
+    textColor: "text-red-400",
   },
   {
     key: "warm" as const,
     label: "Warm",
     color: "bg-amber-500",
-    lightColor: "bg-amber-100",
-    textColor: "text-amber-700",
+    lightColor: "bg-amber-500/10",
+    textColor: "text-amber-400",
   },
   {
     key: "hot" as const,
     label: "Hot",
     color: "bg-green-500",
-    lightColor: "bg-green-100",
-    textColor: "text-green-700",
+    lightColor: "bg-green-500/10",
+    textColor: "text-green-400",
   },
 ];
 

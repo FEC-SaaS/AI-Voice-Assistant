@@ -75,7 +75,7 @@ export default function LiveCallsPage() {
       {isError && (
         <div className="rounded-2xl border border-border bg-red-500/10 p-6 text-center">
           <AlertCircle className="mx-auto h-8 w-8 text-red-500" />
-          <h3 className="mt-3 text-sm font-medium text-red-900">
+          <h3 className="mt-3 text-sm font-medium text-red-400">
             Failed to load active calls
           </h3>
           <p className="mt-1 text-xs text-red-400">

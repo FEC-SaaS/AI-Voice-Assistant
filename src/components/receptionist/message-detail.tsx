@@ -40,7 +40,7 @@ export function MessageDetail({ messageId, onClose, onUpdate }: MessageDetailPro
   const urgencyColors: Record<string, string> = {
     low: "bg-secondary text-muted-foreground",
     normal: "bg-blue-100 text-blue-400",
-    high: "bg-amber-100 text-amber-700",
+    high: "bg-amber-500/10 text-amber-400",
     urgent: "bg-red-100 text-red-400",
   };
 

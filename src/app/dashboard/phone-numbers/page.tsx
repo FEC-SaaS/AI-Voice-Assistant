@@ -587,8 +587,8 @@ export default function PhoneNumbersPage() {
           <div className="flex gap-3">
             <KeyRound className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-medium text-amber-900">Twilio credentials needed for SMS</h4>
-              <p className="mt-1 text-sm text-amber-700">
+              <h4 className="font-medium text-amber-400">Twilio credentials needed for SMS</h4>
+              <p className="mt-1 text-sm text-amber-400">
                 You have imported Twilio numbers but your credentials are not saved.
                 SMS features will not work until you add your credentials.
               </p>
@@ -596,7 +596,7 @@ export default function PhoneNumbersPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-3 border-amber-300 text-amber-800 hover:bg-amber-100"
+                  className="mt-3 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                   onClick={() => setShowCredentialForm(true)}
                 >
                   <KeyRound className="mr-2 h-3.5 w-3.5" />
@@ -606,7 +606,7 @@ export default function PhoneNumbersPage() {
                 <div className="mt-3 space-y-3">
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <Label htmlFor="credSid" className="text-xs text-amber-800">Account SID</Label>
+                      <Label htmlFor="credSid" className="text-xs text-amber-400">Account SID</Label>
                       <Input
                         id="credSid"
                         placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -616,7 +616,7 @@ export default function PhoneNumbersPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="credToken" className="text-xs text-amber-800">Auth Token</Label>
+                      <Label htmlFor="credToken" className="text-xs text-amber-400">Auth Token</Label>
                       <Input
                         id="credToken"
                         type="password"
@@ -755,7 +755,7 @@ export default function PhoneNumbersPage() {
                                 <Pencil className="h-3 w-3 text-muted-foreground/70 opacity-0 group-hover:opacity-100" />
                               </>
                             ) : (
-                              <span className="text-amber-600 hover:text-amber-700">
+                              <span className="text-amber-400 hover:text-amber-400">
                                 + Set Caller ID
                               </span>
                             )}
@@ -790,7 +790,7 @@ export default function PhoneNumbersPage() {
                           <button
                             onClick={() => retryVapiImport.mutate({ id: pn.id })}
                             disabled={retryVapiImport.isPending}
-                            className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700"
+                            className="inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-400"
                           >
                             {retryVapiImport.isPending ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
@@ -851,7 +851,7 @@ export default function PhoneNumbersPage() {
         <div className="flex gap-3">
           <Building2 className="h-5 w-5 text-green-400 shrink-0" />
           <div>
-            <h4 className="font-medium text-green-900">Caller ID & Business Branding</h4>
+            <h4 className="font-medium text-green-400">Caller ID & Business Branding</h4>
             <ul className="mt-2 list-disc list-inside text-sm text-green-400 space-y-1">
               <li><strong>CNAM (Caller Name):</strong> Set your business name to display on recipient phones during calls. All numbers should have Caller ID configured for trust and professionalism.</li>
               <li><strong>Character limit:</strong> CNAM is limited to 15 characters by telecom standards (e.g., &quot;ACME INC&quot;, &quot;DR SMITH OFFICE&quot;).</li>
@@ -867,12 +867,12 @@ export default function PhoneNumbersPage() {
         <div className="flex gap-3">
           <ShieldCheck className="h-5 w-5 text-purple-400 shrink-0" />
           <div>
-            <h4 className="font-medium text-purple-900">Compliance & Regulatory</h4>
+            <h4 className="font-medium text-purple-400">Compliance & Regulatory</h4>
             <div className="mt-2 space-y-3">
               <div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-sm font-medium text-purple-800">STIR/SHAKEN Verified</span>
+                  <span className="text-sm font-medium text-purple-400">STIR/SHAKEN Verified</span>
                 </div>
                 <p className="ml-6 text-sm text-purple-400">
                   All managed Twilio numbers include STIR/SHAKEN attestation, reducing the chance of calls being marked as spam.
@@ -882,7 +882,7 @@ export default function PhoneNumbersPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <Info className="h-4 w-4 text-amber-500" />
-                  <span className="text-sm font-medium text-purple-800">A2P 10DLC Registration (SMS)</span>
+                  <span className="text-sm font-medium text-purple-400">A2P 10DLC Registration (SMS)</span>
                 </div>
                 <p className="ml-6 text-sm text-purple-400">
                   US carriers require A2P 10DLC registration for business SMS. This improves deliverability and avoids filtering.
@@ -921,7 +921,7 @@ export default function PhoneNumbersPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-500" />
-                  <span className="text-sm font-medium text-purple-800">TCPA Compliance</span>
+                  <span className="text-sm font-medium text-purple-400">TCPA Compliance</span>
                 </div>
                 <p className="ml-6 text-sm text-purple-400">
                   Ensure prior express consent before making AI-assisted outbound calls. Maintain Do Not Call lists and honor opt-out requests.
@@ -937,7 +937,7 @@ export default function PhoneNumbersPage() {
         <div className="flex gap-3">
           <Globe className="h-5 w-5 text-blue-500 shrink-0" />
           <div>
-            <h4 className="font-medium text-blue-900">Phone Number Options</h4>
+            <h4 className="font-medium text-blue-400">Phone Number Options</h4>
             <ul className="mt-2 list-disc list-inside text-sm text-blue-400 space-y-1">
               <li><strong>Managed numbers:</strong> We provision and bill you monthly. Simplest option.</li>
               <li><strong>Imported numbers:</strong> Use your own Twilio numbers. You pay Twilio directly.</li>

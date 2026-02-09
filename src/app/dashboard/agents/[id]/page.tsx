@@ -159,7 +159,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5" />
             <div className="flex-1">
-              <h3 className="font-medium text-yellow-800">Agent not connected</h3>
+              <h3 className="font-medium text-yellow-400">Agent not connected</h3>
               <p className="mt-1 text-sm text-yellow-400">
                 This agent is not connected to the voice system and cannot make calls.
               </p>

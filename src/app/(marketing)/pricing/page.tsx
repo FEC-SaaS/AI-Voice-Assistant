@@ -9,7 +9,7 @@ export default function PricingPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-secondary to-white py-16">
+      <section className="bg-gradient-to-b from-secondary to-background py-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Simple, Transparent Pricing
@@ -85,7 +85,7 @@ export default function PricingPage() {
             <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
               <div>
                 <h3 className="text-2xl font-bold">Enterprise</h3>
-                <p className="mt-2 max-w-xl text-muted-foreground">
+                <p className="mt-2 max-w-xl text-gray-400">
                   Custom solutions for large organizations. Get unlimited agents,
                   dedicated support, custom integrations, and SLAs tailored to your needs.
                 </p>
@@ -93,7 +93,7 @@ export default function PricingPage() {
                   {PLANS.enterprise.features.slice(0, 4).map((feature, i) => (
                     <li key={i} className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-400" />
-                      <span className="text-sm text-muted-foreground">{feature}</span>
+                      <span className="text-sm text-gray-400">{feature}</span>
                     </li>
                   ))}
                 </ul>

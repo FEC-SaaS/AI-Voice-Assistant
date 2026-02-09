@@ -54,10 +54,10 @@ interface ContactListProps {
 
 const statusColors: Record<string, string> = {
   pending: "bg-secondary text-foreground",
-  called: "bg-blue-100 text-blue-800",
-  completed: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
-  dnc: "bg-yellow-100 text-yellow-800",
+  called: "bg-blue-500/10 text-blue-400",
+  completed: "bg-green-500/10 text-green-400",
+  failed: "bg-red-500/10 text-red-400",
+  dnc: "bg-yellow-500/10 text-yellow-400",
 };
 
 export function ContactList({ campaignId }: ContactListProps) {
@@ -280,10 +280,10 @@ export function ContactList({ campaignId }: ContactListProps) {
                       {(contact as Record<string, unknown>).leadScore != null ? (
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
                           (contact as Record<string, unknown>).leadScore as number >= 70
-                            ? "bg-green-100 text-green-400"
+                            ? "bg-green-500/10 text-green-400"
                             : (contact as Record<string, unknown>).leadScore as number >= 40
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-red-100 text-red-400"
+                              ? "bg-amber-500/10 text-amber-400"
+                              : "bg-red-500/10 text-red-400"
                         }`}>
                           <Target className="h-3 w-3" />
                           {(contact as Record<string, unknown>).leadScore as number}

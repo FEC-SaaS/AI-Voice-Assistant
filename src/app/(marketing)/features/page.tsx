@@ -20,7 +20,7 @@ export default function FeaturesPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-secondary to-white py-16">
+      <section className="bg-gradient-to-b from-secondary to-background py-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Powerful Features for Modern Business
@@ -78,7 +78,7 @@ export default function FeaturesPage() {
         <div className="container mx-auto px-4">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div className="order-2 lg:order-1 rounded-2xl bg-card p-8 shadow-sm">
-              <div className="aspect-video rounded-lg bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center">
+              <div className="aspect-video rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10 flex items-center justify-center">
                 <Phone className="h-24 w-24 text-green-500/40" />
               </div>
             </div>
@@ -149,7 +149,7 @@ export default function FeaturesPage() {
               </ul>
             </div>
             <div className="rounded-2xl bg-secondary p-8">
-              <div className="aspect-video rounded-lg bg-gradient-to-br from-blue-100 to-indigo-50 flex items-center justify-center">
+              <div className="aspect-video rounded-lg bg-gradient-to-br from-blue-500/10 to-indigo-500/10 flex items-center justify-center">
                 <BarChart3 className="h-24 w-24 text-blue-500/40" />
               </div>
             </div>

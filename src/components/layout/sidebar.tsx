@@ -24,6 +24,7 @@ import {
   Shield,
   PhoneForwarded,
   PhoneMissed,
+  Wand2,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -74,6 +75,7 @@ const navItems: NavItem[] = [
 ];
 
 const bottomNavItems = [
+  { title: "Setup Wizard", href: "/dashboard/onboarding", icon: Wand2 },
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 

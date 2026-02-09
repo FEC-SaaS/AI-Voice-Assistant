@@ -31,9 +31,9 @@ interface BuyingSignalsFeedProps {
 }
 
 function getLeadScoreColor(score: number): string {
-  if (score >= 80) return "bg-green-100 text-green-800 border-green-200";
-  if (score >= 60) return "bg-blue-100 text-blue-800 border-blue-200";
-  if (score >= 40) return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  if (score >= 80) return "bg-green-500/10 text-green-400 border-green-500/20";
+  if (score >= 60) return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+  if (score >= 40) return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
   return "bg-secondary text-foreground border-border";
 }
 
@@ -132,7 +132,7 @@ export function BuyingSignalsFeed({ alerts }: BuyingSignalsFeedProps) {
 
                 {/* Next best action */}
                 {alert.nextBestAction && (
-                  <div className="text-sm bg-blue-500/10 text-blue-800 rounded-md px-3 py-2">
+                  <div className="text-sm bg-blue-500/10 text-blue-400 rounded-md px-3 py-2">
                     <span className="font-medium">Next action:</span>{" "}
                     {alert.nextBestAction}
                   </div>

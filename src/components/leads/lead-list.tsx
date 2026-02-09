@@ -38,10 +38,10 @@ type SortDirection = "asc" | "desc";
 
 const statusColors: Record<string, string> = {
   pending: "bg-secondary text-foreground",
-  called: "bg-blue-100 text-blue-800",
-  completed: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
-  dnc: "bg-yellow-100 text-yellow-800",
+  called: "bg-blue-500/10 text-blue-400",
+  completed: "bg-green-500/10 text-green-400",
+  failed: "bg-red-500/10 text-red-400",
+  dnc: "bg-yellow-500/10 text-yellow-400",
 };
 
 const sentimentColors: Record<string, string> = {

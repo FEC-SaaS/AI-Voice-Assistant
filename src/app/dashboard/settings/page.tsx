@@ -302,7 +302,7 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between rounded-lg border border-border bg-red-500/10 p-4">
                 <div>
-                  <h4 className="font-medium text-red-900">Delete Organization</h4>
+                  <h4 className="font-medium text-red-400">Delete Organization</h4>
                   <p className="text-sm text-red-400">
                     Permanently delete your organization and all its data
                   </p>

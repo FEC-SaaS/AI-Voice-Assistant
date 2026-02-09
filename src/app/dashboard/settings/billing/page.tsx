@@ -281,8 +281,8 @@ export default function BillingPage() {
             <div className="flex items-start gap-4">
               <AlertCircle className="h-6 w-6 text-orange-400 shrink-0" />
               <div className="flex-1">
-                <h3 className="font-semibold text-orange-900">Overage Charges This Period</h3>
-                <p className="text-sm text-orange-800 mt-1">
+                <h3 className="font-semibold text-orange-400">Overage Charges This Period</h3>
+                <p className="text-sm text-orange-400 mt-1">
                   You have used <strong>{usage.overage.minutes.toLocaleString()} minutes</strong> over
                   your plan limit. Current overage charges:{" "}
                   <strong>${(usage.overage.costCents / 100).toFixed(2)}</strong> at $
@@ -571,8 +571,8 @@ export default function BillingPage() {
           <div className="flex items-start gap-4">
             <FileText className="h-6 w-6 text-blue-400 shrink-0" />
             <div className="space-y-2">
-              <h3 className="font-semibold text-blue-900">About Overage Charges</h3>
-              <p className="text-sm text-blue-800">
+              <h3 className="font-semibold text-blue-400">About Overage Charges</h3>
+              <p className="text-sm text-blue-400">
                 If you exceed your monthly minute limit, additional minutes are billed at{" "}
                 <strong>$0.15/minute</strong>. Overage is tracked automatically and included
                 in your next invoice as a metered line item via Stripe.
