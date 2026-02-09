@@ -322,6 +322,21 @@ export const phoneNumbersRouter = router({
       else if (input.phoneNumber.startsWith("+233")) countryCode = "GH";
       // Add more as needed
 
+      // Store the user's Twilio credentials on the org so SMS can use them later
+      const org = await ctx.db.organization.findUnique({
+        where: { id: ctx.orgId },
+        select: { twilioSubaccountSid: true },
+      });
+      if (!org?.twilioSubaccountSid) {
+        await ctx.db.organization.update({
+          where: { id: ctx.orgId },
+          data: {
+            twilioSubaccountSid: input.twilioAccountSid,
+            twilioAuthToken: input.twilioAuthToken,
+          },
+        });
+      }
+
       // Save to database
       const phoneNumber = await ctx.db.phoneNumber.create({
         data: {

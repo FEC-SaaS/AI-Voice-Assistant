@@ -21,6 +21,9 @@ import {
   AlertCircle,
   TrendingUp,
   BarChart3,
+  UserPlus,
+  Search,
+  X,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -60,6 +63,9 @@ function formatDate(date: string | Date | null) {
 
 export default function CampaignDetailPage({ params }: { params: { id: string } }) {
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showAssignExisting, setShowAssignExisting] = useState(false);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
   const [newContact, setNewContact] = useState({ phoneNumber: "", firstName: "", lastName: "" });
   const [actioningId, setActioningId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -148,6 +154,24 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
   const deleteContact = trpc.contacts.delete.useMutation({
     onSuccess: () => {
       toast.success("Contact removed");
+      refetchContacts();
+      refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  // Fetch unassigned contacts for the "Assign Existing" modal
+  const { data: unassignedContacts, isLoading: loadingUnassigned } = trpc.contacts.list.useQuery(
+    { search: assignSearch, limit: 50, noCampaign: true },
+    { enabled: showAssignExisting }
+  );
+
+  const assignToCampaign = trpc.contacts.assignToCampaign.useMutation({
+    onSuccess: (result) => {
+      toast.success(`${result.updated} contact(s) assigned to campaign`);
+      setShowAssignExisting(false);
+      setSelectedContactIds(new Set());
+      setAssignSearch("");
       refetchContacts();
       refetch();
     },
@@ -482,12 +506,125 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               )}
               Import CSV
             </Button>
-            <Button size="sm" onClick={() => setShowAddContact(!showAddContact)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setShowAssignExisting(!showAssignExisting);
+                setShowAddContact(false);
+              }}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Assign Existing
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setShowAddContact(!showAddContact);
+                setShowAssignExisting(false);
+              }}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add Contact
             </Button>
           </div>
         </div>
+
+        {/* Assign Existing Contacts Panel */}
+        {showAssignExisting && (
+          <div className="border-b bg-blue-50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-900">Assign Existing Contacts</h3>
+              <Button variant="ghost" size="sm" onClick={() => {
+                setShowAssignExisting(false);
+                setSelectedContactIds(new Set());
+                setAssignSearch("");
+              }}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Search by name, phone, or email..."
+                value={assignSearch}
+                onChange={(e) => setAssignSearch(e.target.value)}
+                className="pl-9 text-sm"
+              />
+            </div>
+            <div className="max-h-60 overflow-y-auto rounded border bg-white">
+              {loadingUnassigned ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                </div>
+              ) : unassignedContacts?.contacts.length === 0 ? (
+                <p className="py-6 text-center text-sm text-gray-500">
+                  {assignSearch ? "No matching contacts found" : "No unassigned contacts available"}
+                </p>
+              ) : (
+                unassignedContacts?.contacts.map((contact) => {
+                  const isSelected = selectedContactIds.has(contact.id);
+                  return (
+                    <label
+                      key={contact.id}
+                      className={`flex cursor-pointer items-center gap-3 border-b px-3 py-2 last:border-b-0 hover:bg-gray-50 ${
+                        isSelected ? "bg-blue-50" : ""
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          const next = new Set(selectedContactIds);
+                          if (isSelected) {
+                            next.delete(contact.id);
+                          } else {
+                            next.add(contact.id);
+                          }
+                          setSelectedContactIds(next);
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900">
+                          {contact.firstName || contact.lastName
+                            ? `${contact.firstName || ""} ${contact.lastName || ""}`.trim()
+                            : "Unknown"}
+                        </p>
+                        <p className="truncate text-xs text-gray-500">{contact.phoneNumber}</p>
+                      </div>
+                      {contact.company && (
+                        <span className="text-xs text-gray-400">{contact.company}</span>
+                      )}
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                {selectedContactIds.size} contact{selectedContactIds.size !== 1 ? "s" : ""} selected
+              </p>
+              <Button
+                size="sm"
+                disabled={selectedContactIds.size === 0 || assignToCampaign.isPending}
+                onClick={() => {
+                  assignToCampaign.mutate({
+                    contactIds: Array.from(selectedContactIds),
+                    campaignId: params.id,
+                  });
+                }}
+              >
+                {assignToCampaign.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <UserPlus className="mr-2 h-4 w-4" />
+                )}
+                Assign to Campaign
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Add Contact Form */}
         {showAddContact && (

@@ -178,6 +178,14 @@ export function SupervisorControls({
         </div>
       </div>
 
+      {/* Warning Notice */}
+      <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+        <p className="text-xs text-amber-700">
+          <span className="font-semibold">Use with caution:</span> Barge-in speaks directly to the caller and may interrupt the agent mid-conversation.
+          Whisper injects guidance to the agent only. Both can disrupt the natural conversation flow if used excessively.
+        </p>
+      </div>
+
       {/* End Call */}
       <div className="pt-1">
         <Button

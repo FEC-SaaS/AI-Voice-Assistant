@@ -150,8 +150,16 @@ export const missedCallsRouter = router({
       const agentSettings = (missedCall.agent?.settings as Record<string, unknown>) || {};
       const config = getMissedCallConfig(agentSettings);
 
-      // Get org's SMS number
+      // Get org's SMS number — prefer Twilio-compatible numbers
       const phoneNumber = await ctx.db.phoneNumber.findFirst({
+        where: {
+          organizationId: ctx.orgId,
+          isActive: true,
+          provider: { in: ["twilio-managed", "twilio-imported"] },
+        },
+        select: { number: true },
+        orderBy: { createdAt: "asc" },
+      }) || await ctx.db.phoneNumber.findFirst({
         where: { organizationId: ctx.orgId, isActive: true },
         select: { number: true },
         orderBy: { createdAt: "asc" },
@@ -163,7 +171,7 @@ export const missedCallsRouter = router({
 
       const org = await ctx.db.organization.findUnique({
         where: { id: ctx.orgId },
-        select: { name: true, settings: true },
+        select: { name: true, settings: true, twilioSubaccountSid: true, twilioAuthToken: true },
       });
       const orgSettings = (org?.settings as Record<string, unknown>) || {};
       const businessName = (orgSettings.emailBusinessName as string) || org?.name || "CallTone";
@@ -175,6 +183,8 @@ export const missedCallsRouter = router({
         to: missedCall.callerNumber,
         from: phoneNumber.number,
         body: smsBody,
+        accountSid: org?.twilioSubaccountSid || undefined,
+        authToken: org?.twilioAuthToken || undefined,
       });
 
       if (!result.success) {

@@ -1215,17 +1215,27 @@ export async function POST(req: NextRequest) {
         const startTime = call.startedAt ? new Date(call.startedAt) : new Date();
 
         if (existingId) {
-          // Update existing record
-          await db.call.update({
+          // Don't overwrite terminal statuses (completed/failed/no-answer)
+          const existingStartRecord = await db.call.findUnique({
             where: { id: existingId },
-            data: {
-              vapiCallId: call.id,
-              status: "in-progress",
-              startedAt: startTime,
-              agentId: agent?.id || undefined,
-            },
+            select: { status: true },
           });
-          log.info(`Call started: updated existing record ${existingId}`);
+          const terminalCheck = ["completed", "failed", "no-answer"];
+          if (existingStartRecord?.status && terminalCheck.includes(existingStartRecord.status)) {
+            log.info(`Call started: skipping — record ${existingId} already in terminal status ${existingStartRecord.status}`);
+          } else {
+            // Update existing record
+            await db.call.update({
+              where: { id: existingId },
+              data: {
+                vapiCallId: call.id,
+                status: "in-progress",
+                startedAt: startTime,
+                agentId: agent?.id || undefined,
+              },
+            });
+            log.info(`Call started: updated existing record ${existingId}`);
+          }
         } else {
           // Create new record (inbound calls)
           await db.call.create({
@@ -1519,12 +1529,22 @@ export async function POST(req: NextRequest) {
 
       case "status-update": {
         // Handle intermediate status updates from Vapi
-        // Status may be in message.status (server message format) or call.status
-        const newStatus = message?.status || call.status;
+        // Use message.status (server message format); ignore stale call.status snapshot
+        const newStatus = message?.status;
+        if (!newStatus) {
+          log.info(`Status update for ${call.id}: no message.status, ignoring stale call.status`);
+          break;
+        }
         if (newStatus && call.id) {
           // Normalize Vapi status to our status values
           let mappedStatus = newStatus;
           if (newStatus === "ended") mappedStatus = "completed";
+
+          // NEVER set status to "queued" from a webhook — that's only set at call creation
+          if (mappedStatus === "queued") {
+            log.info(`Status update: ignoring "queued" status for ${call.id}`);
+            break;
+          }
 
           log.info(`Status update for ${call.id}: ${newStatus} -> ${mappedStatus}`);
 
@@ -1587,13 +1607,22 @@ export async function POST(req: NextRequest) {
               log.warn(`Status update: failed to create record for ${call.id}`, createError);
             }
           } else {
-            // Fallback: try direct update by vapiCallId
-            await db.call.update({
+            // Fallback: try direct update by vapiCallId (with terminal status check)
+            const existingFallback = await db.call.findUnique({
               where: { vapiCallId: call.id },
-              data: { status: mappedStatus },
-            }).catch(() => {
-              log.warn(`Status update: no record found for call ${call.id}`);
-            });
+              select: { status: true },
+            }).catch(() => null);
+            const terminalFallback = ["completed", "failed", "no-answer"];
+            if (existingFallback?.status && terminalFallback.includes(existingFallback.status)) {
+              log.info(`Status update fallback: skipping ${mappedStatus} — already ${existingFallback.status}`);
+            } else if (existingFallback) {
+              await db.call.update({
+                where: { vapiCallId: call.id },
+                data: { status: mappedStatus },
+              }).catch(() => {
+                log.warn(`Status update fallback: failed to update call ${call.id}`);
+              });
+            }
           }
         }
         break;

@@ -71,6 +71,7 @@ const bulkContactSchema = z.object({
 
 const contactFilterSchema = z.object({
   campaignId: z.string().optional(),
+  noCampaign: z.boolean().optional(), // Filter for contacts not assigned to any campaign
   status: z.enum(["pending", "called", "completed", "failed", "dnc"]).optional(),
   search: z.string().optional(),
   page: z.number().min(1).default(1),
@@ -82,7 +83,7 @@ export const contactsRouter = router({
   list: protectedProcedure
     .input(contactFilterSchema)
     .query(async ({ ctx, input }) => {
-      const { campaignId, status, search, page, limit } = input;
+      const { campaignId, noCampaign, status, search, page, limit } = input;
       const skip = (page - 1) * limit;
 
       const where: Prisma.ContactWhereInput = {
@@ -91,6 +92,8 @@ export const contactsRouter = router({
 
       if (campaignId) {
         where.campaignId = campaignId;
+      } else if (noCampaign) {
+        where.campaignId = null;
       }
 
       if (status) {

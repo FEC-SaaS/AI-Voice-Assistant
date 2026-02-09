@@ -220,8 +220,22 @@ async function sendTextBack(
     // Build the SMS body with the custom message
     const smsBody = `${businessName}: ${message}`;
 
-    // Get org SMS number
+    // Get org SMS config (number + Twilio credentials)
+    const org2 = await db.organization.findUnique({
+      where: { id: organizationId },
+      select: { twilioSubaccountSid: true, twilioAuthToken: true },
+    });
+
+    // Prefer Twilio-compatible numbers for SMS
     const phoneNumber = await db.phoneNumber.findFirst({
+      where: {
+        organizationId,
+        isActive: true,
+        provider: { in: ["twilio-managed", "twilio-imported"] },
+      },
+      select: { number: true },
+      orderBy: { createdAt: "asc" },
+    }) || await db.phoneNumber.findFirst({
       where: { organizationId, isActive: true },
       select: { number: true },
       orderBy: { createdAt: "asc" },
@@ -237,6 +251,8 @@ async function sendTextBack(
       to: callerNumber,
       from: phoneNumber.number,
       body: smsBody,
+      accountSid: org2?.twilioSubaccountSid || undefined,
+      authToken: org2?.twilioAuthToken || undefined,
     });
 
     if (result.success) {

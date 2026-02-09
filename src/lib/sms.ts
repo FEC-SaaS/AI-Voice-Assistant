@@ -101,24 +101,59 @@ interface SendAppointmentSmsResult extends SendSmsResult {
 }
 
 /**
- * Get organization's SMS-enabled phone number
+ * Get organization's SMS config: phone number + Twilio credentials.
+ * Only Twilio-managed or Twilio-imported numbers can send SMS via Twilio.
+ * Vapi/Vonage numbers belong to Vapi's telephony provider and cannot be used as From.
  */
-async function getOrganizationSmsNumber(organizationId: string): Promise<string | null> {
-  // First try to find a number with SMS capability
-  const phoneNumber = await db.phoneNumber.findFirst({
+async function getOrganizationSmsConfig(organizationId: string): Promise<{
+  fromNumber: string;
+  accountSid?: string;
+  authToken?: string;
+} | null> {
+  // Get org's Twilio credentials (if stored)
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: { twilioSubaccountSid: true, twilioAuthToken: true },
+  });
+
+  // First try to find a Twilio-compatible number (can actually send SMS)
+  const twilioNumber = await db.phoneNumber.findFirst({
     where: {
       organizationId,
       isActive: true,
+      provider: { in: ["twilio-managed", "twilio-imported"] },
     },
-    select: {
-      number: true,
-    },
-    orderBy: {
-      createdAt: "asc", // Prefer older (more established) numbers
-    },
+    select: { number: true },
+    orderBy: { createdAt: "asc" },
   });
 
-  return phoneNumber?.number || null;
+  if (twilioNumber) {
+    return {
+      fromNumber: twilioNumber.number,
+      accountSid: org?.twilioSubaccountSid || undefined,
+      authToken: org?.twilioAuthToken || undefined,
+    };
+  }
+
+  // Fallback: any active number (may fail if it's a Vapi number)
+  const anyNumber = await db.phoneNumber.findFirst({
+    where: { organizationId, isActive: true },
+    select: { number: true, provider: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  if (anyNumber) {
+    console.warn(
+      `[SMS] No Twilio number found for org ${organizationId}. Using ${anyNumber.provider} number ${anyNumber.number} — SMS may fail.`
+    );
+    return {
+      fromNumber: anyNumber.number,
+      accountSid: org?.twilioSubaccountSid || undefined,
+      authToken: org?.twilioAuthToken || undefined,
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -197,10 +232,10 @@ export async function sendAppointmentSms(
       };
     }
 
-    // Get organization's SMS number
-    const fromNumber = await getOrganizationSmsNumber(appointment.organizationId);
+    // Get organization's SMS config (number + Twilio credentials)
+    const smsConfig = await getOrganizationSmsConfig(appointment.organizationId);
 
-    if (!fromNumber) {
+    if (!smsConfig) {
       return {
         success: false,
         error: "No SMS-capable phone number configured",
@@ -208,6 +243,7 @@ export async function sendAppointmentSms(
         smsType: type,
       };
     }
+    const fromNumber = smsConfig.fromNumber;
 
     // Build template data
     const templateData: SmsTemplateData = {
@@ -242,11 +278,13 @@ export async function sendAppointmentSms(
         messageBody = getConfirmationSmsTemplate(templateData);
     }
 
-    // Send the SMS
+    // Send the SMS (use org-level Twilio credentials if available)
     const result = await sendSms({
       to: appointment.attendeePhone,
       from: fromNumber,
       body: messageBody,
+      accountSid: smsConfig.accountSid,
+      authToken: smsConfig.authToken,
     });
 
     if (result.success) {
@@ -312,10 +350,10 @@ export async function sendPostCallFollowUpSms(
       return { success: false, error: "SMS is disabled" };
     }
 
-    // Get SMS number
-    const smsFromNumber = await getOrganizationSmsNumber(call.organizationId);
+    // Get SMS config (number + credentials)
+    const smsConfig = await getOrganizationSmsConfig(call.organizationId);
 
-    if (!smsFromNumber) {
+    if (!smsConfig) {
       return { success: false, error: "No SMS number configured" };
     }
 
@@ -331,11 +369,13 @@ export async function sendPostCallFollowUpSms(
       customMessage
     );
 
-    // Send SMS
+    // Send SMS (use org-level Twilio credentials if available)
     return await sendSms({
       to: customerPhone,
-      from: smsFromNumber,
+      from: smsConfig.fromNumber,
       body: messageBody,
+      accountSid: smsConfig.accountSid,
+      authToken: smsConfig.authToken,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -359,9 +399,9 @@ export async function sendMissedCallFollowUpSms(
       return { success: false, error: "SMS is disabled" };
     }
 
-    const fromNumber = await getOrganizationSmsNumber(organizationId);
+    const smsConfig = await getOrganizationSmsConfig(organizationId);
 
-    if (!fromNumber) {
+    if (!smsConfig) {
       return { success: false, error: "No SMS number configured" };
     }
 
@@ -372,8 +412,10 @@ export async function sendMissedCallFollowUpSms(
 
     return await sendSms({
       to: customerPhone,
-      from: fromNumber,
+      from: smsConfig.fromNumber,
       body: messageBody,
+      accountSid: smsConfig.accountSid,
+      authToken: smsConfig.authToken,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -522,8 +564,8 @@ export async function sendReceptionistMessageSms(
       return { success: false, error: "SMS is disabled" };
     }
 
-    const fromNumber = await getOrganizationSmsNumber(organizationId);
-    if (!fromNumber) {
+    const smsConfig = await getOrganizationSmsConfig(organizationId);
+    if (!smsConfig) {
       return { success: false, error: "No SMS number configured" };
     }
 
@@ -535,8 +577,10 @@ export async function sendReceptionistMessageSms(
 
     return await sendSms({
       to: toPhone,
-      from: fromNumber,
+      from: smsConfig.fromNumber,
       body: messageBody,
+      accountSid: smsConfig.accountSid,
+      authToken: smsConfig.authToken,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
