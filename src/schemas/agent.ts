@@ -26,7 +26,7 @@ export const createAgentSchema = z.object({
   voiceId: z.string().default("rachel"),
   language: z.string().default("en-US"),
   modelProvider: z.string().default("openai"),
-  model: z.string().default("gpt-4-turbo"),
+  model: z.string().default("gpt-4o"),
   enableAppointments: z.boolean().default(false),
   enableReceptionist: z.boolean().default(false),
   receptionistConfig: receptionistConfigSchema.optional(),

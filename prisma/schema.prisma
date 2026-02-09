@@ -80,7 +80,7 @@ model Agent {
   voiceId         String       @default("rachel")
   language        String       @default("en-US")
   modelProvider   String       @default("openai")
-  model           String       @default("gpt-4-turbo")
+  model           String       @default("gpt-4o")
   isActive        Boolean      @default(true)
   settings        Json         @default("{}")
   createdAt       DateTime     @default(now())

@@ -27,7 +27,7 @@ export interface TranscriptAnalysis {
 // Analyze transcript
 export async function analyzeTranscript(transcript: string): Promise<TranscriptAnalysis> {
   const response = await openai.chat.completions.create({
-    model: "gpt-4-turbo",
+    model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
@@ -76,7 +76,7 @@ Return your analysis as a JSON object with these exact fields:
 // Generate call summary
 export async function generateSummary(transcript: string): Promise<string> {
   const response = await openai.chat.completions.create({
-    model: "gpt-4-turbo",
+    model: "gpt-4o-mini",
     messages: [
       {
         role: "system",
@@ -95,7 +95,7 @@ export async function generateSummary(transcript: string): Promise<string> {
 // Extract keywords/topics
 export async function extractTopics(transcript: string): Promise<string[]> {
   const response = await openai.chat.completions.create({
-    model: "gpt-4-turbo",
+    model: "gpt-4o-mini",
     messages: [
       {
         role: "system",

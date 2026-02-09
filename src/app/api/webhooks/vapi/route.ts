@@ -1251,25 +1251,67 @@ export async function POST(req: NextRequest) {
       case "call.ended":
       case "call-ended":
       case "end-of-call-report": {
-        // Calculate duration
+        // Calculate duration from call timestamps OR from existing DB record
         const startedAt = call.startedAt ? new Date(call.startedAt) : null;
         const endedAt = call.endedAt ? new Date(call.endedAt) : new Date();
-        const durationSeconds = startedAt
+        let durationSeconds = startedAt
           ? Math.round((endedAt.getTime() - startedAt.getTime()) / 1000)
           : 0;
+
+        // If we couldn't calculate duration from timestamps, try to get from existing DB record
+        if (durationSeconds === 0) {
+          const existingForDuration = await findExistingCallRecord();
+          if (existingForDuration) {
+            const existingRecord = await db.call.findUnique({
+              where: { id: existingForDuration },
+              select: { startedAt: true },
+            });
+            if (existingRecord?.startedAt) {
+              durationSeconds = Math.round((endedAt.getTime() - existingRecord.startedAt.getTime()) / 1000);
+            }
+          }
+        }
 
         // Calculate cost
         const costCents = calculateCostCents(durationSeconds);
 
-        // Determine final status
-        // Vapi may send status as "ended" in end-of-call-report — normalize to "completed"
-        let finalStatus = call.status || "completed";
-        if (finalStatus === "ended") {
-          finalStatus = "completed";
+        // Determine final status using endedReason (most reliable) then call.status
+        // Vapi's call.status in server messages is often stale ("queued")
+        const endedReason = message?.endedReason;
+        let finalStatus = "completed"; // Default to completed
+
+        if (endedReason) {
+          // Map Vapi endedReason to our status
+          if (endedReason.includes("customer-ended") || endedReason === "hangup" || endedReason === "assistant-ended-call") {
+            finalStatus = "completed";
+          } else if (endedReason.includes("no-answer") || endedReason === "customer-did-not-answer") {
+            finalStatus = "no-answer";
+          } else if (endedReason.includes("error") || endedReason.includes("failed")) {
+            finalStatus = "failed";
+          } else if (endedReason === "busy" || endedReason === "customer-busy") {
+            finalStatus = "no-answer";
+          } else {
+            finalStatus = "completed"; // Default for unknown reasons
+          }
+        } else {
+          // Fallback to call.status if no endedReason
+          const rawStatus = call.status || "completed";
+          if (rawStatus === "ended") {
+            finalStatus = "completed";
+          } else if (rawStatus === "queued" || rawStatus === "ringing") {
+            // Call object status is stale — if we got an end-of-call-report, it completed
+            finalStatus = "completed";
+          } else {
+            finalStatus = rawStatus;
+          }
         }
-        if (durationSeconds === 0) {
+
+        // Only mark as no-answer if duration is truly 0 AND no transcript exists
+        if (durationSeconds === 0 && !call.transcript && !message?.artifact?.transcript && !message?.artifact?.messages?.length) {
           finalStatus = "no-answer";
         }
+
+        log.info(`Call end reason: ${endedReason}, raw status: ${call.status}, final: ${finalStatus}`);
 
         // Extract transcript from multiple possible sources:
         // 1. call.transcript (legacy)

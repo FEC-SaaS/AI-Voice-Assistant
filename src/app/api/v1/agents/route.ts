@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
         voiceId: body.voiceId || "rachel",
         language: body.language || "en-US",
         modelProvider: body.modelProvider || "openai",
-        model: body.model || "gpt-4-turbo",
+        model: body.model || "gpt-4o",
         isActive: body.isActive ?? true,
       },
       select: {

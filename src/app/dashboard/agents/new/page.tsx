@@ -15,8 +15,8 @@ import { VOICES, VOICE_PROVIDERS } from "@/constants/voices";
 import { toast } from "sonner";
 
 const AI_MODELS = [
-  { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-  { value: "gpt-4o", label: "GPT-4o" },
+  { value: "gpt-4o", label: "GPT-4o (Recommended)" },
+  { value: "gpt-4o-mini", label: "GPT-4o Mini (Faster)" },
   { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
 ];
 
@@ -42,7 +42,7 @@ export default function NewAgentPage() {
       voiceId: "rachel",
       language: "en-US",
       modelProvider: "openai",
-      model: "gpt-4-turbo",
+      model: "gpt-4o",
     },
   });
 
