@@ -563,18 +563,25 @@ export async function updatePhoneNumber(
   config: {
     assistantId?: string | null;
     name?: string;
+    serverUrl?: string;
+    serverUrlSecret?: string;
   }
 ): Promise<VapiPhoneNumber> {
   const body: Record<string, unknown> = {};
 
   // If assistantId is explicitly set (including null to unassign)
   if (config.assistantId !== undefined) {
-    // Set assistant for inbound calls
+    // Set assistant for inbound calls (also acts as fallback if serverUrl fails)
     body.assistantId = config.assistantId;
+  }
 
-    // Set server message for outbound - this makes the assistant also handle outbound calls
-    // When a call is created, if serverUrl is set, Vapi will use it to get assistant config
-    // But for direct assistant assignment on outbound, we rely on createCall() passing assistantId
+  // Set serverUrl for dynamic assistant-request on inbound calls
+  // This allows us to return per-call overrides (e.g. business hours greeting)
+  if (config.serverUrl !== undefined) {
+    body.serverUrl = config.serverUrl;
+  }
+  if (config.serverUrlSecret !== undefined) {
+    body.serverUrlSecret = config.serverUrlSecret;
   }
 
   if (config.name) {

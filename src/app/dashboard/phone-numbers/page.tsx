@@ -13,6 +13,7 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle,
+  KeyRound,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -42,10 +43,14 @@ export default function PhoneNumbersPage() {
   const { data: phoneNumbers, isLoading, refetch } = trpc.phoneNumbers.list.useQuery();
   const { data: agents } = trpc.agents.list.useQuery();
   const { data: countries } = trpc.phoneNumbers.getSupportedCountries.useQuery();
+  const { data: twilioStatus, refetch: refetchTwilioStatus } = trpc.phoneNumbers.getTwilioStatus.useQuery();
 
   // Panel state
   const [showPanel, setShowPanel] = useState(false);
   const [provisionMethod, setProvisionMethod] = useState<ProvisionMethod>("instant");
+  const [showCredentialForm, setShowCredentialForm] = useState(false);
+  const [credSid, setCredSid] = useState("");
+  const [credToken, setCredToken] = useState("");
 
   // Instant purchase state
   const [selectedCountry, setSelectedCountry] = useState("US");
@@ -116,6 +121,17 @@ export default function PhoneNumbersPage() {
     onSuccess: () => {
       toast.success("Phone number synced successfully");
       refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const updateTwilioCredentials = trpc.phoneNumbers.updateTwilioCredentials.useMutation({
+    onSuccess: () => {
+      toast.success("Twilio credentials updated successfully. SMS features are now enabled.");
+      setShowCredentialForm(false);
+      setCredSid("");
+      setCredToken("");
+      refetchTwilioStatus();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -496,6 +512,79 @@ export default function PhoneNumbersPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Twilio Credentials Warning */}
+      {phoneNumbers?.some((pn) => pn.provider === "twilio-imported") && twilioStatus && !twilioStatus.hasCredentials && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="flex gap-3">
+            <KeyRound className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-medium text-amber-900">Twilio credentials needed for SMS</h4>
+              <p className="mt-1 text-sm text-amber-700">
+                You have imported Twilio numbers but your Twilio credentials are not saved.
+                SMS features (missed call text-back, appointment reminders, notifications) will not work until you add your credentials.
+              </p>
+              {!showCredentialForm ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 border-amber-300 text-amber-800 hover:bg-amber-100"
+                  onClick={() => setShowCredentialForm(true)}
+                >
+                  <KeyRound className="mr-2 h-3.5 w-3.5" />
+                  Add Twilio Credentials
+                </Button>
+              ) : (
+                <div className="mt-3 space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="credSid" className="text-xs text-amber-800">Twilio Account SID</Label>
+                      <Input
+                        id="credSid"
+                        placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={credSid}
+                        onChange={(e) => setCredSid(e.target.value)}
+                        className="bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="credToken" className="text-xs text-amber-800">Twilio Auth Token</Label>
+                      <Input
+                        id="credToken"
+                        type="password"
+                        placeholder="Your auth token"
+                        value={credToken}
+                        onChange={(e) => setCredToken(e.target.value)}
+                        className="bg-white"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => updateTwilioCredentials.mutate({ twilioAccountSid: credSid, twilioAuthToken: credToken })}
+                      disabled={!credSid || !credToken || updateTwilioCredentials.isPending}
+                    >
+                      {updateTwilioCredentials.isPending ? (
+                        <><Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> Saving...</>
+                      ) : (
+                        "Save Credentials"
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setShowCredentialForm(false); setCredSid(""); setCredToken(""); }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

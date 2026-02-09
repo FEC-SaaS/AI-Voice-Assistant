@@ -979,6 +979,103 @@ export async function POST(req: NextRequest) {
       bodyKeys: Object.keys(body),
     });
 
+    // Handle assistant-request: Vapi asks which assistant to use for an inbound call.
+    // This lets us return dynamic firstMessage based on business hours for receptionist agents.
+    if (type === "assistant-request") {
+      const db = await getDb();
+
+      // Identify agent from the phone number receiving the call
+      const phoneNumberId = call?.phoneNumberId;
+      let agent: {
+        id: string;
+        vapiAssistantId: string | null;
+        firstMessage: string | null;
+        settings: unknown;
+      } | null = null;
+
+      if (phoneNumberId) {
+        const phoneRecord = await db.phoneNumber.findFirst({
+          where: { vapiPhoneId: phoneNumberId },
+          select: {
+            agentId: true,
+            agent: {
+              select: {
+                id: true,
+                vapiAssistantId: true,
+                firstMessage: true,
+                settings: true,
+              },
+            },
+          },
+        });
+        agent = phoneRecord?.agent || null;
+      }
+
+      // Fallback: try assistantId from the call
+      if (!agent && call?.assistantId) {
+        agent = await db.agent.findFirst({
+          where: { vapiAssistantId: call.assistantId },
+          select: { id: true, vapiAssistantId: true, firstMessage: true, settings: true },
+        });
+      }
+
+      if (!agent?.vapiAssistantId) {
+        log.warn("assistant-request: no agent found for phone number", { phoneNumberId });
+        return NextResponse.json({});
+      }
+
+      // Check if agent has receptionist enabled
+      const settings = (agent.settings as Record<string, unknown>) || {};
+      const enableReceptionist = settings.enableReceptionist === true;
+      const receptionistConfig = (settings.receptionistConfig as Record<string, unknown>) || {};
+
+      if (!enableReceptionist) {
+        // Non-receptionist agent: use static config, no overrides needed
+        return NextResponse.json({ assistantId: agent.vapiAssistantId });
+      }
+
+      // Receptionist agent: determine if we're within business hours
+      // Check if ANY department is currently open
+      const { isWithinBusinessHours } = await import("@/lib/business-hours");
+      const departments = await db.department.findMany({
+        where: {
+          organizationId: (await db.phoneNumber.findFirst({
+            where: { vapiPhoneId: phoneNumberId! },
+            select: { organizationId: true },
+          }))?.organizationId || "",
+          isActive: true,
+        },
+        select: { businessHours: true },
+      });
+
+      const anyDeptOpen = departments.some((dept) => {
+        const hours = dept.businessHours as Record<string, unknown> | null;
+        return hours ? isWithinBusinessHours(hours as any) : true; // No hours = always open
+      });
+
+      // Pick the right greeting
+      const duringGreeting = (receptionistConfig.duringHoursGreeting as string) || agent.firstMessage || undefined;
+      const afterGreeting = (receptionistConfig.afterHoursGreeting as string) || undefined;
+      const dynamicFirstMessage = anyDeptOpen ? duringGreeting : afterGreeting;
+
+      log.info("assistant-request: receptionist dynamic greeting", {
+        agentId: agent.id,
+        anyDeptOpen,
+        hasCustomGreeting: !!dynamicFirstMessage,
+      });
+
+      // Return assistantId with firstMessage override
+      const overrides: Record<string, unknown> = {};
+      if (dynamicFirstMessage) {
+        overrides.firstMessage = dynamicFirstMessage;
+      }
+
+      return NextResponse.json({
+        assistantId: agent.vapiAssistantId,
+        ...(Object.keys(overrides).length > 0 ? { assistantOverrides: overrides } : {}),
+      });
+    }
+
     // Handle tool/function calls (Vapi sends these as assistant-request or tool-calls)
     if (message?.type === "tool-calls" || message?.toolCalls || message?.toolCallList) {
       const toolCalls = message.toolCalls || message.toolCallList || [];

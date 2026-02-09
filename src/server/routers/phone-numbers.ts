@@ -322,20 +322,14 @@ export const phoneNumbersRouter = router({
       else if (input.phoneNumber.startsWith("+233")) countryCode = "GH";
       // Add more as needed
 
-      // Store the user's Twilio credentials on the org so SMS can use them later
-      const org = await ctx.db.organization.findUnique({
+      // Always store/refresh the user's Twilio credentials on the org for SMS
+      await ctx.db.organization.update({
         where: { id: ctx.orgId },
-        select: { twilioSubaccountSid: true },
+        data: {
+          twilioSubaccountSid: input.twilioAccountSid,
+          twilioAuthToken: input.twilioAuthToken,
+        },
       });
-      if (!org?.twilioSubaccountSid) {
-        await ctx.db.organization.update({
-          where: { id: ctx.orgId },
-          data: {
-            twilioSubaccountSid: input.twilioAccountSid,
-            twilioAuthToken: input.twilioAuthToken,
-          },
-        });
-      }
 
       // Save to database
       const phoneNumber = await ctx.db.phoneNumber.create({
@@ -405,8 +399,17 @@ export const phoneNumbersRouter = router({
       // Sync to Vapi if phone number has a Vapi ID
       if (phoneNumber.vapiPhoneId) {
         try {
+          // Set serverUrl so Vapi sends assistant-request for inbound calls,
+          // allowing dynamic greeting based on business hours for receptionist agents.
+          // assistantId acts as fallback if serverUrl is unavailable.
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+          const serverUrl = vapiAssistantId ? `${baseUrl}/api/webhooks/vapi` : undefined;
+          const serverUrlSecret = vapiAssistantId ? process.env.VAPI_WEBHOOK_SECRET : undefined;
+
           await updateVapiPhoneNumber(phoneNumber.vapiPhoneId, {
             assistantId: vapiAssistantId, // null will unassign in Vapi
+            serverUrl: vapiAssistantId ? serverUrl : undefined,
+            serverUrlSecret: vapiAssistantId ? serverUrlSecret : undefined,
           });
           log.info(`${vapiAssistantId ? 'Assigned' : 'Unassigned'} phone number ${phoneNumber.vapiPhoneId} ${vapiAssistantId ? `to assistant ${vapiAssistantId}` : ''}`);
         } catch (error) {
@@ -551,4 +554,47 @@ export const phoneNumbersRouter = router({
 
       return updated;
     }),
+
+  // Update organization's Twilio credentials (for SMS sending)
+  updateTwilioCredentials: protectedProcedure
+    .input(
+      z.object({
+        twilioAccountSid: z.string().min(1, "Twilio Account SID is required"),
+        twilioAuthToken: z.string().min(1, "Twilio Auth Token is required"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify the credentials are valid by listing numbers
+      try {
+        const { listPhoneNumbers } = await import("@/lib/twilio");
+        await listPhoneNumbers(input.twilioAccountSid, input.twilioAuthToken);
+      } catch {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid Twilio credentials. Please verify your Account SID and Auth Token.",
+        });
+      }
+
+      await ctx.db.organization.update({
+        where: { id: ctx.orgId },
+        data: {
+          twilioSubaccountSid: input.twilioAccountSid,
+          twilioAuthToken: input.twilioAuthToken,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  // Get organization's Twilio credential status (not the actual credentials)
+  getTwilioStatus: protectedProcedure.query(async ({ ctx }) => {
+    const org = await ctx.db.organization.findUnique({
+      where: { id: ctx.orgId },
+      select: { twilioSubaccountSid: true },
+    });
+
+    return {
+      hasCredentials: !!org?.twilioSubaccountSid,
+    };
+  }),
 });
