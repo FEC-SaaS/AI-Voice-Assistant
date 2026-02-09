@@ -5,7 +5,7 @@ import {
   getHourlyDistribution,
   getCampaignPerformance,
 } from "../services/analytics.service";
-import { format } from "date-fns";
+import { format, startOfWeek, startOfMonth } from "date-fns";
 
 export const analyticsRouter = router({
   // Get dashboard overview stats
@@ -90,13 +90,12 @@ export const analyticsRouter = router({
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - input.days);
 
-      const calls = await ctx.db.call.groupBy({
-        by: ["createdAt"],
+      const calls = await ctx.db.call.findMany({
         where: {
           organizationId: ctx.orgId,
           createdAt: { gte: startDate },
         },
-        _count: true,
+        select: { createdAt: true },
       });
 
       // Aggregate by day
@@ -111,7 +110,7 @@ export const analyticsRouter = router({
 
       calls.forEach((call) => {
         const key = call.createdAt.toISOString().split("T")[0] || "";
-        dailyData.set(key, (dailyData.get(key) || 0) + call._count);
+        dailyData.set(key, (dailyData.get(key) || 0) + 1);
       });
 
       return Array.from(dailyData.entries())
@@ -321,4 +320,179 @@ export const analyticsRouter = router({
 
       return { csv: [header, ...rows].join("\n"), filename: "campaigns-export.csv" };
     }),
+
+  // Run custom report
+  runCustomReport: protectedProcedure
+    .input(
+      z.object({
+        groupBy: z.enum(["agent", "campaign", "day", "week", "month"]),
+        metrics: z.array(
+          z.enum(["calls", "minutes", "successRate", "sentimentBreakdown", "leadScoreAvg"])
+        ).min(1),
+        filters: z.object({
+          agentIds: z.array(z.string()).optional(),
+          campaignIds: z.array(z.string()).optional(),
+          statuses: z.array(z.string()).optional(),
+          sentiments: z.array(z.string()).optional(),
+          startDate: z.date().optional(),
+          endDate: z.date().optional(),
+        }).optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { groupBy, metrics, filters } = input;
+
+      // Build where clause
+      const where: Record<string, unknown> = { organizationId: ctx.orgId };
+      if (filters?.agentIds?.length) where.agentId = { in: filters.agentIds };
+      if (filters?.campaignIds?.length) where.campaignId = { in: filters.campaignIds };
+      if (filters?.statuses?.length) where.status = { in: filters.statuses };
+      if (filters?.sentiments?.length) where.sentiment = { in: filters.sentiments };
+      if (filters?.startDate || filters?.endDate) {
+        where.createdAt = {
+          ...(filters.startDate && { gte: filters.startDate }),
+          ...(filters.endDate && { lte: filters.endDate }),
+        };
+      }
+
+      const calls = await ctx.db.call.findMany({
+        where,
+        select: {
+          createdAt: true,
+          status: true,
+          durationSeconds: true,
+          sentiment: true,
+          leadScore: true,
+          agentId: true,
+          campaignId: true,
+          agent: { select: { name: true } },
+          campaign: { select: { name: true } },
+        },
+      });
+
+      // Group calls
+      const groups = new Map<string, typeof calls>();
+      for (const call of calls) {
+        let key: string;
+        switch (groupBy) {
+          case "agent":
+            key = call.agent?.name || "Unassigned";
+            break;
+          case "campaign":
+            key = call.campaign?.name || "No Campaign";
+            break;
+          case "day":
+            key = format(call.createdAt, "yyyy-MM-dd");
+            break;
+          case "week":
+            key = format(startOfWeek(call.createdAt, { weekStartsOn: 1 }), "yyyy-MM-dd");
+            break;
+          case "month":
+            key = format(startOfMonth(call.createdAt), "yyyy-MM");
+            break;
+        }
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(call);
+      }
+
+      // Compute metrics per group
+      const rows = Array.from(groups.entries()).map(([groupLabel, groupCalls]) => {
+        const row: Record<string, unknown> = { groupLabel };
+
+        if (metrics.includes("calls")) {
+          row.calls = groupCalls.length;
+        }
+        if (metrics.includes("minutes")) {
+          row.minutes = Math.round(
+            groupCalls.reduce((sum, c) => sum + (c.durationSeconds || 0), 0) / 60
+          );
+        }
+        if (metrics.includes("successRate")) {
+          const completed = groupCalls.filter((c) => c.status === "completed").length;
+          row.successRate = groupCalls.length > 0
+            ? Math.round((completed / groupCalls.length) * 100)
+            : 0;
+        }
+        if (metrics.includes("sentimentBreakdown")) {
+          row.positive = groupCalls.filter((c) => c.sentiment === "positive").length;
+          row.neutral = groupCalls.filter((c) => c.sentiment === "neutral").length;
+          row.negative = groupCalls.filter((c) => c.sentiment === "negative").length;
+        }
+        if (metrics.includes("leadScoreAvg")) {
+          const scored = groupCalls.filter((c) => c.leadScore != null);
+          row.leadScoreAvg = scored.length > 0
+            ? Math.round(scored.reduce((sum, c) => sum + (c.leadScore || 0), 0) / scored.length)
+            : 0;
+        }
+
+        return row;
+      });
+
+      // Sort rows
+      rows.sort((a, b) => String(a.groupLabel).localeCompare(String(b.groupLabel)));
+
+      // Summary totals
+      const summary: Record<string, unknown> = {};
+      if (metrics.includes("calls")) {
+        summary.calls = calls.length;
+      }
+      if (metrics.includes("minutes")) {
+        summary.minutes = Math.round(
+          calls.reduce((sum, c) => sum + (c.durationSeconds || 0), 0) / 60
+        );
+      }
+      if (metrics.includes("successRate")) {
+        const completed = calls.filter((c) => c.status === "completed").length;
+        summary.successRate = calls.length > 0
+          ? Math.round((completed / calls.length) * 100)
+          : 0;
+      }
+      if (metrics.includes("sentimentBreakdown")) {
+        summary.positive = calls.filter((c) => c.sentiment === "positive").length;
+        summary.neutral = calls.filter((c) => c.sentiment === "neutral").length;
+        summary.negative = calls.filter((c) => c.sentiment === "negative").length;
+      }
+      if (metrics.includes("leadScoreAvg")) {
+        const scored = calls.filter((c) => c.leadScore != null);
+        summary.leadScoreAvg = scored.length > 0
+          ? Math.round(scored.reduce((sum, c) => sum + (c.leadScore || 0), 0) / scored.length)
+          : 0;
+      }
+
+      return { rows, summary };
+    }),
+
+  // Get filter options for report builder
+  getReportFilterOptions: protectedProcedure.query(async ({ ctx }) => {
+    const [agents, campaigns] = await Promise.all([
+      ctx.db.agent.findMany({
+        where: { organizationId: ctx.orgId },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+      ctx.db.campaign.findMany({
+        where: { organizationId: ctx.orgId },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+
+    return {
+      agents: agents.map((a) => ({ value: a.id, label: a.name })),
+      campaigns: campaigns.map((c) => ({ value: c.id, label: c.name })),
+      statuses: [
+        { value: "queued", label: "Queued" },
+        { value: "ringing", label: "Ringing" },
+        { value: "in-progress", label: "In Progress" },
+        { value: "completed", label: "Completed" },
+        { value: "failed", label: "Failed" },
+        { value: "no-answer", label: "No Answer" },
+      ],
+      sentiments: [
+        { value: "positive", label: "Positive" },
+        { value: "neutral", label: "Neutral" },
+        { value: "negative", label: "Negative" },
+      ],
+    };
+  }),
 });

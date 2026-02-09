@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   BarChart3,
   Phone,
@@ -24,6 +24,7 @@ import { TrendChart } from "@/components/analytics/trend-chart";
 import { HourlyChart } from "@/components/analytics/hourly-chart";
 import { ExportButton } from "@/components/analytics/export-button";
 import { PDFExportButton } from "@/components/analytics/pdf-export-button";
+import { ReportBuilder } from "@/components/analytics/report-builder";
 
 const DATE_RANGES = [
   { value: "7", label: "Last 7 days" },
@@ -36,10 +37,15 @@ export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState("30");
   const days = parseInt(dateRange);
 
-  // Calculate date range
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
+  // Calculate date range - memoized to prevent infinite query re-fetching
+  const { startDate, endDate } = useMemo(() => {
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    const start = new Date();
+    start.setDate(start.getDate() - days);
+    start.setHours(0, 0, 0, 0);
+    return { startDate: start, endDate: end };
+  }, [days]);
 
   // Fetch analytics data
   const { data: overview, isLoading: loadingOverview } = trpc.analytics.getOverview.useQuery({
@@ -245,6 +251,9 @@ export default function AnalyticsPage() {
 
       {/* Agent Performance Table */}
       <PerformanceTable data={agentPerformance} isLoading={loadingAgents} />
+
+      {/* Custom Report Builder */}
+      <ReportBuilder />
     </div>
   );
 }
