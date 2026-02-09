@@ -90,13 +90,25 @@ export const phoneNumbersRouter = router({
           throw new TRPCError({ code: "NOT_FOUND", message: "Organization not found" });
         }
 
-        // Search using master account (subaccount not needed for search)
+        // Search using master account credentials (subaccount not needed for search)
+        const masterSid = process.env.TWILIO_ACCOUNT_SID;
+        const masterToken = process.env.TWILIO_AUTH_TOKEN;
+
+        if (!masterSid || !masterToken) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Phone number service is not configured. Please contact support.",
+          });
+        }
+
         const numbers = await searchAvailableNumbers({
           countryCode: input.countryCode,
           type: input.type,
           areaCode: input.areaCode,
           contains: input.contains,
           limit: input.limit,
+          accountSid: masterSid,
+          authToken: masterToken,
         });
 
         // Add pricing info
