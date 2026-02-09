@@ -12,23 +12,37 @@ interface TwilioRequestOptions {
 }
 
 function getAuthHeader(accountSid?: string, authToken?: string): string {
-  const sid = accountSid || process.env.TWILIO_ACCOUNT_SID!;
-  const token = authToken || process.env.TWILIO_AUTH_TOKEN!;
+  const sid = accountSid || process.env.TWILIO_ACCOUNT_SID || "";
+  const token = authToken || process.env.TWILIO_AUTH_TOKEN || "";
+  if (!sid || !token) {
+    console.error(`[Twilio] getAuthHeader called with missing credentials: SID=${sid ? "set" : "MISSING"}, Token=${token ? "set" : "MISSING"}`);
+  }
   return `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`;
 }
 
 async function twilioRequest<T>(options: TwilioRequestOptions): Promise<T> {
   const { method, path, body, accountSid, authToken } = options;
-  const sid = accountSid || process.env.TWILIO_ACCOUNT_SID!;
+  const sid = accountSid || process.env.TWILIO_ACCOUNT_SID;
+  const token = authToken || process.env.TWILIO_AUTH_TOKEN;
+
+  if (!sid || !token) {
+    throw new Error(
+      `Twilio credentials missing: SID=${sid ? "set" : "MISSING"}, Token=${token ? "set" : "MISSING"}`
+    );
+  }
 
   // Separate path from query string so .json goes before query params
   const [basePath, queryString] = path.split("?");
   const url = `${TWILIO_API_URL}/Accounts/${sid}${basePath}.json${queryString ? `?${queryString}` : ""}`;
 
+  const authHeader = `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`;
+
+  console.log(`[Twilio] ${method} ${url} (SID: ${sid.slice(0, 10)}...)`);
+
   const response = await fetch(url, {
     method,
     headers: {
-      Authorization: getAuthHeader(accountSid, authToken),
+      Authorization: authHeader,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: body ? new URLSearchParams(body).toString() : undefined,
@@ -37,6 +51,7 @@ async function twilioRequest<T>(options: TwilioRequestOptions): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: response.statusText }));
     const errorCode = error.code ? ` (${error.code})` : "";
+    console.error(`[Twilio] Error ${response.status}${errorCode}: ${error.message || JSON.stringify(error)} | URL: ${url} | SID: ${sid}`);
     throw new Error(`Twilio API error: ${response.status}${errorCode} - ${error.message || JSON.stringify(error)}`);
   }
 
@@ -253,8 +268,8 @@ export async function releasePhoneNumber(
   accountSid?: string,
   authToken?: string
 ): Promise<void> {
-  const sid = accountSid || process.env.TWILIO_ACCOUNT_SID!;
-  const token = authToken || process.env.TWILIO_AUTH_TOKEN!;
+  const sid = accountSid || process.env.TWILIO_ACCOUNT_SID || "";
+  const token = authToken || process.env.TWILIO_AUTH_TOKEN || "";
 
   const url = `${TWILIO_API_URL}/Accounts/${sid}/IncomingPhoneNumbers/${numberSid}.json`;
 
