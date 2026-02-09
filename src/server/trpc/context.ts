@@ -34,19 +34,22 @@ export async function createContext(): Promise<Context> {
 
     if (user) {
       if (clerkOrgId) {
-        // Clerk has an org context — verify it matches
+        // Clerk has an org context — resolve the database org
         if (user.organization?.clerkOrgId === clerkOrgId) {
+          // User's stored org matches the Clerk org context
           userRole = user.role;
           dbOrgId = user.organizationId;
         } else {
-          // Try direct org lookup by clerkOrgId
+          // Clerk org doesn't match user's stored org — look up by clerkOrgId.
+          // This happens when the user switches orgs in Clerk, or when the
+          // user record hasn't been updated yet after joining an org.
           const org = await db.organization.findFirst({
             where: { clerkOrgId },
             select: { id: true },
           });
-          if (org && org.id === user.organizationId) {
+          if (org) {
             userRole = user.role;
-            dbOrgId = user.organizationId;
+            dbOrgId = org.id;
           }
         }
       } else if (user.organizationId) {
