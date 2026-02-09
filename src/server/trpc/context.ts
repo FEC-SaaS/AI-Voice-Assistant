@@ -16,13 +16,10 @@ export async function createContext(): Promise<Context> {
   let userRole: string | null = null;
   let dbOrgId: string | null = null;
 
-  // Get user role and organization from database if authenticated
-  if (userId && clerkOrgId) {
-    // First, try to find user by clerkId
+  if (userId) {
+    // Find the user in the database
     const user = await db.user.findFirst({
-      where: {
-        clerkId: userId,
-      },
+      where: { clerkId: userId },
       select: {
         role: true,
         organizationId: true,
@@ -35,28 +32,37 @@ export async function createContext(): Promise<Context> {
       },
     });
 
-    // Only set role if the org matches
-    if (user && user.organization?.clerkOrgId === clerkOrgId) {
-      userRole = user.role;
-      dbOrgId = user.organizationId;
-    } else if (user) {
-      // User exists but org doesn't match — look up the org by clerkOrgId
-      const org = await db.organization.findFirst({
-        where: { clerkOrgId },
-        select: { id: true },
-      });
-      if (org && org.id === user.organizationId) {
+    if (user) {
+      if (clerkOrgId) {
+        // Clerk has an org context — verify it matches
+        if (user.organization?.clerkOrgId === clerkOrgId) {
+          userRole = user.role;
+          dbOrgId = user.organizationId;
+        } else {
+          // Try direct org lookup by clerkOrgId
+          const org = await db.organization.findFirst({
+            where: { clerkOrgId },
+            select: { id: true },
+          });
+          if (org && org.id === user.organizationId) {
+            userRole = user.role;
+            dbOrgId = user.organizationId;
+          }
+        }
+      } else if (user.organizationId) {
+        // No Clerk org context but user has an org in the database.
+        // This happens when a user is in "personal workspace" mode in Clerk
+        // or when Clerk org is not configured. Use their DB org as fallback.
         userRole = user.role;
         dbOrgId = user.organizationId;
       }
-      // If no match, dbOrgId stays null → protectedProcedure rejects
     }
   }
 
   return {
     db,
     userId: userId ?? null,
-    orgId: dbOrgId,           // Use database org ID for queries
+    orgId: dbOrgId,
     clerkOrgId: clerkOrgId ?? null,
     userRole,
   };

@@ -18,22 +18,29 @@ import {
   Building2,
   Save,
   Info,
+  Pencil,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 
-type ProvisionMethod = "instant" | "import";
+// ── Hardcoded data (no tRPC dependency for these) ───────────────
 type NumberType = "local" | "toll-free" | "mobile";
+
+const COUNTRIES = [
+  { code: "US", name: "United States", flag: "\u{1F1FA}\u{1F1F8}", types: ["local", "toll-free"] as NumberType[] },
+  { code: "CA", name: "Canada", flag: "\u{1F1E8}\u{1F1E6}", types: ["local", "toll-free"] as NumberType[] },
+  { code: "GB", name: "United Kingdom", flag: "\u{1F1EC}\u{1F1E7}", types: ["local", "mobile"] as NumberType[] },
+] as const;
+
+function getCountryTypes(code: string): NumberType[] {
+  const c = COUNTRIES.find((c) => c.code === code);
+  return c ? [...c.types] : ["local"];
+}
+
+type ProvisionMethod = "instant" | "import";
 
 interface AvailableNumber {
   phone_number: string;
@@ -43,10 +50,10 @@ interface AvailableNumber {
   iso_country: string;
 }
 
+// ── Component ───────────────────────────────────────────────────
 export default function PhoneNumbersPage() {
   const { data: phoneNumbers, isLoading, refetch } = trpc.phoneNumbers.list.useQuery();
   const { data: agents } = trpc.agents.list.useQuery();
-  const { data: countries } = trpc.phoneNumbers.getSupportedCountries.useQuery();
   const { data: twilioStatus, refetch: refetchTwilioStatus } = trpc.phoneNumbers.getTwilioStatus.useQuery();
 
   // Panel state
@@ -63,24 +70,22 @@ export default function PhoneNumbersPage() {
   const [searchResults, setSearchResults] = useState<AvailableNumber[]>([]);
   const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
   const [friendlyName, setFriendlyName] = useState("");
-  const [pricing, setPricing] = useState<{ monthlyBase: number; monthlySaaS: number } | null>(null);
-
-  // Caller ID state
   const [callerIdName, setCallerIdName] = useState("");
-  const [editingCallerId, setEditingCallerId] = useState<string | null>(null);
-  const [editCallerIdValue, setEditCallerIdValue] = useState("");
+  const [pricing, setPricing] = useState<{ monthlyBase: number; monthlySaaS: number } | null>(null);
 
   // Import state
   const [twilioAccountSid, setTwilioAccountSid] = useState("");
   const [twilioAuthToken, setTwilioAuthToken] = useState("");
   const [importPhoneNumber, setImportPhoneNumber] = useState("");
 
-  // Get available number types for selected country
-  const { data: numberTypes } = trpc.phoneNumbers.getCountryNumberTypes.useQuery(
-    { countryCode: selectedCountry },
-    { enabled: !!selectedCountry }
-  );
+  // Inline edit state
+  const [editingCallerId, setEditingCallerId] = useState<string | null>(null);
+  const [editCallerIdValue, setEditCallerIdValue] = useState("");
 
+  // Derived
+  const numberTypes = getCountryTypes(selectedCountry);
+
+  // ── Mutations ───────────────────────────────────────────────
   const searchAvailable = trpc.phoneNumbers.searchAvailable.useMutation({
     onSuccess: (data) => {
       setSearchResults(data.numbers);
@@ -136,7 +141,7 @@ export default function PhoneNumbersPage() {
 
   const updateTwilioCredentials = trpc.phoneNumbers.updateTwilioCredentials.useMutation({
     onSuccess: () => {
-      toast.success("Twilio credentials updated successfully. SMS features are now enabled.");
+      toast.success("Twilio credentials updated. SMS features enabled.");
       setShowCredentialForm(false);
       setCredSid("");
       setCredToken("");
@@ -147,7 +152,7 @@ export default function PhoneNumbersPage() {
 
   const updateCallerIdName = trpc.phoneNumbers.updateCallerIdName.useMutation({
     onSuccess: () => {
-      toast.success("Caller ID name updated");
+      toast.success("Caller ID name updated. Changes may take 24-48h to propagate.");
       setEditingCallerId(null);
       setEditCallerIdValue("");
       refetch();
@@ -155,6 +160,7 @@ export default function PhoneNumbersPage() {
     onError: (err) => toast.error(err.message),
   });
 
+  // ── Handlers ────────────────────────────────────────────────
   const resetForm = () => {
     setShowPanel(false);
     setProvisionMethod("instant");
@@ -162,8 +168,8 @@ export default function PhoneNumbersPage() {
     setSearchResults([]);
     setPricing(null);
     setFriendlyName("");
-    setAreaCode("");
     setCallerIdName("");
+    setAreaCode("");
     setTwilioAccountSid("");
     setTwilioAuthToken("");
     setImportPhoneNumber("");
@@ -224,14 +230,13 @@ export default function PhoneNumbersPage() {
     }
   };
 
+  // ── Loading ─────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Phone Numbers</h1>
-            <p className="text-gray-500">Loading...</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Phone Numbers</h1>
+          <p className="text-gray-500">Loading...</p>
         </div>
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -240,6 +245,7 @@ export default function PhoneNumbersPage() {
     );
   }
 
+  // ── Render ──────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -258,10 +264,10 @@ export default function PhoneNumbersPage() {
         </Button>
       </div>
 
-      {/* Provision Panel */}
+      {/* ── Provision Panel ────────────────────────────────── */}
       {showPanel && (
         <div className="rounded-lg border bg-white p-6 shadow-sm">
-          {/* Method Selection */}
+          {/* Method tabs */}
           <div className="mb-6">
             <Label className="text-base font-semibold">How would you like to get a phone number?</Label>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -282,7 +288,7 @@ export default function PhoneNumbersPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  Search and purchase phone numbers from 30+ countries instantly.
+                  Search and purchase phone numbers from US, Canada, or UK.
                 </p>
               </button>
 
@@ -300,62 +306,59 @@ export default function PhoneNumbersPage() {
                   <span className="font-medium">Import from Twilio</span>
                 </div>
                 <p className="mt-1 text-sm text-gray-500">
-                  Use your existing Twilio phone number with CallTone.
+                  Use your existing Twilio phone number with your AI agents.
                 </p>
               </button>
             </div>
           </div>
 
-          {/* Instant Purchase Form */}
+          {/* ── Instant Purchase ───────────────────────────── */}
           {provisionMethod === "instant" && (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-3">
+                {/* Country */}
                 <div className="space-y-2">
                   <Label>Country</Label>
-                  <Select value={selectedCountry} onValueChange={(v) => {
-                    setSelectedCountry(v);
-                    setSearchResults([]);
-                    setSelectedNumber(null);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {countries?.map((country) => (
-                        <SelectItem key={country.code} value={country.code}>
-                          <span className="flex items-center gap-2">
-                            <span>{country.flag}</span>
-                            <span>{country.name}</span>
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Number Type</Label>
-                  <Select
-                    value={selectedType}
-                    onValueChange={(v) => {
-                      setSelectedType(v as NumberType);
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    value={selectedCountry}
+                    onChange={(e) => {
+                      setSelectedCountry(e.target.value);
+                      const types = getCountryTypes(e.target.value);
+                      setSelectedType(types[0] || "local");
                       setSearchResults([]);
                       setSelectedNumber(null);
                     }}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {numberTypes?.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type === "toll-free" ? "Toll-Free" : type.charAt(0).toUpperCase() + type.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    {COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.flag} {c.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
+                {/* Number Type */}
+                <div className="space-y-2">
+                  <Label>Number Type</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    value={selectedType}
+                    onChange={(e) => {
+                      setSelectedType(e.target.value as NumberType);
+                      setSearchResults([]);
+                      setSelectedNumber(null);
+                    }}
+                  >
+                    {numberTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type === "toll-free" ? "Toll-Free" : type.charAt(0).toUpperCase() + type.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Area Code + Search */}
                 <div className="space-y-2">
                   <Label htmlFor="areaCode">Area Code (optional)</Label>
                   <div className="flex gap-2">
@@ -365,10 +368,7 @@ export default function PhoneNumbersPage() {
                       value={areaCode}
                       onChange={(e) => setAreaCode(e.target.value)}
                     />
-                    <Button
-                      onClick={handleSearch}
-                      disabled={searchAvailable.isPending}
-                    >
+                    <Button onClick={handleSearch} disabled={searchAvailable.isPending}>
                       {searchAvailable.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
@@ -417,22 +417,17 @@ export default function PhoneNumbersPage() {
                 </div>
               )}
 
-              {/* Friendly Name, Caller ID & Purchase */}
+              {/* Configure & Purchase */}
               {selectedNumber && (
                 <div className="space-y-4 rounded-lg bg-gray-50 p-4">
+                  <h4 className="flex items-center gap-2 font-medium text-gray-900">
+                    <Building2 className="h-4 w-4" />
+                    Business Branding & Caller ID
+                  </h4>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="friendlyName">Label (optional)</Label>
-                      <Input
-                        id="friendlyName"
-                        placeholder="e.g., Sales Line, Support"
-                        value={friendlyName}
-                        onChange={(e) => setFriendlyName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
                       <Label htmlFor="callerIdName">
-                        Business Caller ID Name (optional)
+                        Business Caller ID Name
                       </Label>
                       <Input
                         id="callerIdName"
@@ -442,15 +437,24 @@ export default function PhoneNumbersPage() {
                         maxLength={15}
                       />
                       <p className="text-xs text-gray-500">
-                        Max 15 chars. Displayed on recipient&apos;s phone during calls (CNAM).
+                        Max 15 chars. Shown on recipient&apos;s phone screen during calls.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="friendlyName">Internal Label (optional)</Label>
+                      <Input
+                        id="friendlyName"
+                        placeholder="e.g., Sales Line, Support"
+                        value={friendlyName}
+                        onChange={(e) => setFriendlyName(e.target.value)}
+                      />
+                      <p className="text-xs text-gray-500">
+                        For your own reference only. Not visible to callers.
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Button
-                      onClick={handleBuy}
-                      disabled={buyNumber.isPending}
-                    >
+                    <Button onClick={handleBuy} disabled={buyNumber.isPending}>
                       {buyNumber.isPending ? (
                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Purchasing...</>
                       ) : (
@@ -466,17 +470,16 @@ export default function PhoneNumbersPage() {
             </div>
           )}
 
-          {/* Import Form */}
+          {/* ── Import from Twilio ─────────────────────────── */}
           {provisionMethod === "import" && (
             <div className="space-y-4">
               <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <div className="flex gap-3">
                   <AlertCircle className="h-5 w-5 text-blue-500 shrink-0" />
                   <div className="text-sm text-blue-700">
-                    <p className="font-medium">Importing from your Twilio account</p>
+                    <p className="font-medium">Import your existing Twilio number</p>
                     <p className="mt-1">
-                      You&apos;ll need your Twilio Account SID and Auth Token.
-                      Find them in your{" "}
+                      You&apos;ll need your Twilio Account SID and Auth Token from your{" "}
                       <a
                         href="https://console.twilio.com/"
                         target="_blank"
@@ -512,43 +515,50 @@ export default function PhoneNumbersPage() {
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="importPhoneNumber">Phone Number</Label>
-                  <Input
-                    id="importPhoneNumber"
-                    placeholder="+14155551234"
-                    value={importPhoneNumber}
-                    onChange={(e) => setImportPhoneNumber(e.target.value)}
-                  />
-                  <p className="text-xs text-gray-500">E.164 format (include + and country code)</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="importFriendlyName">Label (optional)</Label>
-                  <Input
-                    id="importFriendlyName"
-                    placeholder="e.g., My Twilio Number"
-                    value={friendlyName}
-                    onChange={(e) => setFriendlyName(e.target.value)}
-                  />
-                </div>
-              </div>
-
               <div className="space-y-2">
-                <Label htmlFor="importCallerIdName">
-                  Business Caller ID Name (optional)
-                </Label>
+                <Label htmlFor="importPhoneNumber">Phone Number</Label>
                 <Input
-                  id="importCallerIdName"
-                  placeholder="e.g., ACME INC"
-                  value={callerIdName}
-                  onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
-                  maxLength={15}
+                  id="importPhoneNumber"
+                  placeholder="+14155551234"
+                  value={importPhoneNumber}
+                  onChange={(e) => setImportPhoneNumber(e.target.value)}
                   className="max-w-sm"
                 />
-                <p className="text-xs text-gray-500">
-                  Max 15 chars. This will be set as the CNAM on your Twilio number.
-                </p>
+                <p className="text-xs text-gray-500">E.164 format (include + and country code)</p>
+              </div>
+
+              {/* Business Branding for Import */}
+              <div className="rounded-lg bg-gray-50 p-4 space-y-4">
+                <h4 className="flex items-center gap-2 font-medium text-gray-900">
+                  <Building2 className="h-4 w-4" />
+                  Business Branding & Caller ID
+                </h4>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="importCallerIdName">
+                      Business Caller ID Name
+                    </Label>
+                    <Input
+                      id="importCallerIdName"
+                      placeholder="e.g., ACME INC"
+                      value={callerIdName}
+                      onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
+                      maxLength={15}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Max 15 chars. Shown on recipient&apos;s phone screen during calls.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="importFriendlyName">Internal Label (optional)</Label>
+                    <Input
+                      id="importFriendlyName"
+                      placeholder="e.g., Main Office Line"
+                      value={friendlyName}
+                      onChange={(e) => setFriendlyName(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-3">
@@ -571,7 +581,7 @@ export default function PhoneNumbersPage() {
         </div>
       )}
 
-      {/* Twilio Credentials Warning */}
+      {/* ── Twilio Credentials Warning ─────────────────────── */}
       {phoneNumbers?.some((pn) => pn.provider === "twilio-imported") && twilioStatus && !twilioStatus.hasCredentials && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
           <div className="flex gap-3">
@@ -579,8 +589,8 @@ export default function PhoneNumbersPage() {
             <div className="flex-1">
               <h4 className="font-medium text-amber-900">Twilio credentials needed for SMS</h4>
               <p className="mt-1 text-sm text-amber-700">
-                You have imported Twilio numbers but your Twilio credentials are not saved.
-                SMS features (missed call text-back, appointment reminders, notifications) will not work until you add your credentials.
+                You have imported Twilio numbers but your credentials are not saved.
+                SMS features will not work until you add your credentials.
               </p>
               {!showCredentialForm ? (
                 <Button
@@ -596,7 +606,7 @@ export default function PhoneNumbersPage() {
                 <div className="mt-3 space-y-3">
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <Label htmlFor="credSid" className="text-xs text-amber-800">Twilio Account SID</Label>
+                      <Label htmlFor="credSid" className="text-xs text-amber-800">Account SID</Label>
                       <Input
                         id="credSid"
                         placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -606,7 +616,7 @@ export default function PhoneNumbersPage() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="credToken" className="text-xs text-amber-800">Twilio Auth Token</Label>
+                      <Label htmlFor="credToken" className="text-xs text-amber-800">Auth Token</Label>
                       <Input
                         id="credToken"
                         type="password"
@@ -644,7 +654,7 @@ export default function PhoneNumbersPage() {
         </div>
       )}
 
-      {/* Phone Numbers List */}
+      {/* ── Phone Numbers Table ────────────────────────────── */}
       {!phoneNumbers?.length ? (
         <div className="rounded-lg border bg-white p-12 text-center">
           <Hash className="mx-auto h-12 w-12 text-gray-300" />
@@ -664,7 +674,6 @@ export default function PhoneNumbersPage() {
               <thead>
                 <tr className="border-b text-left text-xs font-medium uppercase text-gray-500">
                   <th className="px-6 py-3">Number</th>
-                  <th className="px-6 py-3">Label</th>
                   <th className="px-6 py-3">Caller ID</th>
                   <th className="px-6 py-3">Type</th>
                   <th className="px-6 py-3">Provider</th>
@@ -674,187 +683,209 @@ export default function PhoneNumbersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {phoneNumbers.map((pn) => (
-                  <tr key={pn.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-gray-400" />
-                        <span className="font-mono text-sm font-medium text-gray-900">
-                          {pn.number}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {pn.friendlyName || "—"}
-                    </td>
-                    <td className="px-6 py-4">
-                      {editingCallerId === pn.id ? (
-                        <div className="flex items-center gap-1">
-                          <Input
-                            value={editCallerIdValue}
-                            onChange={(e) => setEditCallerIdValue(e.target.value.toUpperCase().slice(0, 15))}
-                            maxLength={15}
-                            className="h-7 w-32 text-xs"
-                            placeholder="BUSINESS NAME"
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                updateCallerIdName.mutate({ id: pn.id, callerIdName: editCallerIdValue });
-                              }
-                              if (e.key === "Escape") {
-                                setEditingCallerId(null);
-                              }
-                            }}
-                          />
+                {phoneNumbers.map((pn) => {
+                  const cnam = (pn as Record<string, unknown>).callerIdName as string | null;
+                  return (
+                    <tr key={pn.id} className="hover:bg-gray-50">
+                      {/* Number + Label */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <span className="font-mono text-sm font-medium text-gray-900">
+                              {pn.number}
+                            </span>
+                            {pn.friendlyName && (
+                              <p className="text-xs text-gray-500">{pn.friendlyName}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Caller ID (inline editable) */}
+                      <td className="px-6 py-4">
+                        {editingCallerId === pn.id ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              value={editCallerIdValue}
+                              onChange={(e) => setEditCallerIdValue(e.target.value.toUpperCase().slice(0, 15))}
+                              maxLength={15}
+                              className="h-7 w-36 text-xs"
+                              placeholder="BUSINESS NAME"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && editCallerIdValue.trim()) {
+                                  updateCallerIdName.mutate({ id: pn.id, callerIdName: editCallerIdValue });
+                                }
+                                if (e.key === "Escape") {
+                                  setEditingCallerId(null);
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={() => {
+                                if (editCallerIdValue.trim()) {
+                                  updateCallerIdName.mutate({ id: pn.id, callerIdName: editCallerIdValue });
+                                }
+                              }}
+                              disabled={!editCallerIdValue.trim() || updateCallerIdName.isPending}
+                              className="rounded p-1 text-green-600 hover:bg-green-50 disabled:opacity-50"
+                              title="Save"
+                            >
+                              {updateCallerIdName.isPending ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Save className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => updateCallerIdName.mutate({ id: pn.id, callerIdName: editCallerIdValue })}
-                            disabled={updateCallerIdName.isPending}
-                            className="rounded p-1 text-green-600 hover:bg-green-50"
-                            title="Save"
+                            onClick={() => {
+                              setEditingCallerId(pn.id);
+                              setEditCallerIdValue(cnam || "");
+                            }}
+                            className="group inline-flex items-center gap-1.5 text-sm"
+                            title="Click to edit caller ID"
                           >
-                            {updateCallerIdName.isPending ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
+                            {cnam ? (
+                              <>
+                                <Building2 className="h-3.5 w-3.5 text-green-500" />
+                                <span className="font-medium text-gray-900">{cnam}</span>
+                                <Pencil className="h-3 w-3 text-gray-300 opacity-0 group-hover:opacity-100" />
+                              </>
                             ) : (
-                              <Save className="h-3 w-3" />
+                              <span className="text-amber-600 hover:text-amber-700">
+                                + Set Caller ID
+                              </span>
                             )}
                           </button>
-                        </div>
-                      ) : (
+                        )}
+                      </td>
+
+                      {/* Type */}
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                          pn.type === "toll_free"
+                            ? "bg-purple-100 text-purple-700"
+                            : pn.type === "mobile"
+                            ? "bg-orange-100 text-orange-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}>
+                          {pn.type === "toll_free" ? "Toll-Free" : pn.type === "mobile" ? "Mobile" : "Local"}
+                        </span>
+                      </td>
+
+                      {/* Provider */}
+                      <td className="px-6 py-4">{getProviderBadge(pn.provider)}</td>
+
+                      {/* Status */}
+                      <td className="px-6 py-4">
+                        {pn.vapiPhoneId ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                            <CheckCircle className="h-3 w-3" />
+                            Ready
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => retryVapiImport.mutate({ id: pn.id })}
+                            disabled={retryVapiImport.isPending}
+                            className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700"
+                          >
+                            {retryVapiImport.isPending ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-3 w-3" />
+                            )}
+                            Sync
+                          </button>
+                        )}
+                      </td>
+
+                      {/* Agent Assignment */}
+                      <td className="px-6 py-4">
+                        <select
+                          className="rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          value={pn.agentId || ""}
+                          onChange={(e) =>
+                            assignToAgent.mutate({
+                              id: pn.id,
+                              agentId: e.target.value || null,
+                            })
+                          }
+                        >
+                          <option value="">Unassigned</option>
+                          {agents?.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => {
-                            setEditingCallerId(pn.id);
-                            setEditCallerIdValue((pn as Record<string, unknown>).callerIdName as string || "");
+                            if (confirm("Release this phone number? This cannot be undone.")) {
+                              release.mutate({ id: pn.id });
+                            }
                           }}
-                          className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-                          title="Click to edit caller ID name"
+                          className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                          title="Release number"
                         >
-                          {(pn as Record<string, unknown>).callerIdName ? (
-                            <span className="inline-flex items-center gap-1">
-                              <Building2 className="h-3 w-3 text-green-500" />
-                              {String((pn as Record<string, unknown>).callerIdName)}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">Set CNAM</span>
-                          )}
+                          <Trash2 className="h-4 w-4" />
                         </button>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        pn.type === "toll_free"
-                          ? "bg-purple-100 text-purple-700"
-                          : pn.type === "mobile"
-                          ? "bg-orange-100 text-orange-700"
-                          : "bg-blue-100 text-blue-700"
-                      }`}>
-                        {pn.type === "toll_free" ? "Toll-Free" : pn.type === "mobile" ? "Mobile" : "Local"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getProviderBadge(pn.provider)}
-                    </td>
-                    <td className="px-6 py-4">
-                      {pn.vapiPhoneId ? (
-                        <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                          <CheckCircle className="h-3 w-3" />
-                          Ready
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => retryVapiImport.mutate({ id: pn.id })}
-                          disabled={retryVapiImport.isPending}
-                          className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700"
-                        >
-                          {retryVapiImport.isPending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-3 w-3" />
-                          )}
-                          Sync
-                        </button>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <select
-                        className="rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        value={pn.agentId || ""}
-                        onChange={(e) =>
-                          assignToAgent.mutate({
-                            id: pn.id,
-                            agentId: e.target.value || null,
-                          })
-                        }
-                      >
-                        <option value="">Unassigned</option>
-                        {agents?.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => {
-                          if (confirm("Release this phone number? This cannot be undone.")) {
-                            release.mutate({ id: pn.id });
-                          }
-                        }}
-                        className="rounded p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
-                        title="Release number"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* Caller ID & Branding Info */}
+      {/* ── Caller ID & Branding Info ──────────────────────── */}
       <div className="rounded-lg border border-green-200 bg-green-50 p-4">
         <div className="flex gap-3">
           <Building2 className="h-5 w-5 text-green-600 shrink-0" />
           <div>
             <h4 className="font-medium text-green-900">Caller ID & Business Branding</h4>
             <ul className="mt-2 list-disc list-inside text-sm text-green-700 space-y-1">
-              <li><strong>CNAM (Caller Name):</strong> Set your business name to display on recipient phones during outbound calls. Click &quot;Set CNAM&quot; in the table above to configure per number.</li>
+              <li><strong>CNAM (Caller Name):</strong> Set your business name to display on recipient phones during calls. All numbers should have Caller ID configured for trust and professionalism.</li>
               <li><strong>Character limit:</strong> CNAM is limited to 15 characters by telecom standards (e.g., &quot;ACME INC&quot;, &quot;DR SMITH OFFICE&quot;).</li>
-              <li><strong>Propagation:</strong> CNAM updates may take 24-48 hours to propagate across carrier networks.</li>
-              <li><strong>Coverage:</strong> CNAM display is most reliable for US/Canada calls. International coverage varies by carrier.</li>
+              <li><strong>Propagation:</strong> CNAM updates take 24-48 hours to propagate across carrier networks.</li>
+              <li><strong>Coverage:</strong> CNAM display is most reliable for US/Canada calls. UK coverage varies by carrier.</li>
             </ul>
           </div>
         </div>
       </div>
 
-      {/* Compliance & Regulatory Info */}
+      {/* ── Compliance & Regulatory ────────────────────────── */}
       <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
         <div className="flex gap-3">
           <ShieldCheck className="h-5 w-5 text-purple-600 shrink-0" />
           <div>
             <h4 className="font-medium text-purple-900">Compliance & Regulatory</h4>
             <div className="mt-2 space-y-3">
-              {/* STIR/SHAKEN */}
               <div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   <span className="text-sm font-medium text-purple-800">STIR/SHAKEN Verified</span>
                 </div>
                 <p className="ml-6 text-sm text-purple-700">
-                  All managed Twilio numbers include STIR/SHAKEN attestation, reducing the chance of calls being marked as spam. Your calls are cryptographically signed to verify caller identity.
+                  All managed Twilio numbers include STIR/SHAKEN attestation, reducing the chance of calls being marked as spam.
                 </p>
               </div>
 
-              {/* A2P 10DLC */}
               <div>
                 <div className="flex items-center gap-2">
                   <Info className="h-4 w-4 text-amber-500" />
                   <span className="text-sm font-medium text-purple-800">A2P 10DLC Registration (SMS)</span>
                 </div>
                 <p className="ml-6 text-sm text-purple-700">
-                  US carriers require A2P 10DLC registration for business SMS on local numbers. This improves deliverability and avoids filtering.
+                  US carriers require A2P 10DLC registration for business SMS. This improves deliverability and avoids filtering.
                 </p>
                 <div className="ml-6 mt-1 flex flex-wrap gap-2">
                   <a
@@ -887,14 +918,13 @@ export default function PhoneNumbersPage() {
                 </div>
               </div>
 
-              {/* TCPA */}
               <div>
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-amber-500" />
                   <span className="text-sm font-medium text-purple-800">TCPA Compliance</span>
                 </div>
                 <p className="ml-6 text-sm text-purple-700">
-                  Ensure you have prior express consent before making AI-assisted outbound calls. Maintain Do Not Call lists and honor opt-out requests promptly.
+                  Ensure prior express consent before making AI-assisted outbound calls. Maintain Do Not Call lists and honor opt-out requests.
                 </p>
               </div>
             </div>
@@ -902,7 +932,7 @@ export default function PhoneNumbersPage() {
         </div>
       </div>
 
-      {/* Info Card */}
+      {/* ── Phone Number Options Info ──────────────────────── */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
         <div className="flex gap-3">
           <Globe className="h-5 w-5 text-blue-500 shrink-0" />
@@ -912,7 +942,7 @@ export default function PhoneNumbersPage() {
               <li><strong>Managed numbers:</strong> We provision and bill you monthly. Simplest option.</li>
               <li><strong>Imported numbers:</strong> Use your own Twilio numbers. You pay Twilio directly.</li>
               <li>All numbers support inbound and outbound calling with your AI agents.</li>
-              <li>Numbers are automatically connected for voice AI capabilities.</li>
+              <li>Numbers are automatically connected for voice AI with STIR/SHAKEN verification.</li>
             </ul>
           </div>
         </div>
