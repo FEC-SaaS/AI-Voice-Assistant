@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Bot,
@@ -15,6 +16,11 @@ import {
   Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Features | CallTone AI",
+  description: "Powerful AI voice agent features — agent builder, inbound & outbound calling, conversation intelligence, and enterprise-grade compliance.",
+};
 
 export default function FeaturesPage() {
   return (

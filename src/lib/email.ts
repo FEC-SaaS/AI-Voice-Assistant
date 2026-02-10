@@ -629,6 +629,60 @@ export async function sendReceptionistMessageNotification(
   });
 }
 
+/**
+ * Send hot lead notification email to organization owner/admins
+ */
+export async function sendHotLeadNotification(options: {
+  to: string;
+  contactName: string;
+  contactPhone: string;
+  leadScore: number;
+  sentiment: string;
+  summary: string;
+  buyingSignals: string[];
+  nextBestAction?: string;
+  callId: string;
+  branding?: EmailBrandingConfig;
+}) {
+  const {
+    to, contactName, contactPhone, leadScore, sentiment,
+    summary, buyingSignals, nextBestAction, callId, branding,
+  } = options;
+
+  const businessName = branding?.businessName || "CallTone AI";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  const signalsList = buyingSignals.length > 0
+    ? buyingSignals.map((s) => `<li style="padding: 4px 0; color: #166534;">${s}</li>`).join("")
+    : "<li style='color: #666;'>No specific signals detected</li>";
+
+  return sendEmail({
+    to,
+    subject: `Hot Lead Alert: ${contactName} (Score: ${leadScore}/100)`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="padding: 30px;">
+          <div style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+            <h1 style="margin: 0; font-size: 24px;">Hot Lead Detected</h1>
+            <p style="margin: 8px 0 0; opacity: 0.9;">Lead score: ${leadScore}/100</p>
+          </div>
+          <div style="background: #fff7ed; padding: 20px; border-radius: 8px; border-left: 4px solid #f97316; margin-bottom: 20px;">
+            <h2 style="margin: 0 0 12px; color: #1a1a1a;">${contactName}</h2>
+            <table style="width: 100%;"><tr><td style="padding: 6px 0; color: #666;">Phone:</td><td style="padding: 6px 0; text-align: right; font-weight: bold;">${contactPhone}</td></tr><tr><td style="padding: 6px 0; color: #666;">Sentiment:</td><td style="padding: 6px 0; text-align: right; font-weight: bold; text-transform: capitalize;">${sentiment}</td></tr><tr><td style="padding: 6px 0; color: #666;">Lead Score:</td><td style="padding: 6px 0; text-align: right; font-weight: bold; color: #ea580c;">${leadScore}/100</td></tr></table>
+          </div>
+          <div style="margin-bottom: 20px;"><h3 style="margin: 0 0 8px; color: #1a1a1a;">Call Summary</h3><p style="color: #444; line-height: 1.6;">${summary}</p></div>
+          <div style="margin-bottom: 20px;"><h3 style="margin: 0 0 8px; color: #166534;">Buying Signals</h3><ul style="padding-left: 20px; margin: 0;">${signalsList}</ul></div>
+          ${nextBestAction ? `<div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 20px;"><h3 style="margin: 0 0 8px; color: #1e40af;">Recommended Next Action</h3><p style="color: #1e40af; margin: 0; font-weight: 500;">${nextBestAction}</p></div>` : ""}
+          <div style="text-align: center; margin-top: 24px;"><a href="${appUrl}/dashboard/calls/${callId}" style="display: inline-block; background: #f97316; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">View Call Details</a></div>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+          <p style="color: #666; font-size: 14px; text-align: center;">${businessName} — Conversation Intelligence Alert</p>
+        </div>
+      </div>
+    `,
+    branding,
+  });
+}
+
 export async function sendAppointmentRescheduled(
   email: string,
   name: string,

@@ -117,19 +117,21 @@ async function calculateComplianceScore(orgId: string, db: any) {
   // AI Disclosure (15%)
   const agents = await db.agent.findMany({
     where: { organizationId: orgId, isActive: true },
-    select: { systemPrompt: true },
+    select: { systemPrompt: true, firstMessage: true },
   });
   const totalAgents = agents.length;
+  const disclosurePattern = /\bAI\b|artificial|automated|virtual assistant|voice assistant/i;
   const agentsWithDisclosure = agents.filter(
-    (a: { systemPrompt: string }) =>
-      /\bAI\b/i.test(a.systemPrompt) || /artificial/i.test(a.systemPrompt)
+    (a: { systemPrompt: string; firstMessage: string | null }) =>
+      disclosurePattern.test(a.systemPrompt) ||
+      (a.firstMessage && disclosurePattern.test(a.firstMessage))
   ).length;
   const aiDisclosureScore = totalAgents > 0
     ? Math.round((agentsWithDisclosure / totalAgents) * 100)
     : 100;
   const aiDisclosureRecommendation = aiDisclosureScore >= 100
-    ? "All agents include AI disclosure in their prompts."
-    : "Ensure all agent system prompts include AI disclosure language (mention 'AI' or 'artificial').";
+    ? "All agents include AI disclosure in their prompts or first messages."
+    : "Ensure all agent system prompts or first messages include AI disclosure language (e.g., 'AI', 'automated', 'virtual assistant').";
 
   // Opt-Out Handling (10%) - system auto-handles
   const optOutScore = 100;
@@ -415,10 +417,17 @@ export const complianceRouter = router({
     const alerts = await ctx.db.auditLog.findMany({
       where: {
         organizationId: ctx.orgId,
-        action: "call.blocked",
+        action: {
+          in: [
+            "call.blocked",
+            "consent.revoked",
+            "dnc.added",
+            "optout.detected",
+          ],
+        },
       },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 50,
     });
 
     return alerts;

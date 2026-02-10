@@ -108,17 +108,59 @@ interface AvailableNumber {
   iso_country: string;
 }
 
+const ONBOARDING_STORAGE_KEY = "calltone_onboarding_progress";
+
+interface OnboardingProgress {
+  currentStep: number;
+  createdAgentId: string | null;
+  createdPhoneNumberId: string | null;
+  createdPhoneNumber: string | null;
+  agentName: string;
+  selectedTemplate: string | null;
+}
+
+function loadProgress(): OnboardingProgress | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveProgress(progress: OnboardingProgress) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(progress));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function clearProgress() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+  } catch {
+    // Ignore
+  }
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { organization, isLoaded } = useOrganization();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [createdAgentId, setCreatedAgentId] = useState<string | null>(null);
-  const [createdPhoneNumberId, setCreatedPhoneNumberId] = useState<string | null>(null);
-  const [createdPhoneNumber, setCreatedPhoneNumber] = useState<string | null>(null);
+
+  // Load persisted progress
+  const saved = loadProgress();
+  const [currentStep, setCurrentStep] = useState(saved?.currentStep ?? 1);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(saved?.selectedTemplate ?? null);
+  const [createdAgentId, setCreatedAgentId] = useState<string | null>(saved?.createdAgentId ?? null);
+  const [createdPhoneNumberId, setCreatedPhoneNumberId] = useState<string | null>(saved?.createdPhoneNumberId ?? null);
+  const [createdPhoneNumber, setCreatedPhoneNumber] = useState<string | null>(saved?.createdPhoneNumber ?? null);
 
   // Agent form state
-  const [agentName, setAgentName] = useState("");
+  const [agentName, setAgentName] = useState(saved?.agentName ?? "");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [firstMessage, setFirstMessage] = useState("");
 
@@ -138,7 +180,22 @@ export default function OnboardingPage() {
   const [knowledgeName, setKnowledgeName] = useState("");
   const [knowledgeContent, setKnowledgeContent] = useState("");
 
+  // Test call state
+  const [testCallPhone, setTestCallPhone] = useState("");
+
   const utils = trpc.useUtils();
+
+  // Persist progress when key state changes
+  useEffect(() => {
+    saveProgress({
+      currentStep,
+      createdAgentId,
+      createdPhoneNumberId,
+      createdPhoneNumber,
+      agentName,
+      selectedTemplate,
+    });
+  }, [currentStep, createdAgentId, createdPhoneNumberId, createdPhoneNumber, agentName, selectedTemplate]);
 
   // Queries
   const { data: countries } = trpc.phoneNumbers.getSupportedCountries.useQuery(
@@ -215,8 +272,18 @@ export default function OnboardingPage() {
     onError: (err) => toast.error(err.message),
   });
 
+  const testCall = trpc.agents.testCall.useMutation({
+    onSuccess: () => {
+      toast.success("Test call initiated! Your phone should ring shortly.");
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
+
   const completeOnboarding = trpc.users.completeOnboarding.useMutation({
     onSuccess: () => {
+      clearProgress();
       utils.users.me.invalidate();
       router.push("/dashboard");
     },
@@ -1028,6 +1095,47 @@ export default function OnboardingPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Call Me Button */}
+              {createdAgentId && (
+                <div className="rounded-xl border-2 border-green-500/20 bg-green-500/5 p-5">
+                  <h3 className="font-semibold text-foreground mb-2">Quick Test: Have the Agent Call You</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Enter your phone number and we&apos;ll have your agent call you directly.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="+1 (555) 123-4567"
+                      value={testCallPhone}
+                      onChange={(e) => setTestCallPhone(e.target.value)}
+                      type="tel"
+                    />
+                    <Button
+                      onClick={() => {
+                        if (!testCallPhone.trim() || testCallPhone.replace(/\D/g, "").length < 10) {
+                          toast.error("Please enter a valid phone number");
+                          return;
+                        }
+                        testCall.mutate({
+                          agentId: createdAgentId,
+                          phoneNumber: testCallPhone,
+                        });
+                      }}
+                      disabled={testCall.isPending}
+                      className="flex-shrink-0"
+                    >
+                      {testCall.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <PhoneCall className="mr-2 h-4 w-4" />
+                          Call Me
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-lg bg-blue-500/10 border border-border p-3">
                 <div className="flex gap-2">

@@ -251,14 +251,17 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             <Sparkles className="h-5 w-5 text-primary" />
             AI Analysis
           </h2>
-          {call.transcript && !call.sentiment && (
+          {call.transcript && (
             <Button
               onClick={handleAnalyze}
               disabled={analyzeMutation.isPending}
               size="sm"
+              variant={call.sentiment ? "outline" : "default"}
             >
               {analyzeMutation.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>
+              ) : call.sentiment ? (
+                <><Sparkles className="mr-2 h-4 w-4" /> Re-analyze</>
               ) : (
                 <><Sparkles className="mr-2 h-4 w-4" /> Analyze with AI</>
               )}

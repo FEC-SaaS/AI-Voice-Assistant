@@ -17,8 +17,8 @@ const FOOTER_LINKS = {
     { href: "/blog", label: "API Reference" },
   ],
   Legal: [
-    { href: "/contact", label: "Privacy Policy" },
-    { href: "/contact", label: "Terms of Service" },
+    { href: "/privacy", label: "Privacy Policy" },
+    { href: "/terms", label: "Terms of Service" },
   ],
 };
 

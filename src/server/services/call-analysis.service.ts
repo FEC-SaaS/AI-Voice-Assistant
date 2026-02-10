@@ -1,9 +1,61 @@
 import { db } from "@/lib/db";
 import { analyzeTranscript, TranscriptAnalysis } from "@/lib/openai";
 import { detectOptOut, handleOptOutRequest } from "./dnc.service";
+import { sendHotLeadNotification } from "@/lib/email";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("Call Analysis");
+
+/**
+ * Send hot lead notifications (email) to org admins/owners
+ */
+async function sendHotLeadNotifications(
+  organizationId: string,
+  callId: string,
+  contactName: string,
+  contactPhone: string,
+  analysis: TranscriptAnalysis
+) {
+  // Get organization name and admin/owner users
+  const org = await db.organization.findUnique({
+    where: { id: organizationId },
+    select: {
+      name: true,
+      users: {
+        where: { role: { in: ["owner", "admin"] } },
+        select: { email: true },
+        take: 10,
+      },
+    },
+  });
+
+  if (!org?.users?.length) return;
+
+  const adminEmails = org.users.map((u) => u.email).filter(Boolean);
+  if (adminEmails.length === 0) return;
+
+  // Send email notification to each admin
+  for (const email of adminEmails) {
+    try {
+      await sendHotLeadNotification({
+        to: email,
+        contactName,
+        contactPhone,
+        leadScore: analysis.leadScore,
+        sentiment: analysis.sentiment,
+        summary: analysis.summary,
+        buyingSignals: analysis.buyingSignals || [],
+        nextBestAction: analysis.nextBestAction,
+        callId,
+        branding: { businessName: org.name },
+      });
+    } catch (err) {
+      log.error(`Failed to send hot lead email to ${email}:`, err);
+    }
+  }
+
+  log.info(`Hot lead notifications sent for call ${callId} (score: ${analysis.leadScore})`);
+}
 
 export interface CallAnalysisResult {
   callId: string;
@@ -95,6 +147,23 @@ export async function analyzeCall(callId: string): Promise<CallAnalysisResult> {
         where: { id: call.contactId },
         data: { status: newStatus },
       });
+    }
+
+    // Send hot lead notification if lead score is high
+    if (analysis.leadScore >= 80 && call.organizationId && !optOutDetected) {
+      try {
+        await sendHotLeadNotifications(
+          call.organizationId,
+          callId,
+          call.contact
+            ? `${call.contact.firstName ?? ""} ${call.contact.lastName ?? ""}`.trim() || "Unknown"
+            : "Unknown",
+          call.toNumber || call.fromNumber || "Unknown",
+          analysis
+        );
+      } catch (err) {
+        log.error(`Failed to send hot lead notifications for call ${callId}:`, err);
+      }
     }
 
     return {

@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PLANS } from "@/constants/plans";
+
+export const metadata: Metadata = {
+  title: "Pricing | CallTone AI",
+  description: "Simple, transparent pricing for AI voice agents. Start free, scale as you grow. No hidden fees.",
+};
 
 export default function PricingPage() {
   const plans = Object.values(PLANS);

@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { MarketingHeader } from "@/components/marketing/marketing-header";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
+
+export const metadata: Metadata = {
+  title: "CallTone AI — AI Voice Agents for Modern Business",
+  description: "Deploy intelligent AI voice agents for inbound and outbound calling. Automate sales, support, and scheduling at scale.",
+};
 
 export default function MarketingLayout({
   children,

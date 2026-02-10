@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { Clock, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+export const metadata: Metadata = {
+  title: "Blog | CallTone AI",
+  description: "Insights, guides, and best practices for AI voice agents and business communication.",
+};
 
 const BLOG_POSTS = [
   {

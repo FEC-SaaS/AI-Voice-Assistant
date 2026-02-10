@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { createCall } from "@/lib/vapi";
-import { checkDNC, checkCallingHours, normalizePhoneNumber } from "./dnc.service";
+import { checkDNC, checkCallingHours, checkConsent, requiresTwoPartyConsent, normalizePhoneNumber } from "./dnc.service";
 import { getRemainingMinutes } from "@/constants/plans";
 import { createLogger } from "@/lib/logger";
 import { logAudit } from "./audit.service";
@@ -212,6 +212,26 @@ async function processContact(
       success: false,
       skippedReason: `DNC: ${dncCheck.reason}`,
     };
+  }
+
+  // Check consent for two-party consent states
+  if (requiresTwoPartyConsent(state)) {
+    const consentCheck = await checkConsent(phoneNumber, contact.organizationId);
+    if (!consentCheck.hasConsent) {
+      await logAudit({
+        organizationId: contact.organizationId,
+        action: "call.blocked",
+        entityType: "contact",
+        entityId: contact.id,
+        details: { reason: "No consent record for two-party consent state", phoneNumber, state },
+      });
+
+      return {
+        contactId: contact.id,
+        success: false,
+        skippedReason: `No consent for two-party consent state: ${state}`,
+      };
+    }
   }
 
   // Check calling hours
