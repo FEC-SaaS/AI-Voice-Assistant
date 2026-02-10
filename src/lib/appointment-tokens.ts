@@ -1,6 +1,13 @@
 import crypto from "crypto";
 
-const TOKEN_SECRET = process.env.APPOINTMENT_TOKEN_SECRET || process.env.NEXTAUTH_SECRET || "default-secret-change-in-production";
+function getTokenSecret(): string {
+  const secret = process.env.APPOINTMENT_TOKEN_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error("APPOINTMENT_TOKEN_SECRET or NEXTAUTH_SECRET must be configured");
+  }
+  return secret;
+}
+const TOKEN_SECRET = getTokenSecret();
 const TOKEN_EXPIRY_HOURS = 72; // Tokens expire after 72 hours
 
 interface TokenPayload {

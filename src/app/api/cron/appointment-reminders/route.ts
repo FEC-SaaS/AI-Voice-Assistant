@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: "Reminder processing failed",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: "Internal error",
       },
       { status: 500 }
     );

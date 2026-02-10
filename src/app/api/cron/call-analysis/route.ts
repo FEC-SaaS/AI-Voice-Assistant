@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[Cron] Call analysis error:", error);
     return NextResponse.json(
-      { error: "Call analysis failed", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Call analysis failed" },
       { status: 500 }
     );
   }

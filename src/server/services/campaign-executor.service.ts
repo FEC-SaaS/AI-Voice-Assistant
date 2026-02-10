@@ -381,7 +381,8 @@ export async function executeCampaign(
 
     const callingHours = campaign.callingHours as { start: string; end: string };
 
-    // Get pending contacts
+    // Get pending contacts in batches to avoid memory exhaustion
+    const BATCH_SIZE = 100;
     const contacts = await db.contact.findMany({
       where: {
         campaignId,
@@ -389,6 +390,7 @@ export async function executeCampaign(
         status: "pending",
       },
       orderBy: { createdAt: "asc" },
+      take: BATCH_SIZE,
     });
 
     result.totalContacts = contacts.length;

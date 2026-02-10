@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[Cron] Campaign execution error:", error);
     return NextResponse.json(
-      { error: "Campaign execution failed", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Campaign execution failed" },
       { status: 500 }
     );
   }

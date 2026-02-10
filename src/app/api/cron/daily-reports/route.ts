@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[Cron] Daily reports error:", error);
     return NextResponse.json(
-      { error: "Report generation failed", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Report generation failed" },
       { status: 500 }
     );
   }

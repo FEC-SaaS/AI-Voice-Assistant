@@ -29,14 +29,16 @@ export const rateLimit = (limit: number, windowSeconds: number) =>
       const redisToken = process.env.UPSTASH_REDIS_TOKEN;
 
       if (!redisUrl || !redisToken) {
-        // Redis not configured, skip rate limiting in development
         if (process.env.NODE_ENV === "development") {
           log.warn("Redis not configured, skipping rate limit check");
           return next();
         }
-        // In production, allow but warn
-        log.warn("Redis not configured in production");
-        return next();
+        // In production, reject requests when rate limiting is unavailable
+        log.error("Redis not configured in production — blocking request");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Service temporarily unavailable. Please try again later.",
+        });
       }
 
       const result = await checkRateLimit(
@@ -54,14 +56,18 @@ export const rateLimit = (limit: number, windowSeconds: number) =>
 
       return next();
     } catch (error) {
-      // If it's a TRPCError, rethrow it
       if (error instanceof TRPCError) {
         throw error;
       }
 
-      // Log Redis errors but don't block the request
       log.error("Redis error:", error);
-      return next();
+      if (process.env.NODE_ENV === "development") {
+        return next();
+      }
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Service temporarily unavailable. Please try again later.",
+      });
     }
   });
 
@@ -80,7 +86,13 @@ export const orgRateLimit = (limit: number, windowSeconds: number) =>
       const redisToken = process.env.UPSTASH_REDIS_TOKEN;
 
       if (!redisUrl || !redisToken) {
-        return next();
+        if (process.env.NODE_ENV === "development") {
+          return next();
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Service temporarily unavailable. Please try again later.",
+        });
       }
 
       const result = await checkRateLimit(
@@ -102,7 +114,13 @@ export const orgRateLimit = (limit: number, windowSeconds: number) =>
         throw error;
       }
       log.error("Redis error:", error);
-      return next();
+      if (process.env.NODE_ENV === "development") {
+        return next();
+      }
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Service temporarily unavailable. Please try again later.",
+      });
     }
   });
 
@@ -121,7 +139,13 @@ export const actionRateLimit = (action: string, limit: number, windowSeconds: nu
       const redisToken = process.env.UPSTASH_REDIS_TOKEN;
 
       if (!redisUrl || !redisToken) {
-        return next();
+        if (process.env.NODE_ENV === "development") {
+          return next();
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Service temporarily unavailable. Please try again later.",
+        });
       }
 
       const result = await checkRateLimit(
@@ -143,7 +167,13 @@ export const actionRateLimit = (action: string, limit: number, windowSeconds: nu
         throw error;
       }
       log.error("Redis error:", error);
-      return next();
+      if (process.env.NODE_ENV === "development") {
+        return next();
+      }
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Service temporarily unavailable. Please try again later.",
+      });
     }
   });
 

@@ -1191,8 +1191,9 @@ export async function POST(req: NextRequest) {
 
         // Final fallback: assistantId from full webhook body
         if (!organizationId) {
-          const fullBody = JSON.parse(rawBody);
-          const possibleAssistantId = fullBody.assistantId || fullBody.assistant?.id;
+          let fullBody: Record<string, unknown> | undefined;
+          try { fullBody = JSON.parse(rawBody); } catch { /* already parsed above, ignore */ }
+          const possibleAssistantId = fullBody?.assistantId || (fullBody?.assistant as Record<string, unknown>)?.id;
           if (possibleAssistantId) {
             const agentByAssistant = await db.agent.findFirst({
               where: { vapiAssistantId: possibleAssistantId },
@@ -1224,7 +1225,12 @@ export async function POST(req: NextRequest) {
           // Handle both string and object arguments - Vapi sometimes sends them pre-parsed
           let args: Record<string, string>;
           if (typeof toolCall.function.arguments === "string") {
-            args = JSON.parse(toolCall.function.arguments || "{}");
+            try {
+              args = JSON.parse(toolCall.function.arguments || "{}");
+            } catch {
+              toolLog.error(`Failed to parse tool arguments for ${toolCall.function.name}`);
+              args = {};
+            }
           } else {
             args = (toolCall.function.arguments as Record<string, string>) || {};
           }
@@ -1786,20 +1792,4 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Health check / status endpoint
-export async function GET() {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "NOT SET";
-  const hasWebhookSecret = !!process.env.VAPI_WEBHOOK_SECRET;
-  const hasVapiKey = !!process.env.VAPI_API_KEY;
-
-  return NextResponse.json({
-    status: "Vapi webhook endpoint is active",
-    configuration: {
-      appUrl,
-      webhookUrl: `${appUrl}/api/webhooks/vapi`,
-      hasWebhookSecret,
-      hasVapiKey,
-    },
-    timestamp: new Date().toISOString(),
-  });
-}
+// Webhook endpoint does not expose a GET handler to avoid leaking configuration details

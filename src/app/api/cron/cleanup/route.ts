@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("[Cron] Cleanup error:", error);
     return NextResponse.json(
-      { error: "Cleanup failed", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Cleanup failed" },
       { status: 500 }
     );
   }

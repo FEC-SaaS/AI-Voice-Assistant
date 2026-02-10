@@ -58,7 +58,7 @@ const contactSchema = z.object({
   lastName: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
   company: z.string().optional(),
-  customData: z.record(z.any()).optional(),
+  customData: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
   notificationPreference: z.enum(["email", "sms", "both", "none"]).default("both"),
 });
 
