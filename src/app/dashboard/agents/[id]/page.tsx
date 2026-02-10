@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft, Bot, Edit, Phone, Megaphone, Power, Trash2,
-  PhoneCall, Loader2, CheckCircle, XCircle, BookOpen, RefreshCw, AlertTriangle, Calendar, Link as LinkIcon, PhoneForwarded, MessageSquare
+  PhoneCall, Loader2, CheckCircle, XCircle, BookOpen, RefreshCw, AlertTriangle, Calendar, Link as LinkIcon, PhoneForwarded
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -354,13 +354,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
                     Receptionist
                   </span>
                 )}
-                {Boolean((agent.settings as Record<string, unknown>)?.enableMissedCallTextBack) && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2.5 py-0.5 text-xs font-medium text-orange-400">
-                    <MessageSquare className="h-3 w-3" />
-                    Missed Call Text-Back
-                  </span>
-                )}
-                {!((agent.settings as Record<string, unknown>)?.enableAppointments) && !((agent.settings as Record<string, unknown>)?.enableReceptionist) && !((agent.settings as Record<string, unknown>)?.enableMissedCallTextBack) && (
+                {!((agent.settings as Record<string, unknown>)?.enableAppointments) && !((agent.settings as Record<string, unknown>)?.enableReceptionist) && (
                   <span className="text-sm text-muted-foreground">None enabled</span>
                 )}
               </div>

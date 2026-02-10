@@ -7,16 +7,6 @@ export const receptionistConfigSchema = z.object({
   enableCallScreening: z.boolean().default(false),
 });
 
-export const missedCallConfigSchema = z.object({
-  enableMissedCallTextBack: z.boolean().default(false),
-  textBackMessage: z.string().optional(),
-  afterHoursMessage: z.string().optional(),
-  enableAutoCallback: z.boolean().default(false),
-  callbackDelayMinutes: z.number().min(1).max(60).default(5),
-  autoCreateLead: z.boolean().default(true),
-  dedupWindowMinutes: z.number().min(5).max(1440).default(30),
-});
-
 export const createAgentSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   description: z.string().optional(),
@@ -30,8 +20,6 @@ export const createAgentSchema = z.object({
   enableAppointments: z.boolean().default(false),
   enableReceptionist: z.boolean().default(false),
   receptionistConfig: receptionistConfigSchema.optional(),
-  enableMissedCallTextBack: z.boolean().default(false),
-  missedCallConfig: missedCallConfigSchema.optional(),
 });
 
 export const updateAgentSchema = createAgentSchema.partial();
@@ -39,4 +27,3 @@ export const updateAgentSchema = createAgentSchema.partial();
 export type CreateAgentInput = z.infer<typeof createAgentSchema>;
 export type UpdateAgentInput = z.infer<typeof updateAgentSchema>;
 export type ReceptionistConfig = z.infer<typeof receptionistConfigSchema>;
-export type MissedCallConfig = z.infer<typeof missedCallConfigSchema>;

@@ -13,7 +13,6 @@ import { canHidePoweredBy } from "@/lib/plan-features";
 const emailSettingsSchema = z.object({
   emailBusinessName: z.string().optional(),
   emailFromAddress: z.string().email().optional().nullable(),
-  emailReplyTo: z.string().email().optional().nullable(),
   emailPrimaryColor: z.string().optional(),
   emailLogoUrl: z.string().url().optional().nullable(),
 });
@@ -175,7 +174,6 @@ export const organizationRouter = router({
       // Default to org name if no business name set
       emailBusinessName: (settings?.emailBusinessName as string) || org.name,
       emailFromAddress: settings?.emailFromAddress as string | null,
-      emailReplyTo: settings?.emailReplyTo as string | null,
       emailPrimaryColor: (settings?.emailPrimaryColor as string) || "#22c55e",
       emailLogoUrl: settings?.emailLogoUrl as string | null,
       // Info about the organization
@@ -206,7 +204,6 @@ export const organizationRouter = router({
         ...currentSettings,
         emailBusinessName: input.emailBusinessName,
         emailFromAddress: input.emailFromAddress,
-        emailReplyTo: input.emailReplyTo,
         emailPrimaryColor: input.emailPrimaryColor,
         emailLogoUrl: input.emailLogoUrl,
       };

@@ -57,16 +57,6 @@ const receptionistConfigSchema = z.object({
   enableCallScreening: z.boolean().default(false),
 });
 
-const missedCallConfigSchema = z.object({
-  enableMissedCallTextBack: z.boolean().default(false),
-  textBackMessage: z.string().optional(),
-  afterHoursMessage: z.string().optional(),
-  enableAutoCallback: z.boolean().default(false),
-  callbackDelayMinutes: z.number().min(1).max(60).default(5),
-  autoCreateLead: z.boolean().default(true),
-  dedupWindowMinutes: z.number().min(5).max(1440).default(30),
-});
-
 const agentSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   description: z.string().optional(),
@@ -80,8 +70,6 @@ const agentSchema = z.object({
   enableAppointments: z.boolean().default(false),
   enableReceptionist: z.boolean().default(false),
   receptionistConfig: receptionistConfigSchema.optional(),
-  enableMissedCallTextBack: z.boolean().default(false),
-  missedCallConfig: missedCallConfigSchema.optional(),
 });
 
 export const agentsRouter = router({
@@ -282,15 +270,6 @@ export const agentsRouter = router({
             enableAppointments: input.enableAppointments,
             enableReceptionist: input.enableReceptionist,
             ...(input.receptionistConfig && { receptionistConfig: input.receptionistConfig }),
-            enableMissedCallTextBack: input.enableMissedCallTextBack,
-            ...(input.missedCallConfig && {
-              missedCallTextBackMessage: input.missedCallConfig.textBackMessage,
-              missedCallAfterHoursMessage: input.missedCallConfig.afterHoursMessage,
-              enableMissedCallAutoCallback: input.missedCallConfig.enableAutoCallback,
-              missedCallCallbackDelay: input.missedCallConfig.callbackDelayMinutes,
-              missedCallAutoCreateLead: input.missedCallConfig.autoCreateLead,
-              missedCallDedupWindow: input.missedCallConfig.dedupWindowMinutes,
-            }),
           },
         },
       });
@@ -405,15 +384,10 @@ export const agentsRouter = router({
       delete updateData.enableAppointments;
       delete updateData.enableReceptionist;
       delete updateData.receptionistConfig;
-      delete updateData.enableMissedCallTextBack;
-      delete updateData.missedCallConfig;
-
       const hasCapabilityChange =
         input.data.enableAppointments !== undefined ||
         input.data.enableReceptionist !== undefined ||
-        input.data.receptionistConfig !== undefined ||
-        input.data.enableMissedCallTextBack !== undefined ||
-        input.data.missedCallConfig !== undefined;
+        input.data.receptionistConfig !== undefined;
 
       if (hasCapabilityChange) {
         updateData.settings = {
@@ -421,15 +395,6 @@ export const agentsRouter = router({
           ...(input.data.enableAppointments !== undefined && { enableAppointments: input.data.enableAppointments }),
           ...(input.data.enableReceptionist !== undefined && { enableReceptionist: input.data.enableReceptionist }),
           ...(input.data.receptionistConfig !== undefined && { receptionistConfig: input.data.receptionistConfig }),
-          ...(input.data.enableMissedCallTextBack !== undefined && { enableMissedCallTextBack: input.data.enableMissedCallTextBack }),
-          ...(input.data.missedCallConfig && {
-            missedCallTextBackMessage: input.data.missedCallConfig.textBackMessage,
-            missedCallAfterHoursMessage: input.data.missedCallConfig.afterHoursMessage,
-            enableMissedCallAutoCallback: input.data.missedCallConfig.enableAutoCallback,
-            missedCallCallbackDelay: input.data.missedCallConfig.callbackDelayMinutes,
-            missedCallAutoCreateLead: input.data.missedCallConfig.autoCreateLead,
-            missedCallDedupWindow: input.data.missedCallConfig.dedupWindowMinutes,
-          }),
         };
       }
 

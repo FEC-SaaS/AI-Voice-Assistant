@@ -60,7 +60,6 @@ export default function EmailSettingsPage() {
   const [formData, setFormData] = useState({
     emailBusinessName: "",
     emailFromAddress: "",
-    emailReplyTo: "",
     emailPrimaryColor: "#22c55e",
     emailLogoUrl: "",
   });
@@ -124,7 +123,6 @@ export default function EmailSettingsPage() {
       setFormData({
         emailBusinessName: settings.emailBusinessName || "",
         emailFromAddress: settings.emailFromAddress || "",
-        emailReplyTo: settings.emailReplyTo || "",
         emailPrimaryColor: settings.emailPrimaryColor || "#22c55e",
         emailLogoUrl: settings.emailLogoUrl || "",
       });
@@ -160,7 +158,6 @@ export default function EmailSettingsPage() {
     updateSettings.mutate({
       emailBusinessName: formData.emailBusinessName || undefined,
       emailFromAddress: formData.emailFromAddress || null,
-      emailReplyTo: formData.emailReplyTo || null,
       emailPrimaryColor: formData.emailPrimaryColor || undefined,
       emailLogoUrl: formData.emailLogoUrl || null,
     });
@@ -493,34 +490,6 @@ export default function EmailSettingsPage() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Email Addresses */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Email Addresses
-          </CardTitle>
-          <CardDescription>
-            Configure reply-to addresses for your appointment emails.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="emailReplyTo">Reply-To Email</Label>
-            <Input
-              id="emailReplyTo"
-              type="email"
-              placeholder="support@yourbusiness.com"
-              value={formData.emailReplyTo}
-              onChange={(e) => handleChange("emailReplyTo", e.target.value)}
-            />
-            <p className="text-sm text-muted-foreground">
-              When customers reply to emails, responses will go to this address.
-            </p>
-          </div>
         </CardContent>
       </Card>
 

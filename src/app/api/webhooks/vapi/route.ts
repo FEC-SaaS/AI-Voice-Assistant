@@ -1522,31 +1522,6 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        // Detect missed calls for inbound calls
-        // A missed call is: inbound + (no-answer status OR zero duration OR failed with short duration)
-        const endCallDirection = callDirection || updatedCall.direction || "outbound";
-        const isMissedCall =
-          endCallDirection === "inbound" &&
-          (finalStatus === "no-answer" ||
-           (durationSeconds <= 5 && finalStatus !== "completed") ||
-           finalStatus === "busy");
-
-        if (isMissedCall && organizationId && call.customer?.number) {
-          // Fire and forget — process missed call in background
-          import("@/lib/missed-calls").then(({ processMissedCall }) => {
-            processMissedCall({
-              organizationId: organizationId!,
-              agentId: agent?.id,
-              callerNumber: call!.customer!.number,
-              calledNumber: call!.metadata?.fromNumber,
-              reason: finalStatus === "busy" ? "busy" : "no_answer",
-              vapiCallId: call!.id,
-            }).catch((error) => {
-              log.error("Missed call processing failed:", error);
-            });
-          });
-        }
-
         break;
       }
 
@@ -1762,22 +1737,6 @@ export async function POST(req: NextRequest) {
             },
           }).catch(() => {
             // Contact might not exist
-          });
-        }
-
-        // Detect missed inbound calls that failed
-        if (callDirection === "inbound" && organizationId && call.customer?.number) {
-          import("@/lib/missed-calls").then(({ processMissedCall }) => {
-            processMissedCall({
-              organizationId: organizationId!,
-              agentId: agent?.id,
-              callerNumber: call!.customer!.number,
-              calledNumber: call!.metadata?.fromNumber,
-              reason: "agent_unavailable",
-              vapiCallId: call!.id,
-            }).catch((error) => {
-              log.error("Missed call processing failed:", error);
-            });
           });
         }
 

@@ -1,19 +1,16 @@
 /**
  * Email Webhook Handler
- * Receives inbound emails from Resend and processes customer replies
+ * Receives webhook events from Resend for bounce and complaint handling
  *
  * To set up:
  * 1. In Resend dashboard, go to Webhooks
  * 2. Add webhook URL: https://yourdomain.com/api/webhooks/email
- * 3. Select "email.received" event
+ * 3. Select "email.bounced" and "email.complained" events
  * 4. Copy the signing secret and set RESEND_WEBHOOK_SECRET env variable
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { processInboundEmail, logEmailActivity } from "@/lib/email-reply-processor";
-import { sendEmail } from "@/lib/email";
-import { db } from "@/lib/db";
 
 /**
  * Verify Resend/Svix webhook signature
@@ -83,18 +80,13 @@ function verifyWebhookSignature(
 
 // Resend webhook event types
 interface ResendEmailEvent {
-  type: "email.sent" | "email.delivered" | "email.bounced" | "email.complained" | "email.received";
+  type: "email.sent" | "email.delivered" | "email.bounced" | "email.complained";
   created_at: string;
   data: {
     email_id?: string;
     from?: string;
     to?: string | string[];
     subject?: string;
-    text?: string;
-    html?: string;
-    // For inbound emails
-    headers?: Record<string, string>;
-    attachments?: Array<{ filename: string; content: string; content_type: string }>;
   };
 }
 
@@ -129,75 +121,6 @@ export async function POST(request: NextRequest) {
 
     // Handle different event types
     switch (event.type) {
-      case "email.received": {
-        console.log("[Email Webhook] Raw event.data keys:", Object.keys(event.data));
-
-        // Resend webhooks only include metadata (from, to, subject, email_id).
-        // The email body must be fetched separately via the Resend API.
-        const emailId = event.data.email_id;
-        let emailText: string | undefined;
-        let emailHtml: string | undefined;
-        let emailHeaders: Record<string, string> | undefined;
-
-        if (emailId && process.env.RESEND_API_KEY) {
-          try {
-            console.log(`[Email Webhook] Fetching inbound email body from Resend API for: ${emailId}`);
-            // Use the Resend inbound email API endpoint directly
-            // SDK v2.1.0 doesn't have emails.receiving — requires direct fetch
-            const res = await fetch(`https://api.resend.com/emails/receiving/${emailId}`, {
-              headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
-            });
-
-            if (!res.ok) {
-              const errBody = await res.text();
-              console.error(`[Email Webhook] Resend API ${res.status}: ${errBody}`);
-            } else {
-              const fullEmail = await res.json();
-              emailText = fullEmail.text ?? undefined;
-              emailHtml = fullEmail.html ?? undefined;
-              emailHeaders = fullEmail.headers ?? undefined;
-              console.log(`[Email Webhook] Fetched body — text: ${emailText?.length ?? 0} chars, html: ${emailHtml?.length ?? 0} chars`);
-            }
-          } catch (fetchErr) {
-            console.error("[Email Webhook] Failed to fetch email from Resend:", fetchErr);
-          }
-        } else {
-          console.warn("[Email Webhook] No email_id or RESEND_API_KEY, cannot fetch body");
-        }
-
-        // Process inbound email
-        const toAddress = Array.isArray(event.data.to) ? event.data.to[0] : event.data.to;
-        const inboundEmail = {
-          from: event.data.from || "",
-          to: toAddress || "",
-          subject: event.data.subject || "",
-          text: emailText,
-          html: emailHtml,
-          inReplyTo: emailHeaders?.["in-reply-to"],
-          references: emailHeaders?.["references"],
-        };
-
-        console.log("[Email Webhook] Inbound email payload:", JSON.stringify({
-          from: inboundEmail.from,
-          to: inboundEmail.to,
-          subject: inboundEmail.subject,
-          hasText: !!inboundEmail.text,
-          textLength: inboundEmail.text?.length,
-          hasHtml: !!inboundEmail.html,
-          htmlLength: inboundEmail.html?.length,
-        }));
-
-        const result = await processInboundEmail(inboundEmail);
-        console.log("[Email Webhook] Process result:", result);
-
-        // Notify business if needed
-        if (result.shouldNotifyBusiness && result.appointmentId) {
-          await notifyBusinessOfEmailReply(result.appointmentId, inboundEmail, result);
-        }
-
-        return NextResponse.json({ success: true, result });
-      }
-
       case "email.bounced": {
         // Handle bounced emails - mark contact email as invalid
         const toEmail = Array.isArray(event.data.to) ? event.data.to[0] : event.data.to;
@@ -229,95 +152,6 @@ export async function POST(request: NextRequest) {
       { error: "Webhook processing failed" },
       { status: 500 }
     );
-  }
-}
-
-/**
- * Notify business owner about an email reply
- */
-async function notifyBusinessOfEmailReply(
-  appointmentId: string,
-  email: { from: string; subject: string; text?: string },
-  result: { action?: string; message?: string }
-): Promise<void> {
-  try {
-    // Get appointment with organization details
-    const appointment = await db.appointment.findUnique({
-      where: { id: appointmentId },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            settings: true,
-          },
-        },
-      },
-    });
-
-    if (!appointment) return;
-
-    // Get organization's reply-to email or admin emails
-    const settings = appointment.organization.settings as Record<string, unknown> | null;
-    const replyToEmail = settings?.emailReplyTo as string | null;
-
-    // For now, log the notification - could send actual email to business
-    console.log(`[Email Webhook] Notifying business about email reply:`, {
-      appointmentId,
-      organizationId: appointment.organizationId,
-      action: result.action,
-      from: email.from,
-      subject: email.subject,
-    });
-
-    // Log activity
-    await logEmailActivity(
-      appointment.organizationId,
-      appointmentId,
-      `email_reply_${result.action || "received"}`,
-      {
-        from: email.from,
-        subject: email.subject,
-        textPreview: email.text?.substring(0, 200),
-        action: result.action,
-        message: result.message,
-      }
-    );
-
-    // If there's a business reply-to email, send notification
-    if (replyToEmail && result.action && result.action !== "no_action") {
-      const actionLabel = {
-        confirmed: "Appointment Confirmed",
-        cancel_requested: "Cancellation Requested",
-        reschedule_requested: "Reschedule Requested",
-        question: "Customer Question",
-      }[result.action] || "Email Received";
-
-      await sendEmail({
-        to: replyToEmail,
-        subject: `[${actionLabel}] Reply from ${email.from}`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #1a1a1a;">Customer Email Reply</h2>
-            <p><strong>Status:</strong> ${actionLabel}</p>
-            <p><strong>From:</strong> ${email.from}</p>
-            <p><strong>Subject:</strong> ${email.subject}</p>
-            <p><strong>Appointment:</strong> ${appointment.title}</p>
-            ${result.message ? `<p><strong>Action Taken:</strong> ${result.message}</p>` : ""}
-            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-            <p><strong>Customer Message:</strong></p>
-            <blockquote style="background: #f5f5f5; padding: 15px; border-left: 4px solid #ddd; margin: 10px 0;">
-              ${email.text || "(No text content)"}
-            </blockquote>
-            <p style="color: #666; font-size: 12px;">
-              This notification was generated automatically by CallTone AI.
-            </p>
-          </div>
-        `,
-      });
-    }
-  } catch (error) {
-    console.error("[Email Webhook] Failed to notify business:", error);
   }
 }
 

@@ -23,7 +23,6 @@ import {
   Target,
   Shield,
   PhoneForwarded,
-  PhoneMissed,
   Wand2,
   type LucideIcon,
 } from "lucide-react";
@@ -60,7 +59,6 @@ const navItems: NavItem[] = [
     children: [
       { title: "Call Logs", href: "/dashboard/calls", icon: Phone },
       { title: "Live Calls", href: "/dashboard/live", icon: Radio },
-      { title: "Missed Calls", href: "/dashboard/missed-calls", icon: PhoneMissed },
     ],
   },
   { type: "link", title: "Appointments", href: "/dashboard/appointments", icon: Calendar },

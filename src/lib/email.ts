@@ -384,12 +384,6 @@ export async function sendAppointmentConfirmation(
 
           ${actionButtonsHtml}
 
-          <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
-            <p style="margin: 0; color: #0369a1; font-size: 13px;">
-              You can also reply to this email to manage your appointment. Just write what you'd like to do in your own words — for example, confirm, reschedule, cancel, or ask a question — and we'll take care of it.
-            </p>
-          </div>
-
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 
           <p style="color: #666; font-size: 14px; text-align: center;">
@@ -488,12 +482,6 @@ export async function sendAppointmentReminder(
           ${meetingDetails}
 
           ${actionButtonsHtml}
-
-          <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
-            <p style="margin: 0; color: #0369a1; font-size: 13px;">
-              You can also reply to this email to manage your appointment. Just write what you'd like to do in your own words — for example, confirm, reschedule, cancel, or ask a question — and we'll take care of it.
-            </p>
-          </div>
 
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 
@@ -729,12 +717,6 @@ export async function sendAppointmentRescheduled(
           ${meetingDetails}
 
           ${actionButtonsHtml}
-
-          <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin: 20px 0;">
-            <p style="margin: 0; color: #0369a1; font-size: 13px;">
-              You can also reply to this email to manage your appointment. Just write what you'd like to do in your own words — for example, confirm the new time, reschedule again, cancel, or ask a question — and we'll take care of it.
-            </p>
-          </div>
 
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
 

@@ -43,7 +43,6 @@ model Organization {
   departments        Department[]
   staffMembers       StaffMember[]
   receptionistMessages ReceptionistMessage[]
-  missedCalls          MissedCall[]
 
   @@index([slug])
   @@index([clerkOrgId])
@@ -91,7 +90,6 @@ model Agent {
   phoneNumbers PhoneNumber[]
   appointments Appointment[]
   receptionistMessages ReceptionistMessage[]
-  missedCalls  MissedCall[]
 
   @@index([organizationId])
   @@index([vapiAssistantId])
@@ -491,40 +489,3 @@ model ReceptionistMessage {
   @@index([createdAt])
 }
 
-model MissedCall {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agentId        String?
-  agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
-  callerNumber   String
-  calledNumber   String?
-  reason         String       @default("no_answer") // no_answer, busy, rejected, after_hours, agent_unavailable
-  vapiCallId     String?
-
-  // Text-back tracking
-  textBackSent   Boolean      @default(false)
-  textBackSentAt DateTime?
-  textBackMessage String?     @db.Text
-
-  // Auto-callback tracking
-  callbackInitiated Boolean   @default(false)
-  callbackAt        DateTime?
-  callbackCallId    String?
-
-  // Lead capture
-  contactCreated Boolean      @default(false)
-  contactId      String?
-
-  // Deduplication
-  isDuplicate    Boolean      @default(false)
-
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([organizationId])
-  @@index([callerNumber])
-  @@index([agentId])
-  @@index([createdAt])
-  @@index([textBackSent])
-}

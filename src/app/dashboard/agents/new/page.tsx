@@ -47,10 +47,8 @@ export default function NewAgentPage() {
   });
 
   const [showReceptionistConfig, setShowReceptionistConfig] = useState(false);
-  const [showMissedCallConfig, setShowMissedCallConfig] = useState(false);
   const selectedProvider = watch("voiceProvider");
   const watchReceptionist = watch("enableReceptionist");
-  const watchMissedCall = watch("enableMissedCallTextBack");
   const filteredVoices = VOICES.filter((v) => v.provider === selectedProvider);
 
   const onSubmit = (data: CreateAgentInput) => {
@@ -259,115 +257,6 @@ export default function NewAgentPage() {
             </div>
           )}
 
-          <hr className="border-border/50" />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label htmlFor="enableMissedCallTextBack" className="text-base">Missed Call Text-Back</Label>
-              <p className="text-sm text-muted-foreground">
-                Automatically send an SMS when an inbound call is missed, and optionally auto-callback
-              </p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                id="enableMissedCallTextBack"
-                className="sr-only peer"
-                {...register("enableMissedCallTextBack")}
-              />
-              <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
-          </div>
-
-          {watchMissedCall && (
-            <div className="ml-4 space-y-4 border-l-2 border-primary/20 pl-4">
-              <button
-                type="button"
-                onClick={() => setShowMissedCallConfig(!showMissedCallConfig)}
-                className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-              >
-                {showMissedCallConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                Missed Call Configuration
-              </button>
-              {showMissedCallConfig && (
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="missedCallConfig.textBackMessage">Text-Back Message</Label>
-                    <textarea
-                      id="missedCallConfig.textBackMessage"
-                      className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      placeholder="Hi! We missed your call. Reply YES if you'd like us to call you back."
-                      {...register("missedCallConfig.textBackMessage")}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="missedCallConfig.afterHoursMessage">After-Hours Message</Label>
-                    <textarea
-                      id="missedCallConfig.afterHoursMessage"
-                      className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      placeholder="Thanks for calling! We're currently closed but will return your call during business hours."
-                      {...register("missedCallConfig.afterHoursMessage")}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="missedCallConfig.enableAutoCallback" className="text-sm">Auto-Callback</Label>
-                      <p className="text-xs text-muted-foreground">Automatically call back missed callers after a delay</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        id="missedCallConfig.enableAutoCallback"
-                        className="sr-only peer"
-                        {...register("missedCallConfig.enableAutoCallback")}
-                      />
-                      <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="missedCallConfig.callbackDelayMinutes">Callback Delay (minutes)</Label>
-                      <Input
-                        id="missedCallConfig.callbackDelayMinutes"
-                        type="number"
-                        min={1}
-                        max={60}
-                        defaultValue={5}
-                        {...register("missedCallConfig.callbackDelayMinutes", { valueAsNumber: true })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="missedCallConfig.dedupWindowMinutes">Dedup Window (minutes)</Label>
-                      <Input
-                        id="missedCallConfig.dedupWindowMinutes"
-                        type="number"
-                        min={5}
-                        max={1440}
-                        defaultValue={30}
-                        {...register("missedCallConfig.dedupWindowMinutes", { valueAsNumber: true })}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="missedCallConfig.autoCreateLead" className="text-sm">Auto-Create Lead</Label>
-                      <p className="text-xs text-muted-foreground">Automatically create a contact/lead from missed callers</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        id="missedCallConfig.autoCreateLead"
-                        className="sr-only peer"
-                        defaultChecked
-                        {...register("missedCallConfig.autoCreateLead")}
-                      />
-                      <div className="w-11 h-6 bg-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <div className="flex items-center justify-end gap-4">

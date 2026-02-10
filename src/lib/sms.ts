@@ -77,14 +77,6 @@ export function getPostCallFollowUpSmsTemplate(
   return `${businessName}: Thanks for speaking with us today, ${customerName}! If you have any questions, feel free to reply to this message.`;
 }
 
-// Template: Missed Call Follow-up
-export function getMissedCallFollowUpSmsTemplate(
-  businessName: string,
-  customerName: string
-): string {
-  return `${businessName}: Hi ${customerName}, we tried to reach you but missed you. Reply CALL to request a callback or let us know a good time to reach you.`;
-}
-
 // ============================================
 // SMS Sending Functions
 // ============================================
@@ -104,6 +96,12 @@ interface SendAppointmentSmsResult extends SendSmsResult {
  * Get organization's SMS config: phone number + Twilio credentials.
  * Only Twilio-managed or Twilio-imported numbers can send SMS via Twilio.
  * Vapi/Vonage numbers belong to Vapi's telephony provider and cannot be used as From.
+ *
+ * IMPORTANT: The credentials returned MUST match the account that owns the phone number.
+ * Numbers purchased via buyNumber are owned by the org's Twilio subaccount, so we must
+ * use the subaccount credentials — not the master account — to send SMS from those numbers.
+ * Error 21660 ("Mismatch between From number and account") occurs when the wrong
+ * account's credentials are used.
  */
 async function getOrganizationSmsConfig(organizationId: string): Promise<{
   fromNumber: string;
@@ -123,11 +121,29 @@ async function getOrganizationSmsConfig(organizationId: string): Promise<{
       isActive: true,
       provider: { in: ["twilio-managed", "twilio-imported"] },
     },
-    select: { number: true },
+    select: { number: true, provider: true },
     orderBy: { createdAt: "asc" },
   });
 
   if (twilioNumber) {
+    // For twilio-managed numbers (bought through our app), they belong to the
+    // org's subaccount. We MUST use subaccount credentials to avoid error 21660.
+    if (twilioNumber.provider === "twilio-managed") {
+      if (!org?.twilioSubaccountSid || !org?.twilioAuthToken) {
+        console.error(
+          `[SMS] Twilio-managed number found for org ${organizationId} but no subaccount credentials stored. SMS will fail with error 21660.`
+        );
+        return null;
+      }
+      return {
+        fromNumber: twilioNumber.number,
+        accountSid: org.twilioSubaccountSid,
+        authToken: org.twilioAuthToken,
+      };
+    }
+
+    // For twilio-imported numbers, use subaccount creds if available,
+    // otherwise fall back to master (the number may belong to the master account)
     return {
       fromNumber: twilioNumber.number,
       accountSid: org?.twilioSubaccountSid || undefined,
@@ -380,46 +396,6 @@ export async function sendPostCallFollowUpSms(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("[SMS] Post-call follow-up error:", errorMessage);
-    return { success: false, error: errorMessage };
-  }
-}
-
-/**
- * Send missed call follow-up SMS
- */
-export async function sendMissedCallFollowUpSms(
-  organizationId: string,
-  customerPhone: string,
-  customerName?: string
-): Promise<SendSmsResult> {
-  try {
-    const orgSettings = await getOrganizationSettings(organizationId);
-
-    if (!orgSettings.smsEnabled) {
-      return { success: false, error: "SMS is disabled" };
-    }
-
-    const smsConfig = await getOrganizationSmsConfig(organizationId);
-
-    if (!smsConfig) {
-      return { success: false, error: "No SMS number configured" };
-    }
-
-    const messageBody = getMissedCallFollowUpSmsTemplate(
-      orgSettings.businessName,
-      customerName || "there"
-    );
-
-    return await sendSms({
-      to: customerPhone,
-      from: smsConfig.fromNumber,
-      body: messageBody,
-      accountSid: smsConfig.accountSid,
-      authToken: smsConfig.authToken,
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("[SMS] Missed call follow-up error:", errorMessage);
     return { success: false, error: errorMessage };
   }
 }
