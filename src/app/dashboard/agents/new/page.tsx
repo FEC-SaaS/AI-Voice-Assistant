@@ -38,8 +38,8 @@ export default function NewAgentPage() {
   } = useForm<CreateAgentInput>({
     resolver: zodResolver(createAgentSchema),
     defaultValues: {
-      voiceProvider: "elevenlabs",
-      voiceId: "rachel",
+      voiceProvider: "vapi",
+      voiceId: "Elliot",
       language: "en-US",
       modelProvider: "openai",
       model: "gpt-4o",

@@ -97,14 +97,13 @@ export interface VapiAssistant {
 
 // Vapi's built-in voices (no external credentials needed)
 const VAPI_VOICES = [
-  "Elliot", "Kylie", "Rohan", "Lily", "Savannah", "Hana", "Neha",
-  "Harry", "Paige", "Spencer", "Leah", "Tara", "Jess", "Leo", "Dan", "Mia", "Zac", "Zoe"
+  "Elliot", "Rohan", "Savannah", "Leah", "Tara", "Jess", "Leo", "Dan", "Mia", "Zac", "Zoe"
 ];
 
 // Deepgram voices supported by Vapi
 const DEEPGRAM_VOICES = [
-  "asteria", "luna", "stella", "athena", "hera", "orion", "arcas", "perseus",
-  "angus", "orpheus", "helios", "zeus", "thalia", "andromeda", "helena", "apollo",
+  "luna", "stella", "athena", "hera", "orion", "arcas", "perseus",
+  "angus", "orpheus", "helios", "zeus", "thalia", "andromeda", "helena",
   "aries", "amalthea", "atlas", "aurora", "callista", "cora", "cordelia", "delia",
   "draco", "electra", "harmonia", "hermes", "hyperion", "iris", "janus", "juno",
   "jupiter", "mars", "minerva", "neptune", "odysseus", "ophelia", "pandora",
@@ -115,10 +114,7 @@ const DEEPGRAM_VOICES = [
 // Map voice provider names to Vapi's expected format
 function mapVoiceProvider(provider: string): string {
   const providerMap: Record<string, string> = {
-    elevenlabs: "11labs",
-    "11labs": "11labs",
     vapi: "vapi",
-    playht: "playht",
     deepgram: "deepgram",
     openai: "openai",
     cartesia: "cartesia",
@@ -141,12 +137,6 @@ export async function createAssistant(config: AssistantConfig): Promise<VapiAssi
     // Deepgram voices
     voiceProvider = "deepgram";
     voiceId = voiceId.toLowerCase(); // Deepgram uses lowercase
-  } else if (voiceProvider === "11labs" || voiceProvider === "elevenlabs") {
-    // ElevenLabs - ensure provider is correct
-    voiceProvider = "11labs";
-  } else if (voiceProvider === "playht") {
-    // PlayHT - keep as is
-    voiceProvider = "playht";
   }
 
   console.log("[Vapi] Creating assistant with voice:", { provider: voiceProvider, voiceId });
@@ -228,8 +218,6 @@ export async function updateAssistant(
     } else if (DEEPGRAM_VOICES.includes(voiceId.toLowerCase())) {
       voiceProvider = "deepgram";
       voiceId = voiceId.toLowerCase();
-    } else if (voiceProvider === "11labs" || voiceProvider === "elevenlabs") {
-      voiceProvider = "11labs";
     }
 
     body.voice = {

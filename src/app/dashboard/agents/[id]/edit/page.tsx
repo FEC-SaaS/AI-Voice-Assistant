@@ -72,7 +72,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
 
   const selectedProvider = watch("voiceProvider");
   const watchReceptionist = watch("enableReceptionist");
-  const filteredVoices = VOICES.filter((v) => v.provider === (selectedProvider || "elevenlabs"));
+  const filteredVoices = VOICES.filter((v) => v.provider === (selectedProvider || "vapi"));
 
   const onSubmit = (data: CreateAgentInput) => {
     updateAgent.mutate({ id: params.id, data });

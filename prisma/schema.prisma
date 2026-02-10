@@ -75,8 +75,8 @@ model Agent {
   description     String?
   systemPrompt    String       @db.Text
   firstMessage    String?
-  voiceProvider   String       @default("elevenlabs")
-  voiceId         String       @default("rachel")
+  voiceProvider   String       @default("vapi")
+  voiceId         String       @default("Elliot")
   language        String       @default("en-US")
   modelProvider   String       @default("openai")
   model           String       @default("gpt-4o")
