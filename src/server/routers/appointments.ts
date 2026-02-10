@@ -694,22 +694,7 @@ export const appointmentsRouter = router({
           branding
         );
 
-        // Also send SMS if phone is available
-        let message = `Confirmation email sent to ${appointment.attendeeEmail}`;
-        if (appointment.attendeePhone) {
-          try {
-            await sendAppointmentSms({
-              appointmentId: appointment.id,
-              type: "confirmation",
-            });
-            message += ` and SMS sent to ${appointment.attendeePhone}`;
-          } catch (smsError) {
-            log.error("Failed to send confirmation SMS:", smsError);
-            // Don't fail — email was already sent
-          }
-        }
-
-        return { success: true, message };
+        return { success: true, message: `Confirmation email sent to ${appointment.attendeeEmail}` };
       } catch (error) {
         log.error("Failed to send confirmation email:", error);
         throw new TRPCError({
