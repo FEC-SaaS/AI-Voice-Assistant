@@ -2,8 +2,28 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
+      "path": "/api/cron/campaign-executor",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/call-analysis",
+      "schedule": "*/10 * * * *"
+    },
+    {
       "path": "/api/cron/reminders",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/appointment-reminders",
+      "schedule": "30 * * * *"
+    },
+    {
+      "path": "/api/cron/daily-reports",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 3 * * *"
     }
   ]
 }

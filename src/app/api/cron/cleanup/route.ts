@@ -59,9 +59,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Vercel Cron uses GET requests
 export async function GET(req: NextRequest) {
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
-  }
   return POST(req);
 }

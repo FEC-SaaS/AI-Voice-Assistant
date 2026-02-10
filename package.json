@@ -48,6 +48,7 @@
     "next": "^14.2.25",
     "openai": "^6.16.0",
     "posthog-js": "^1.342.1",
+    "posthog-node": "^5.24.14",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.3.8",
