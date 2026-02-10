@@ -1271,66 +1271,72 @@ export default function AppointmentsPage() {
             </div>
           )}
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <div className="flex gap-2 flex-1">
-              {editAppointment && editFormData.attendeeEmail && editAppointment.status !== "cancelled" && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // Save first, then resend
-                    if (editFormData.attendeeEmail !== editAppointment.attendeeEmail) {
-                      updateAppointment.mutate({
-                        id: editAppointment.id,
-                        attendeeEmail: editFormData.attendeeEmail,
-                      }, {
-                        onSuccess: () => {
-                          resendConfirmation.mutate({ id: editAppointment.id });
-                        }
-                      });
-                    } else {
-                      resendConfirmation.mutate({ id: editAppointment.id });
-                    }
-                  }}
-                  disabled={resendConfirmation.isPending || updateAppointment.isPending}
-                >
-                  {resendConfirmation.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="mr-2 h-4 w-4" />
-                  )}
-                  Resend Email
-                </Button>
-              )}
-              {editAppointment && editFormData.attendeePhone && editAppointment.status !== "cancelled" && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    // Save phone first if changed, then resend
-                    if (editFormData.attendeePhone !== editAppointment.attendeePhone) {
-                      updateAppointment.mutate({
-                        id: editAppointment.id,
-                        attendeePhone: editFormData.attendeePhone,
-                      }, {
-                        onSuccess: () => {
-                          resendSms.mutate({ id: editAppointment.id });
-                        }
-                      });
-                    } else {
-                      resendSms.mutate({ id: editAppointment.id });
-                    }
-                  }}
-                  disabled={resendSms.isPending || updateAppointment.isPending}
-                >
-                  {resendSms.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                  )}
-                  Resend SMS
-                </Button>
-              )}
-            </div>
-            <div className="flex gap-2">
+          <DialogFooter className="flex-col gap-3">
+            {/* Resend actions row */}
+            {editAppointment && editAppointment.status !== "cancelled" && (editFormData.attendeeEmail || editFormData.attendeePhone) && (
+              <div className="flex flex-wrap gap-2 w-full">
+                {editFormData.attendeeEmail && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Save first, then resend
+                      if (editFormData.attendeeEmail !== editAppointment.attendeeEmail) {
+                        updateAppointment.mutate({
+                          id: editAppointment.id,
+                          attendeeEmail: editFormData.attendeeEmail,
+                        }, {
+                          onSuccess: () => {
+                            resendConfirmation.mutate({ id: editAppointment.id });
+                          }
+                        });
+                      } else {
+                        resendConfirmation.mutate({ id: editAppointment.id });
+                      }
+                    }}
+                    disabled={resendConfirmation.isPending || updateAppointment.isPending}
+                  >
+                    {resendConfirmation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-2 h-4 w-4" />
+                    )}
+                    Resend Email
+                  </Button>
+                )}
+                {editFormData.attendeePhone && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Save phone first if changed, then resend
+                      if (editFormData.attendeePhone !== editAppointment.attendeePhone) {
+                        updateAppointment.mutate({
+                          id: editAppointment.id,
+                          attendeePhone: editFormData.attendeePhone,
+                        }, {
+                          onSuccess: () => {
+                            resendSms.mutate({ id: editAppointment.id });
+                          }
+                        });
+                      } else {
+                        resendSms.mutate({ id: editAppointment.id });
+                      }
+                    }}
+                    disabled={resendSms.isPending || updateAppointment.isPending}
+                  >
+                    {resendSms.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                    )}
+                    Resend SMS
+                  </Button>
+                )}
+              </div>
+            )}
+            {/* Primary actions row */}
+            <div className="flex justify-end gap-2 w-full">
               <Button variant="outline" onClick={() => setEditAppointment(null)}>
                 Cancel
               </Button>

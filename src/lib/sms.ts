@@ -78,6 +78,42 @@ export function getPostCallFollowUpSmsTemplate(
 }
 
 // ============================================
+// Phone Number Normalization
+// ============================================
+
+/**
+ * Normalize a phone number to E.164 format.
+ * Strips spaces, dashes, parentheses and other formatting characters.
+ * If the number already starts with +, it keeps the country code.
+ * If it starts with 0 (common local format), we cannot guess the country code,
+ * so we return it as-is with a + prefix removed of the leading 0.
+ * Returns null if the result is clearly invalid (too short / too long).
+ */
+function normalizePhoneNumber(phone: string): string | null {
+  // Strip all non-digit characters except leading +
+  const hasPlus = phone.startsWith("+");
+  const digits = phone.replace(/\D/g, "");
+
+  if (!digits || digits.length < 7 || digits.length > 15) {
+    console.warn(`[SMS] Phone number "${phone}" has invalid length (${digits.length} digits)`);
+    return null;
+  }
+
+  // If the original started with +, the digits already include the country code
+  if (hasPlus) {
+    return `+${digits}`;
+  }
+
+  // If it starts with 00 (international dialing prefix), strip it and add +
+  if (digits.startsWith("00") && digits.length > 9) {
+    return `+${digits.slice(2)}`;
+  }
+
+  // Otherwise just prefix with + (assume the digits include country code)
+  return `+${digits}`;
+}
+
+// ============================================
 // SMS Sending Functions
 // ============================================
 
@@ -294,9 +330,20 @@ export async function sendAppointmentSms(
         messageBody = getConfirmationSmsTemplate(templateData);
     }
 
+    // Normalize the phone number to E.164 before sending
+    const normalizedPhone = normalizePhoneNumber(appointment.attendeePhone);
+    if (!normalizedPhone) {
+      return {
+        success: false,
+        error: `Invalid phone number: ${appointment.attendeePhone}`,
+        appointmentId,
+        smsType: type,
+      };
+    }
+
     // Send the SMS (use org-level Twilio credentials if available)
     const result = await sendSms({
-      to: appointment.attendeePhone,
+      to: normalizedPhone,
       from: fromNumber,
       body: messageBody,
       accountSid: smsConfig.accountSid,
@@ -385,9 +432,15 @@ export async function sendPostCallFollowUpSms(
       customMessage
     );
 
+    // Normalize the phone number to E.164 before sending
+    const normalizedCustomerPhone = normalizePhoneNumber(customerPhone);
+    if (!normalizedCustomerPhone) {
+      return { success: false, error: `Invalid phone number: ${customerPhone}` };
+    }
+
     // Send SMS (use org-level Twilio credentials if available)
     return await sendSms({
-      to: customerPhone,
+      to: normalizedCustomerPhone,
       from: smsConfig.fromNumber,
       body: messageBody,
       accountSid: smsConfig.accountSid,
@@ -551,8 +604,14 @@ export async function sendReceptionistMessageSms(
 
     const messageBody = `${orgSettings.businessName}: ${urgencyLabel}New msg from ${data.callerName}${phoneInfo}. "${truncatedBody}". View in dashboard.`;
 
+    // Normalize the phone number to E.164 before sending
+    const normalizedToPhone = normalizePhoneNumber(toPhone);
+    if (!normalizedToPhone) {
+      return { success: false, error: `Invalid phone number: ${toPhone}` };
+    }
+
     return await sendSms({
-      to: toPhone,
+      to: normalizedToPhone,
       from: smsConfig.fromNumber,
       body: messageBody,
       accountSid: smsConfig.accountSid,
