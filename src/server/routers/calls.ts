@@ -12,6 +12,7 @@ export const callsRouter = router({
         campaignId: z.string().optional(),
         status: z.string().optional(),
         direction: z.enum(["inbound", "outbound"]).optional(),
+        search: z.string().optional(),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
         limit: z.number().min(1).max(100).default(50),
@@ -19,9 +20,9 @@ export const callsRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const { agentId, campaignId, status, direction, startDate, endDate, limit, cursor } = input;
+      const { agentId, campaignId, status, direction, search, startDate, endDate, limit, cursor } = input;
 
-      const where = {
+      const where: Record<string, unknown> = {
         organizationId: ctx.orgId,
         ...(agentId && { agentId }),
         ...(campaignId && { campaignId }),
@@ -36,6 +37,16 @@ export const callsRouter = router({
             }
           : {}),
       };
+
+      if (search) {
+        where.OR = [
+          { toNumber: { contains: search } },
+          { fromNumber: { contains: search } },
+          { summary: { contains: search, mode: "insensitive" } },
+          { agent: { name: { contains: search, mode: "insensitive" } } },
+          { campaign: { name: { contains: search, mode: "insensitive" } } },
+        ];
+      }
 
       const calls = await ctx.db.call.findMany({
         where,

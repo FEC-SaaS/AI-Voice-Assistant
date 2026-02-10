@@ -17,9 +17,11 @@ import {
   Bot,
   Trash2,
   Settings,
+  Search,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +53,7 @@ function formatDate(date: string | Date | null) {
 export default function CampaignsPage() {
   const { data: campaigns, isLoading, refetch } = trpc.campaigns.list.useQuery();
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const startCampaign = trpc.campaigns.start.useMutation({
     onSuccess: () => {
@@ -168,6 +171,19 @@ export default function CampaignsPage() {
         </Link>
       </div>
 
+      {/* Search */}
+      {campaigns && campaigns.length > 0 && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
+          <Input
+            placeholder="Search campaigns..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
+
       {/* Campaigns List */}
       {!campaigns?.length ? (
         <div className="rounded-2xl border border-border/50 bg-card p-8 lg:p-12 text-center shadow-sm">
@@ -187,7 +203,16 @@ export default function CampaignsPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {campaigns.map((campaign) => {
+          {campaigns.filter((campaign) => {
+            if (!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            return (
+              campaign.name.toLowerCase().includes(q) ||
+              (campaign.description || "").toLowerCase().includes(q) ||
+              (campaign.agent?.name || "").toLowerCase().includes(q) ||
+              campaign.status.toLowerCase().includes(q)
+            );
+          }).map((campaign) => {
             const status = STATUS_CONFIG[campaign.status] ?? DEFAULT_STATUS;
             const isActioning = actioningId === campaign.id;
             const callingHours = campaign.callingHours as { start: string; end: string };

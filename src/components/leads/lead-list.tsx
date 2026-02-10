@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -50,8 +50,18 @@ const sentimentColors: Record<string, string> = {
   negative: "text-red-400",
 };
 
+function useDebounce(value: string, delay: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 export function LeadList() {
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const search = useDebounce(searchInput, 400);
   const [status, setStatus] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [sortField, setSortField] = useState<SortField>("leadScore");
@@ -71,7 +81,7 @@ export function LeadList() {
   });
 
   const handleSearch = (value: string) => {
-    setSearch(value);
+    setSearchInput(value);
     setPage(1);
   };
 
@@ -134,7 +144,7 @@ export function LeadList() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
           <Input
             placeholder="Search leads..."
-            value={search}
+            value={searchInput}
             onChange={(e) => handleSearch(e.target.value)}
             className="pl-9"
           />

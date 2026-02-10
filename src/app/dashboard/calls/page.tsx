@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Phone, Filter, Loader2, ArrowRight, PhoneIncoming, PhoneOutgoing,
-  Clock, CheckCircle, XCircle, AlertCircle,
+  Clock, CheckCircle, XCircle, AlertCircle, Search,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const STATUS_STYLES: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
@@ -39,8 +40,19 @@ function formatDate(date: string | Date) {
   });
 }
 
+function useDebounce(value: string, delay: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 export default function CallsPage() {
   const [showFilters, setShowFilters] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebounce(searchInput, 400);
   const [filters, setFilters] = useState<{
     agentId?: string;
     status?: string;
@@ -56,6 +68,7 @@ export default function CallsPage() {
         ...(filters.agentId && { agentId: filters.agentId }),
         ...(filters.status && { status: filters.status }),
         ...(filters.direction && { direction: filters.direction }),
+        ...(debouncedSearch && { search: debouncedSearch }),
       },
       {
         getNextPageParam: (lastPage) => lastPage.nextCursor,
@@ -74,14 +87,25 @@ export default function CallsPage() {
             View and analyze all your call recordings
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-          className="w-full sm:w-auto rounded-xl"
-        >
-          <Filter className="mr-2 h-4 w-4" />
-          Filters
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
+            <Input
+              placeholder="Search calls..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="rounded-xl"
+          >
+            <Filter className="mr-2 h-4 w-4" />
+            Filters
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

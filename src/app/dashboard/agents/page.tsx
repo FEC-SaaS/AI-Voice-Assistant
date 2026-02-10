@@ -1,13 +1,16 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Bot, Plus, Phone, Megaphone, Power, Trash2, ArrowRight, Sparkles } from "lucide-react";
+import { Bot, Plus, Phone, Megaphone, Power, Trash2, ArrowRight, Sparkles, Search } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getVoice } from "@/constants/voices";
 import { toast } from "sonner";
 
 export default function AgentsPage() {
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: agents, isLoading, refetch } = trpc.agents.list.useQuery();
   const toggleActive = trpc.agents.toggleActive.useMutation({
     onSuccess: () => {
@@ -61,6 +64,19 @@ export default function AgentsPage() {
         </Link>
       </div>
 
+      {/* Search */}
+      {agents && agents.length > 0 && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
+          <Input
+            placeholder="Search agents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
+
       {!agents?.length ? (
         <div className="rounded-2xl border border-border/50 bg-card p-8 lg:p-12 text-center shadow-sm">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
@@ -79,7 +95,15 @@ export default function AgentsPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {agents.map((agent) => {
+          {agents.filter((agent) => {
+            if (!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            return (
+              agent.name.toLowerCase().includes(q) ||
+              (agent.description || "").toLowerCase().includes(q) ||
+              (agent.voiceId || "").toLowerCase().includes(q)
+            );
+          }).map((agent) => {
             const voice = getVoice(agent.voiceId);
             return (
               <div
