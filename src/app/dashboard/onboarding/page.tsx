@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useOrganization } from "@clerk/nextjs";
 import {
   Bot, ArrowRight, ArrowLeft, Check, Phone, Mic,
@@ -1112,34 +1113,58 @@ export default function OnboardingPage() {
             <div>
               <h3 className="font-semibold text-foreground mb-3">Explore What&apos;s Next</h3>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
-                  <Mic className="h-6 w-6 text-primary mb-2" />
+                <Link
+                  href="/dashboard/campaigns/new"
+                  className="group rounded-xl border border-border p-4 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Mic className="h-6 w-6 text-primary" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </div>
                   <h4 className="font-medium text-sm">Launch a Campaign</h4>
                   <p className="text-xs text-muted-foreground mt-1">
                     Start automated outbound calling campaigns to reach your contacts
                   </p>
-                </div>
-                <div className="rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
-                  <BookOpen className="h-6 w-6 text-primary mb-2" />
+                </Link>
+                <Link
+                  href="/dashboard/knowledge"
+                  className="group rounded-xl border border-border p-4 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <BookOpen className="h-6 w-6 text-primary" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </div>
                   <h4 className="font-medium text-sm">Add More Knowledge</h4>
                   <p className="text-xs text-muted-foreground mt-1">
                     Upload documents or add more business info to make your agent smarter
                   </p>
-                </div>
-                <div className="rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
-                  <Bot className="h-6 w-6 text-primary mb-2" />
+                </Link>
+                <Link
+                  href="/dashboard/agents/new"
+                  className="group rounded-xl border border-border p-4 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Bot className="h-6 w-6 text-primary" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </div>
                   <h4 className="font-medium text-sm">Create More Agents</h4>
                   <p className="text-xs text-muted-foreground mt-1">
                     Build specialized agents for different departments or use cases
                   </p>
-                </div>
-                <div className="rounded-xl border border-border p-4 hover:border-primary/30 transition-colors">
-                  <Shield className="h-6 w-6 text-primary mb-2" />
+                </Link>
+                <Link
+                  href="/dashboard/settings"
+                  className="group rounded-xl border border-border p-4 hover:border-primary/30 hover:bg-primary/5 transition-all"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Shield className="h-6 w-6 text-primary" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                  </div>
                   <h4 className="font-medium text-sm">Configure Settings</h4>
                   <p className="text-xs text-muted-foreground mt-1">
                     Set up team members, billing, integrations, and compliance
                   </p>
-                </div>
+                </Link>
               </div>
             </div>
 

@@ -101,8 +101,33 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
     return trimmed;
   }, []);
 
+  // Detect delimiter from first line: comma, semicolon, or tab
+  const detectDelimiter = useCallback((firstLine: string): string => {
+    // Count occurrences outside of quotes
+    let commas = 0, semicolons = 0, tabs = 0;
+    let inQuotes = false;
+    for (const char of firstLine) {
+      if (char === '"') inQuotes = !inQuotes;
+      else if (!inQuotes) {
+        if (char === ",") commas++;
+        else if (char === ";") semicolons++;
+        else if (char === "\t") tabs++;
+      }
+    }
+    // Pick the delimiter with the most occurrences
+    if (tabs > commas && tabs > semicolons) return "\t";
+    if (semicolons > commas) return ";";
+    return ",";
+  }, []);
+
   const parseCSV = useCallback((text: string): string[][] => {
     const lines = text.split(/\r?\n/).filter((line) => line.trim());
+    if (lines.length === 0) return [];
+
+    const firstLine = lines[0] || "";
+    const delimiter = detectDelimiter(firstLine);
+    console.log("[ContactUpload] Detected delimiter:", delimiter === "\t" ? "TAB" : delimiter);
+
     return lines.map((line) => {
       const result: string[] = [];
       let current = "";
@@ -112,7 +137,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
         const char = line[i];
         if (char === '"') {
           inQuotes = !inQuotes;
-        } else if (char === "," && !inQuotes) {
+        } else if (char === delimiter && !inQuotes) {
           result.push(normalizeValue(current));
           current = "";
         } else {
@@ -122,7 +147,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
       result.push(normalizeValue(current));
       return result;
     });
-  }, [normalizeValue]);
+  }, [normalizeValue, detectDelimiter]);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -159,7 +184,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
             console.log("[ContactUpload] Parsed rows:", parsed.length);
 
             if (parsed.length < 2) {
-              toast.error("CSV file must have at least a header row and one data row");
+              toast.error("File must have at least a header row and one data row");
               return;
             }
 
@@ -168,47 +193,82 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
             setHeaders(headerRow);
             setCsvData(parsed.slice(1));
 
-            // Auto-detect column mappings
+            // Auto-detect column mappings with flexible matching
             const autoMapping = { ...defaultMapping };
-            const lowerHeaders = headerRow.map((h: string) => h.toLowerCase());
+            const lowerHeaders = headerRow.map((h: string) => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
 
-            // Phone number detection
+            // Phone number detection — very broad matching
             const phoneIndex = lowerHeaders.findIndex(
               (h) =>
                 h.includes("phone") ||
                 h.includes("mobile") ||
                 h.includes("cell") ||
-                h === "number"
+                h.includes("tel") ||
+                h.includes("contact") ||
+                h === "number" ||
+                h === "no" ||
+                h === "msisdn" ||
+                h === "dial"
             );
             if (phoneIndex >= 0) autoMapping.phoneNumber = headerRow[phoneIndex] || "";
 
-            // First name detection
+            // If no phone header found, check if any column's data looks like phone numbers
+            if (!autoMapping.phoneNumber && parsed.length > 1) {
+              const dataRow = parsed[1] || [];
+              for (let ci = 0; ci < headerRow.length; ci++) {
+                const val = (dataRow[ci] || "").replace(/[\s\-().+]/g, "");
+                if (/^\d{7,15}$/.test(val)) {
+                  autoMapping.phoneNumber = headerRow[ci] || "";
+                  console.log("[ContactUpload] Auto-detected phone column by data pattern:", headerRow[ci]);
+                  break;
+                }
+              }
+            }
+
+            // Name detection — handle both split and combined name columns
             const firstNameIndex = lowerHeaders.findIndex(
               (h) =>
-                h.includes("first") ||
                 h === "firstname" ||
-                h === "first_name" ||
-                h === "fname"
+                h === "first" ||
+                h === "fname" ||
+                h === "givenname" ||
+                h === "prenom"
             );
             if (firstNameIndex >= 0) autoMapping.firstName = headerRow[firstNameIndex] || "";
 
-            // Last name detection
             const lastNameIndex = lowerHeaders.findIndex(
               (h) =>
-                h.includes("last") ||
                 h === "lastname" ||
-                h === "last_name" ||
-                h === "lname"
+                h === "last" ||
+                h === "lname" ||
+                h === "surname" ||
+                h === "familyname"
             );
             if (lastNameIndex >= 0) autoMapping.lastName = headerRow[lastNameIndex] || "";
 
+            // If no first/last name found, try a combined "name" or "fullname" column as firstName
+            if (!autoMapping.firstName && !autoMapping.lastName) {
+              const nameIndex = lowerHeaders.findIndex(
+                (h) => h === "name" || h === "fullname" || h === "contactname" || h === "customername"
+              );
+              if (nameIndex >= 0) autoMapping.firstName = headerRow[nameIndex] || "";
+            }
+
             // Email detection
-            const emailIndex = lowerHeaders.findIndex((h) => h.includes("email"));
+            const emailIndex = lowerHeaders.findIndex(
+              (h) => h.includes("email") || h.includes("mail") || h === "emailaddress"
+            );
             if (emailIndex >= 0) autoMapping.email = headerRow[emailIndex] || "";
 
             // Company detection
             const companyIndex = lowerHeaders.findIndex(
-              (h) => h.includes("company") || h.includes("organization") || h.includes("org")
+              (h) =>
+                h.includes("company") ||
+                h.includes("organization") ||
+                h.includes("org") ||
+                h.includes("business") ||
+                h === "employer" ||
+                h === "firm"
             );
             if (companyIndex >= 0) autoMapping.company = headerRow[companyIndex] || "";
 
@@ -251,22 +311,23 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
     accept: {
       "text/csv": [".csv"],
       "application/vnd.ms-excel": [".csv", ".xls"],
-      "text/plain": [".csv", ".txt"],
+      "text/plain": [".csv", ".txt", ".tsv"],
       "application/csv": [".csv"],
       "text/comma-separated-values": [".csv"],
-      "application/octet-stream": [".csv"], // Some browsers report this for CSV
+      "text/tab-separated-values": [".tsv"],
+      "application/octet-stream": [".csv", ".txt", ".tsv"],
     },
     maxFiles: 1,
     multiple: false,
     validator: (file) => {
-      // Custom validator to allow CSV files regardless of MIME type
+      // Allow CSV and plain text files regardless of MIME type
       const extension = file.name.split('.').pop()?.toLowerCase();
-      if (extension === 'csv' || extension === 'txt') {
+      if (extension === 'csv' || extension === 'txt' || extension === 'tsv') {
         return null; // Valid
       }
       return {
         code: 'file-invalid-type',
-        message: 'Only CSV files are allowed',
+        message: 'Please upload a .csv, .tsv, or .txt file with contact data',
       };
     },
   });
@@ -388,7 +449,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                     : "Drag and drop a CSV file, or click to browse"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Supported format: .csv (max 10,000 rows)
+                  Supported: .csv, .tsv, .txt — comma, semicolon, or tab separated (max 10,000 rows)
                 </p>
               </div>
               {parseError && (
