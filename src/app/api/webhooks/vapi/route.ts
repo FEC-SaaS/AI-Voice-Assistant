@@ -226,6 +226,15 @@ async function processToolCall(
 
   try {
     switch (toolName) {
+    case "get_current_datetime": {
+      const now = new Date();
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const formatted = `${dayNames[now.getDay()]}, ${monthNames[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+      const time = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+      return `Current date and time: ${formatted} at ${time}. Use this as reference for all scheduling.`;
+    }
+
     case "check_availability": {
       const { date, duration: durationStr } = args;
       const duration = parseInt(durationStr || "30", 10);
@@ -1030,8 +1039,18 @@ export async function POST(req: NextRequest) {
       const receptionistConfig = (settings.receptionistConfig as Record<string, unknown>) || {};
 
       if (!enableReceptionist) {
-        // Non-receptionist agent: use static config, no overrides needed
-        return NextResponse.json({ assistantId: agent.vapiAssistantId });
+        // Non-receptionist agent: inject fresh date for scheduling
+        const now = new Date();
+        const dayNamesNR = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const monthNamesNR = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const dateStrNR = `${dayNamesNR[now.getDay()]}, ${monthNamesNR[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
+        return NextResponse.json({
+          assistantId: agent.vapiAssistantId,
+          assistantOverrides: {
+            variableValues: { currentDate: dateStrNR },
+          },
+        });
       }
 
       // Receptionist agent: determine if we're within business hours
@@ -1064,15 +1083,22 @@ export async function POST(req: NextRequest) {
         hasCustomGreeting: !!dynamicFirstMessage,
       });
 
-      // Return assistantId with firstMessage override
+      // Return assistantId with firstMessage and fresh date overrides
       const overrides: Record<string, unknown> = {};
       if (dynamicFirstMessage) {
         overrides.firstMessage = dynamicFirstMessage;
       }
 
+      // Inject fresh date for scheduling
+      const nowR = new Date();
+      const dayNamesR = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const monthNamesR = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const dateStrR = `${dayNamesR[nowR.getDay()]}, ${monthNamesR[nowR.getMonth()]} ${nowR.getDate()}, ${nowR.getFullYear()}`;
+      overrides.variableValues = { currentDate: dateStrR };
+
       return NextResponse.json({
         assistantId: agent.vapiAssistantId,
-        ...(Object.keys(overrides).length > 0 ? { assistantOverrides: overrides } : {}),
+        assistantOverrides: overrides,
       });
     }
 

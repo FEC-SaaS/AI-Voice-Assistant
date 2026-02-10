@@ -5,7 +5,7 @@ import {
   Calendar, Clock, Plus, Phone, Video, MapPin, Loader2,
   CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight,
   User, Building, Filter, MoreVertical, Search, Mail, Edit, Trash2, Send,
-  List,
+  List, MessageSquare,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -400,6 +400,7 @@ export default function AppointmentsPage() {
     attendeeName: "",
     attendeeEmail: "",
     attendeePhone: "",
+    notificationPreference: "both" as "email" | "sms" | "both" | "none",
     notes: "",
   });
 
@@ -467,6 +468,15 @@ export default function AppointmentsPage() {
     },
   });
 
+  const resendSms = trpc.appointments.resendSms.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const deleteAppointment = trpc.appointments.delete.useMutation({
     onSuccess: () => {
       toast.success("Appointment deleted");
@@ -507,6 +517,7 @@ export default function AppointmentsPage() {
       attendeeName: "",
       attendeeEmail: "",
       attendeePhone: "",
+      notificationPreference: "both",
       notes: "",
     });
   };
@@ -535,6 +546,7 @@ export default function AppointmentsPage() {
       attendeeName: formData.attendeeName || undefined,
       attendeeEmail: formData.attendeeEmail || undefined,
       attendeePhone: formData.attendeePhone || undefined,
+      notificationPreference: formData.notificationPreference,
       notes: formData.notes || undefined,
     });
   };
@@ -819,6 +831,17 @@ export default function AppointmentsPage() {
                             </DropdownMenuItem>
                           )}
 
+                          {/* Resend SMS */}
+                          {appointment.attendeePhone && appointment.status !== "cancelled" && (
+                            <DropdownMenuItem
+                              onClick={() => resendSms.mutate({ id: appointment.id })}
+                              disabled={resendSms.isPending}
+                            >
+                              <MessageSquare className="mr-2 h-4 w-4" />
+                              Resend SMS
+                            </DropdownMenuItem>
+                          )}
+
                           <DropdownMenuSeparator />
 
                           {/* Status changes */}
@@ -1053,6 +1076,24 @@ export default function AppointmentsPage() {
             </div>
 
             <div className="space-y-2">
+              <Label>Notification Preference</Label>
+              <Select
+                value={formData.notificationPreference}
+                onValueChange={(v) => setFormData({ ...formData, notificationPreference: v as "email" | "sms" | "both" | "none" })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="both">Email &amp; SMS</SelectItem>
+                  <SelectItem value="email">Email Only</SelectItem>
+                  <SelectItem value="sms">SMS Only</SelectItem>
+                  <SelectItem value="none">No Notifications</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
@@ -1258,6 +1299,34 @@ export default function AppointmentsPage() {
                     <Send className="mr-2 h-4 w-4" />
                   )}
                   Resend Email
+                </Button>
+              )}
+              {editAppointment && editFormData.attendeePhone && editAppointment.status !== "cancelled" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // Save phone first if changed, then resend
+                    if (editFormData.attendeePhone !== editAppointment.attendeePhone) {
+                      updateAppointment.mutate({
+                        id: editAppointment.id,
+                        attendeePhone: editFormData.attendeePhone,
+                      }, {
+                        onSuccess: () => {
+                          resendSms.mutate({ id: editAppointment.id });
+                        }
+                      });
+                    } else {
+                      resendSms.mutate({ id: editAppointment.id });
+                    }
+                  }}
+                  disabled={resendSms.isPending || updateAppointment.isPending}
+                >
+                  {resendSms.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                  )}
+                  Resend SMS
                 </Button>
               )}
             </div>

@@ -166,6 +166,10 @@ export async function createAssistant(config: AssistantConfig): Promise<VapiAssi
       listenEnabled: true,
       controlEnabled: true,
     },
+    // Patience / endpointing configuration
+    silenceTimeoutSeconds: 30,
+    maxDurationSeconds: 1800,
+    backgroundDenoisingEnabled: true,
   };
 
   // Add server URL for tool/function webhooks
@@ -248,6 +252,11 @@ export async function updateAssistant(
     listenEnabled: true,
     controlEnabled: true,
   };
+
+  // Patience / endpointing configuration
+  body.silenceTimeoutSeconds = 30;
+  body.maxDurationSeconds = 1800;
+  body.backgroundDenoisingEnabled = true;
 
   return vapiRequest<VapiAssistant>({
     method: "PATCH",

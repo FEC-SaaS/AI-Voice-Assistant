@@ -694,7 +694,22 @@ export const appointmentsRouter = router({
           branding
         );
 
-        return { success: true, message: `Confirmation email sent to ${appointment.attendeeEmail}` };
+        // Also send SMS if phone is available
+        let message = `Confirmation email sent to ${appointment.attendeeEmail}`;
+        if (appointment.attendeePhone) {
+          try {
+            await sendAppointmentSms({
+              appointmentId: appointment.id,
+              type: "confirmation",
+            });
+            message += ` and SMS sent to ${appointment.attendeePhone}`;
+          } catch (smsError) {
+            log.error("Failed to send confirmation SMS:", smsError);
+            // Don't fail — email was already sent
+          }
+        }
+
+        return { success: true, message };
       } catch (error) {
         log.error("Failed to send confirmation email:", error);
         throw new TRPCError({
@@ -702,6 +717,46 @@ export const appointmentsRouter = router({
           message: "Failed to send confirmation email. Please try again.",
         });
       }
+    }),
+
+  // Resend SMS
+  resendSms: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const appointment = await ctx.db.appointment.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!appointment) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Appointment not found",
+        });
+      }
+
+      if (!appointment.attendeePhone) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No phone number on file",
+        });
+      }
+
+      if (appointment.status === "cancelled") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot send for cancelled appointment",
+        });
+      }
+
+      await sendAppointmentSms({
+        appointmentId: appointment.id,
+        type: "confirmation",
+      });
+
+      return { success: true, message: `SMS sent to ${appointment.attendeePhone}` };
     }),
 
   // Delete appointment

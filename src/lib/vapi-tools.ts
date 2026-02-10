@@ -28,6 +28,19 @@ export function getAppointmentTools(): VapiTool[] {
     {
       type: "function",
       function: {
+        name: "get_current_datetime",
+        description: "Get the current date and time. ALWAYS call this at the start of any conversation about scheduling to ensure you have the correct date.",
+        parameters: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
+      async: false,
+    },
+    {
+      type: "function",
+      function: {
         name: "check_availability",
         description: "Check available appointment time slots for a specific date. Use this when the customer wants to schedule an appointment or asks about availability.",
         parameters: {
@@ -96,7 +109,7 @@ export function getAppointmentTools(): VapiTool[] {
             description: "Any additional notes or reason for the appointment",
           },
         },
-        required: ["date", "time", "customer_name"],
+        required: ["date", "time", "customer_name", "customer_email", "customer_phone"],
       },
     },
     async: false,
@@ -173,38 +186,49 @@ export function getAppointmentSystemPromptAddition(): string {
 
   return `
 
---- IMPORTANT: CURRENT DATE INFORMATION ---
-Today's date is ${formattedDate} (${currentDate}).
-ALWAYS use this as your reference for the current date when discussing scheduling.
-When a customer says "today", "tomorrow", "next week", etc., calculate the actual date from ${formattedDate}.
---- END CURRENT DATE INFORMATION ---
+--- CONVERSATION STYLE ---
+- Be patient. NEVER interrupt the customer while they are speaking.
+- Wait for the customer to finish their complete thought before responding.
+- If there is a pause, wait at least 2-3 seconds before assuming they are done.
+- Use brief acknowledgments like "I see", "Got it", "Sure" when listening.
+- Do NOT rush the conversation. Let the customer speak at their own pace.
+--- END CONVERSATION STYLE ---
+
+--- IMPORTANT: CURRENT DATE ---
+CRITICAL: Before discussing any dates or scheduling, you MUST call the get_current_datetime tool to get the real current date and time. Do NOT rely on any date mentioned in your instructions — always use the tool for the live date.
+Fallback hint (use ONLY if the tool fails): Today is approximately ${formattedDate} (${currentDate}).
+--- END CURRENT DATE ---
 
 --- APPOINTMENT SCHEDULING CAPABILITIES ---
 You have the ability to check appointment availability and schedule appointments for customers.
 
-When a customer wants to schedule an appointment:
-1. Ask what date they prefer
-2. Use check_availability to see available time slots
-3. Present the available times to the customer
-4. Once they choose a time, collect their name and contact information
-5. Use schedule_appointment to book the appointment
-6. Confirm the appointment details with the customer
+When a customer wants to schedule an appointment, follow this EXACT flow:
+1. Call get_current_datetime to get the real current date
+2. Ask the customer what date and time they prefer
+3. Use check_availability to verify the slot
+4. Present available times to the customer
+5. Once they choose a time, collect ALL of the following:
+   a. Full name (REQUIRED)
+   b. Email address (REQUIRED — explain it's needed for confirmation)
+   c. Phone number (REQUIRED — explain it's needed for reminders)
+   d. Ask: "Would you like to receive appointment reminders by email, text message, or both?"
+6. BEFORE scheduling, repeat ALL details back to the customer:
+   - "Let me confirm: [Name], appointment on [Date] at [Time], email [email], phone [phone], notifications by [preference]. Is everything correct?"
+7. Wait for explicit confirmation (e.g., "yes", "correct", "that's right")
+8. ONLY THEN call schedule_appointment
+9. After booking, confirm the appointment was created
+
+IMPORTANT RULES:
+- NEVER schedule without confirming details with the customer first
+- NEVER skip asking for email or phone — both are required
+- NEVER assume the notification preference — always ask
+- If the customer declines to provide email or phone, politely explain why it's needed for confirmations and reminders, but proceed if they insist
+- customer_email and customer_phone should be passed as REQUIRED fields to schedule_appointment
 
 When checking availability:
 - Always confirm the date with the customer before checking
 - Present times in a friendly format (e.g., "2:30 PM" instead of "14:30")
 - If no slots are available, offer to check another date
-- IMPORTANT: Use the current date (${currentDate}) as your reference point
-
-When scheduling:
-- Always collect the customer's name
-- Try to get their email for confirmation (optional but recommended)
-- Ask about their notification preference: "Would you prefer to receive appointment reminders by email, text message, or both?"
-  - "email" = email only
-  - "sms" = text message only
-  - "both" = both email and text (most common)
-  - "none" = no reminders
-- Confirm all details before finalizing the booking
 
 IMPORTANT - Updating vs Creating New Appointments:
 - If you have ALREADY scheduled an appointment for this customer during this call and they provide their email afterwards, use the update_appointment tool to add their email - DO NOT schedule a new appointment!
@@ -432,6 +456,14 @@ Call Screening:
     : "";
 
   return `
+
+--- CONVERSATION STYLE ---
+- Be patient. NEVER interrupt the customer while they are speaking.
+- Wait for the customer to finish their complete thought before responding.
+- If there is a pause, wait at least 2-3 seconds before assuming they are done.
+- Use brief acknowledgments like "I see", "Got it", "Sure" when listening.
+- Do NOT rush the conversation. Let the customer speak at their own pace.
+--- END CONVERSATION STYLE ---
 
 --- RECEPTIONIST CAPABILITIES ---
 Today is ${formattedDate} (${currentDate}).
