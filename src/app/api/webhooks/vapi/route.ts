@@ -919,10 +919,10 @@ async function verifySignature(req: NextRequest, _body: string): Promise<boolean
   const vapiSecret = req.headers.get("x-vapi-secret");
   const secret = process.env.VAPI_WEBHOOK_SECRET;
 
-  // If no secret configured, skip verification (not recommended for production)
+  // VAPI_WEBHOOK_SECRET must be configured — reject if missing
   if (!secret) {
-    log.warn("VAPI_WEBHOOK_SECRET not configured - skipping signature verification");
-    return true;
+    log.error("VAPI_WEBHOOK_SECRET not configured — rejecting request");
+    return false;
   }
 
   if (!vapiSecret) {

@@ -1,10 +1,30 @@
 /**
  * Vapi Reminder Tools Webhook
  * Handles tool calls from the reminder assistant during outbound calls
+ * Protected by Vapi webhook secret verification
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { processReminderCallOutcome } from "@/lib/reminder-calls";
+
+function verifyVapiSecret(req: NextRequest): boolean {
+  const vapiSecret = req.headers.get("x-vapi-secret");
+  const secret = process.env.VAPI_WEBHOOK_SECRET;
+
+  if (!secret || !vapiSecret) return false;
+
+  try {
+    const secretBuffer = Buffer.from(secret);
+    const vapiSecretBuffer = Buffer.from(vapiSecret);
+
+    if (secretBuffer.length !== vapiSecretBuffer.length) return false;
+
+    return crypto.timingSafeEqual(secretBuffer, vapiSecretBuffer);
+  } catch {
+    return false;
+  }
+}
 
 interface VapiToolCallRequest {
   message: {
@@ -25,6 +45,11 @@ interface VapiToolCallRequest {
 }
 
 export async function POST(request: NextRequest) {
+  // Verify Vapi webhook secret
+  if (!verifyVapiSecret(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body: VapiToolCallRequest = await request.json();
     const appointmentId = request.nextUrl.searchParams.get("appointmentId");

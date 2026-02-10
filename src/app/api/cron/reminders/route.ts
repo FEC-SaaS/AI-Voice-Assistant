@@ -26,9 +26,10 @@ import { db } from "@/lib/db";
 function verifyCronAuth(request: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET;
 
-  // If no secret configured, allow in development
+  // CRON_SECRET must be configured — reject if missing
   if (!cronSecret) {
-    return process.env.NODE_ENV === "development";
+    console.error("[Reminder Cron] CRON_SECRET not configured — rejecting request");
+    return false;
   }
 
   const authHeader = request.headers.get("authorization");
