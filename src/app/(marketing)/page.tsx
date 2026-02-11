@@ -180,8 +180,9 @@ export default function HomePage() {
       </section>
 
       {/* Value-Driven Features */}
-      <section className="relative py-16 sm:py-20 md:py-28">
+      <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 via-secondary to-secondary/50" />
+        <AudioWave className="opacity-20" />
         <div className="relative container mx-auto px-4">
           <div className="text-center">
             <h2 className="reveal text-3xl font-bold text-foreground sm:text-4xl">
@@ -235,6 +236,7 @@ export default function HomePage() {
       {/* Bottom CTA */}
       <section className="relative overflow-hidden py-16 sm:py-20 md:py-28">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-purple-500/10" />
+        <AudioWave className="opacity-25" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-float" />
         <div className="relative container mx-auto px-4 text-center">
           <h2 className="reveal text-3xl font-bold text-foreground sm:text-4xl">

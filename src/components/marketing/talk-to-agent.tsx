@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Phone, PhoneOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Phone, PhoneOff, Loader2 } from "lucide-react";
 
 type Status = "idle" | "connecting" | "connected" | "ended" | "error";
 
-// Generate a session ID for analytics
 function getSessionId(): string {
   if (typeof window === "undefined") return "";
   let id = sessionStorage.getItem("calltone_session");
@@ -27,22 +25,23 @@ async function trackEvent(data: {
     await fetch("/api/analytics/landing", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...data,
-        sessionId: getSessionId(),
-      }),
+      body: JSON.stringify({ ...data, sessionId: getSessionId() }),
     });
   } catch {
-    // Non-blocking, silently fail
+    // Non-blocking
   }
 }
 
 async function fetchLocation(): Promise<string | undefined> {
   try {
-    const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(3000) });
+    const res = await fetch("https://ipapi.co/json/", {
+      signal: AbortSignal.timeout(3000),
+    });
     if (!res.ok) return undefined;
     const data = await res.json();
-    return [data.city, data.region, data.country_name].filter(Boolean).join(", ");
+    return [data.city, data.region, data.country_name]
+      .filter(Boolean)
+      .join(", ");
   } catch {
     return undefined;
   }
@@ -54,11 +53,12 @@ export function TalkToAgent() {
   const [elapsed, setElapsed] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  const vapiRef = useRef<InstanceType<typeof import("@vapi-ai/web").default> | null>(null);
+  const vapiRef = useRef<InstanceType<
+    typeof import("@vapi-ai/web").default
+  > | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -66,7 +66,7 @@ export function TalkToAgent() {
         try {
           vapiRef.current.stop();
         } catch {
-          // ignore
+          /* ignore */
         }
       }
     };
@@ -101,7 +101,6 @@ export function TalkToAgent() {
         ? process.env.NEXT_PUBLIC_VAPI_MALE_ASSISTANT_ID
         : process.env.NEXT_PUBLIC_VAPI_FEMALE_ASSISTANT_ID;
 
-    // Graceful degradation when env vars are missing
     if (!publicKey || !assistantId) {
       setAgentType(agent);
       setStatus("error");
@@ -111,12 +110,10 @@ export function TalkToAgent() {
     setAgentType(agent);
     setStatus("connecting");
 
-    // Track button click and fetch location (non-blocking)
     const locationPromise = fetchLocation();
     trackEvent({ event: "button_click", agent });
 
     try {
-      // Dynamic import to avoid SSR issues
       const VapiModule = await import("@vapi-ai/web");
       const Vapi = VapiModule.default;
 
@@ -149,13 +146,8 @@ export function TalkToAgent() {
         trackEvent({ event: "call_error", agent });
       });
 
-      vapi.on("speech-start", () => {
-        setIsSpeaking(true);
-      });
-
-      vapi.on("speech-end", () => {
-        setIsSpeaking(false);
-      });
+      vapi.on("speech-start", () => setIsSpeaking(true));
+      vapi.on("speech-end", () => setIsSpeaking(false));
 
       await vapi.start(assistantId);
     } catch (error) {
@@ -170,7 +162,7 @@ export function TalkToAgent() {
       try {
         vapiRef.current.stop();
       } catch {
-        // ignore
+        /* ignore */
       }
     }
     const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
@@ -188,94 +180,93 @@ export function TalkToAgent() {
     vapiRef.current = null;
   };
 
-  // Idle state — two buttons
+  // ────── Idle ──────
   if (status === "idle") {
     return (
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Button
-          size="lg"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5 transition-all duration-300"
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <button
           onClick={() => handleStartCall("male")}
+          className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-blue-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-10 sm:py-5"
         >
-          <Phone className="mr-2 h-4 w-4" />
+          <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
           Talk to Male Agent
-        </Button>
-        <Button
-          size="lg"
-          className="bg-purple-600 hover:bg-purple-700 text-white px-6 shadow-lg shadow-purple-600/25 hover:shadow-xl hover:shadow-purple-600/30 hover:-translate-y-0.5 transition-all duration-300"
+        </button>
+        <button
           onClick={() => handleStartCall("female")}
+          className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-purple-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-purple-600/25 transition-all duration-300 hover:bg-purple-700 hover:shadow-xl hover:shadow-purple-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-10 sm:py-5"
         >
-          <Phone className="mr-2 h-4 w-4" />
+          <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
           Talk to Female Agent
-        </Button>
+        </button>
       </div>
     );
   }
 
-  // Connecting state
+  // ────── Connecting ──────
   if (status === "connecting") {
     return (
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative flex h-20 w-20 items-center justify-center">
+      <div className="flex flex-col items-center gap-5">
+        <div className="relative flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center">
           <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-          <div className="absolute inset-2 animate-pulse rounded-full bg-primary/30" />
-          <Phone className="relative h-8 w-8 text-primary" />
+          <div className="absolute inset-3 animate-pulse rounded-full bg-primary/30" />
+          <Loader2 className="relative h-10 w-10 text-primary animate-spin" />
         </div>
+        <p className="text-base sm:text-lg font-medium text-foreground">
+          Just a sec...
+        </p>
         <p className="text-sm text-muted-foreground">
-          Connecting to {agentType} agent...
+          Connecting to {agentType === "male" ? "Male" : "Female"} Agent
         </p>
       </div>
     );
   }
 
-  // Connected state
+  // ────── Connected ──────
   if (status === "connected") {
     return (
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative flex h-24 w-24 items-center justify-center">
+      <div className="flex flex-col items-center gap-5">
+        <div className="relative flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center">
           <div
             className={`absolute inset-0 rounded-full transition-all duration-300 ${
               isSpeaking
-                ? "bg-primary/30 scale-110"
+                ? "bg-green-500/30 scale-110"
                 : "bg-primary/15 scale-100"
             }`}
           />
           <div
             className={`absolute inset-3 rounded-full transition-all duration-300 ${
               isSpeaking
-                ? "bg-primary/40 scale-105"
+                ? "bg-green-500/40 scale-105"
                 : "bg-primary/20 scale-100"
             }`}
           />
           <div className="absolute inset-6 rounded-full bg-primary/30 animate-pulse" />
-          <Phone className="relative h-8 w-8 text-primary" />
+          <Phone className="relative h-10 w-10 text-primary" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-foreground">
-            Speaking with {agentType === "male" ? "Male" : "Female"} Agent...
+          <p className="text-base sm:text-lg font-medium text-foreground">
+            Speaking with {agentType === "male" ? "Male" : "Female"} Agent
           </p>
-          <p className="text-2xl font-mono font-bold text-primary mt-1">
+          <p className="text-3xl sm:text-4xl font-mono font-bold text-primary mt-2">
             {formatTime(elapsed)}
           </p>
         </div>
-        <Button
-          variant="destructive"
-          size="lg"
+        <button
           onClick={handleEndCall}
-          className="px-8"
+          className="inline-flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-10 py-4 text-base font-semibold text-white shadow-lg shadow-red-600/25 transition-all duration-300 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-12 sm:py-5"
         >
-          <PhoneOff className="mr-2 h-4 w-4" />
-          End Call
-        </Button>
+          <PhoneOff className="h-5 w-5 sm:h-6 sm:w-6" />
+          Click to End Call
+        </button>
       </div>
     );
   }
 
-  // Ended state
+  // ────── Ended ──────
   if (status === "ended") {
     return (
-      <div className="flex flex-col items-center gap-4">
-        <p className="text-lg font-semibold text-foreground">
+      <div className="flex flex-col items-center gap-5">
+        <p className="text-xl sm:text-2xl font-semibold text-foreground">
           Thanks for trying CallTone!
         </p>
         {elapsed > 0 && (
@@ -283,36 +274,32 @@ export function TalkToAgent() {
             Call duration: {formatTime(elapsed)}
           </p>
         )}
-        <Button
-          size="lg"
-          variant="outline"
+        <button
           onClick={handleReset}
-          className="px-8"
+          className="inline-flex items-center justify-center gap-3 rounded-2xl border-2 border-border px-8 py-4 text-base font-semibold text-foreground transition-all duration-300 hover:border-primary/30 hover:bg-primary/5 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-10 sm:py-5"
         >
-          <Phone className="mr-2 h-4 w-4" />
+          <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
           Talk Again
-        </Button>
+        </button>
       </div>
     );
   }
 
-  // Error state
+  // ────── Error ──────
   return (
-    <div className="flex flex-col items-center gap-4">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col items-center gap-5">
+      <p className="text-base sm:text-lg text-muted-foreground">
         {!process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY
           ? "Demo coming soon"
           : "Something went wrong. Please try again."}
       </p>
-      <Button
-        size="lg"
-        variant="outline"
+      <button
         onClick={handleReset}
-        className="px-8"
+        className="inline-flex items-center justify-center gap-3 rounded-2xl border-2 border-border px-8 py-4 text-base font-semibold text-foreground transition-all duration-300 hover:border-primary/30 hover:bg-primary/5 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-10 sm:py-5"
       >
-        <Phone className="mr-2 h-4 w-4" />
+        <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
         Try Again
-      </Button>
+      </button>
     </div>
   );
 }

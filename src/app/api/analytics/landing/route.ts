@@ -70,24 +70,28 @@ export async function POST(request: NextRequest) {
     const sanitizedSessionId =
       typeof sessionId === "string" ? sessionId.slice(0, 100) : undefined;
 
-    await prisma.landingEvent.create({
-      data: {
-        event,
-        agent: agent || undefined,
-        duration: typeof duration === "number" ? Math.floor(duration) : undefined,
-        location: sanitizedLocation,
-        userAgent: userAgent?.slice(0, 500),
-        sessionId: sanitizedSessionId,
-        metadata: metadata && typeof metadata === "object" ? metadata : {},
-      },
-    });
+    // Fire-and-forget: don't let DB errors block the response
+    try {
+      await prisma.landingEvent.create({
+        data: {
+          event,
+          agent: agent || undefined,
+          duration: typeof duration === "number" ? Math.floor(duration) : undefined,
+          location: sanitizedLocation,
+          userAgent: userAgent?.slice(0, 500),
+          sessionId: sanitizedSessionId,
+          metadata: metadata && typeof metadata === "object" ? metadata : {},
+        },
+      });
+    } catch (dbError) {
+      // Log but don't fail the request — analytics should never block UX
+      console.error("[Landing Analytics] DB write failed:", dbError);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[Landing Analytics] Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    // Still return success to avoid blocking client-side flows
+    return NextResponse.json({ success: true });
   }
 }
