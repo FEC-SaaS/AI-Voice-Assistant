@@ -43,6 +43,7 @@ model Organization {
   departments        Department[]
   staffMembers       StaffMember[]
   receptionistMessages ReceptionistMessage[]
+  cnamProfile          CnamProfile?
 
   @@index([slug])
   @@index([clerkOrgId])
@@ -104,6 +105,8 @@ model PhoneNumber {
   number         String
   friendlyName   String?
   callerIdName   String?      // Business name displayed on caller ID (CNAM)
+  cnamStatus     String?      // none, pending, registered, failed
+  cnamSid        String?      // Twilio CNAM assignment SID
   type           String       @default("local") // local, toll_free, mobile
   provider       String       @default("twilio-managed") // twilio-managed, twilio-imported, vapi
   countryCode    String?      // ISO country code (US, GB, GH, etc.)
@@ -487,6 +490,43 @@ model ReceptionistMessage {
   @@index([departmentId])
   @@index([staffMemberId])
   @@index([createdAt])
+}
+
+model CnamProfile {
+  id                  String   @id @default(cuid())
+  organizationId      String   @unique
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Business information
+  businessName        String
+  businessType        String   // sole_proprietorship, partnership, llc, corporation
+  ein                 String?  // Tax ID / EIN
+  businessAddress     String
+  businessCity        String
+  businessState       String
+  businessZip         String
+  businessCountry     String   @default("US")
+  contactFirstName    String
+  contactLastName     String
+  contactEmail        String
+  contactPhone        String
+
+  // Twilio Trust Hub IDs
+  customerProfileSid  String?  // Twilio Customer Profile SID
+  endUserSid          String?  // Twilio End User SID
+  trustProductSid     String?  // Twilio Trust Product SID
+  policySid           String?  // Twilio Policy SID used
+
+  // Status tracking
+  status              String   @default("draft") // draft, pending_review, in_review, approved, rejected, failed
+  rejectionReason     String?
+  approvedAt          DateTime?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
 }
 
 model LandingEvent {

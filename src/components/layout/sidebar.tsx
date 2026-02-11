@@ -68,7 +68,15 @@ const navItems: NavItem[] = [
   { type: "link", title: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
   { type: "link", title: "Compliance", href: "/dashboard/compliance", icon: Shield },
   { type: "link", title: "Knowledge Base", href: "/dashboard/knowledge", icon: BookOpen },
-  { type: "link", title: "Phone Numbers", href: "/dashboard/phone-numbers", icon: Hash },
+  {
+    type: "group",
+    title: "Phone Numbers",
+    icon: Hash,
+    children: [
+      { title: "Manage Numbers", href: "/dashboard/phone-numbers", icon: Hash },
+      { title: "Caller ID (CNAM)", href: "/dashboard/phone-numbers/cnam", icon: Shield },
+    ],
+  },
   { type: "link", title: "Integrations", href: "/dashboard/integrations", icon: Plug },
 ];
 

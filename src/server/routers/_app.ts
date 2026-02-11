@@ -15,6 +15,7 @@ import { liveCallsRouter } from "./live-calls";
 import { intelligenceRouter } from "./intelligence";
 import { complianceRouter } from "./compliance";
 import { receptionistRouter } from "./receptionist";
+import { cnamRouter } from "./cnam";
 
 export const appRouter = router({
   agents: agentsRouter,
@@ -33,6 +34,7 @@ export const appRouter = router({
   intelligence: intelligenceRouter,
   compliance: complianceRouter,
   receptionist: receptionistRouter,
+  cnam: cnamRouter,
 });
 
 export type AppRouter = typeof appRouter;
