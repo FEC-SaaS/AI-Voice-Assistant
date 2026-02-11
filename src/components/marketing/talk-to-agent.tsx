@@ -122,11 +122,17 @@ export function TalkToAgent() {
   };
 
   const handleStartCall = async (agent: "male" | "female") => {
-    const publicKey = process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY;
-    const assistantId =
+    // Strip invisible Unicode chars (BOM, zero-width spaces, etc.) that
+    // break fetch headers when env vars are copy-pasted from web UIs
+    const sanitize = (v: string | undefined) =>
+      v?.replace(/[^\x20-\x7E]/g, "").trim() || "";
+
+    const publicKey = sanitize(process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY);
+    const assistantId = sanitize(
       agent === "male"
         ? process.env.NEXT_PUBLIC_VAPI_MALE_ASSISTANT_ID
-        : process.env.NEXT_PUBLIC_VAPI_FEMALE_ASSISTANT_ID;
+        : process.env.NEXT_PUBLIC_VAPI_FEMALE_ASSISTANT_ID
+    );
 
     if (!publicKey || !assistantId) {
       setAgentType(agent);
