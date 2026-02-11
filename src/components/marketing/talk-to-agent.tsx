@@ -5,6 +5,32 @@ import { Phone, PhoneOff, Loader2 } from "lucide-react";
 
 type Status = "idle" | "connecting" | "connected" | "ended" | "error";
 
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (typeof error === "object" && error !== null) {
+    // Vapi emits objects like { error: { message: "...", statusCode: 401 } }
+    // or { message: "..." } or { error: "string" }
+    const obj = error as Record<string, unknown>;
+    if (typeof obj.message === "string") return obj.message;
+    if (typeof obj.error === "string") return obj.error;
+    if (typeof obj.error === "object" && obj.error !== null) {
+      const inner = obj.error as Record<string, unknown>;
+      if (typeof inner.message === "string") {
+        const code = inner.statusCode || inner.code || "";
+        return code ? `${inner.message} (${code})` : inner.message;
+      }
+    }
+    // Last resort: stringify the whole thing
+    try {
+      return JSON.stringify(error, null, 0).slice(0, 300);
+    } catch {
+      return "Unknown error";
+    }
+  }
+  return "Unknown error";
+}
+
 function getSessionId(): string {
   if (typeof window === "undefined") return "";
   let id = sessionStorage.getItem("calltone_session");
@@ -145,14 +171,8 @@ export function TalkToAgent() {
       });
 
       vapi.on("error", (error: unknown) => {
-        console.error("[TalkToAgent] Vapi error:", error);
-        const msg =
-          error instanceof Error
-            ? error.message
-            : typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message: unknown }).message)
-            : String(error);
-        setErrorMessage(msg);
+        console.error("[TalkToAgent] Vapi error (raw):", JSON.stringify(error, null, 2));
+        setErrorMessage(extractErrorMessage(error));
         setStatus("error");
         stopTimer();
         setIsSpeaking(false);
@@ -164,10 +184,8 @@ export function TalkToAgent() {
 
       await vapi.start(assistantId);
     } catch (error) {
-      console.error("[TalkToAgent] Failed to start call:", error);
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to start call"
-      );
+      console.error("[TalkToAgent] Failed to start call (raw):", JSON.stringify(error, null, 2));
+      setErrorMessage(extractErrorMessage(error));
       setStatus("error");
       trackEvent({ event: "call_error", agent });
     }
