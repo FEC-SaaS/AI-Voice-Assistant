@@ -2,9 +2,11 @@
 
 import { useSignUp, useClerk, useUser, useOrganizationList } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+
+const ACCOUNT_NAME_KEY = "calltone_pending_account_name";
 
 type Phase = "form" | "verifying";
 
@@ -27,6 +29,46 @@ export function ClerkSignUp() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [creatingOrg, setCreatingOrg] = useState(false);
+
+  // Prevent double-creation
+  const orgCreationAttempted = useRef(false);
+
+  const membershipsReady = userMemberships.data !== undefined;
+  const hasNoOrg =
+    isSignedIn &&
+    user &&
+    membershipsReady &&
+    (userMemberships.data?.length ?? 0) === 0;
+
+  // ─────────────────────────────────────────────────
+  // AUTO-CREATE ORG: If user is signed in, has no org,
+  // and we have a stored account name from before the
+  // Clerk redirect, create the org automatically.
+  // ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!hasNoOrg || orgCreationAttempted.current || !clerk.loaded) return;
+
+    const storedName = sessionStorage.getItem(ACCOUNT_NAME_KEY);
+    if (!storedName) return;
+
+    orgCreationAttempted.current = true;
+    setCreatingOrg(true);
+
+    (async () => {
+      try {
+        const org = await clerk.createOrganization({ name: storedName });
+        await clerk.setActive({ organization: org.id });
+        sessionStorage.removeItem(ACCOUNT_NAME_KEY);
+        router.push("/dashboard");
+      } catch (err: unknown) {
+        setError(extractMsg(err));
+        sessionStorage.removeItem(ACCOUNT_NAME_KEY);
+        setCreatingOrg(false);
+        orgCreationAttempted.current = false;
+      }
+    })();
+  }, [hasNoOrg, clerk, router]);
 
   if (!isLoaded) {
     return (
@@ -39,18 +81,23 @@ export function ClerkSignUp() {
     );
   }
 
-  // ─────────────────────────────────────────────────
-  // PRIORITY CHECK: User is signed in but has no org
-  // This handles OAuth returns AND any edge case where
-  // a user exists without an organization.
-  // ─────────────────────────────────────────────────
-  const membershipsReady = userMemberships.data !== undefined;
-  const hasNoOrg =
-    isSignedIn &&
-    user &&
-    membershipsReady &&
-    (userMemberships.data?.length ?? 0) === 0;
+  // Show spinner while auto-creating org from stored name
+  if (creatingOrg) {
+    return (
+      <Card>
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Setting up your account...</p>
+          {error && <ErrorMsg msg={error} />}
+        </div>
+      </Card>
+    );
+  }
 
+  // ─────────────────────────────────────────────────
+  // User is signed in, no org, and no stored name
+  // → Show Account Name form (OAuth returns land here)
+  // ─────────────────────────────────────────────────
   if (hasNoOrg) {
     return (
       <Card>
@@ -58,7 +105,7 @@ export function ClerkSignUp() {
           Create Your Account
         </h1>
         <p className="mt-1 text-sm text-muted-foreground text-center">
-          Welcome{user.firstName ? `, ${user.firstName}` : ""}! Name your account to get started.
+          Welcome{user?.firstName ? `, ${user.firstName}` : ""}! Name your account to get started.
         </p>
 
         <form
@@ -112,7 +159,7 @@ export function ClerkSignUp() {
     );
   }
 
-  // If user is signed in AND has an org, send them to dashboard
+  // If signed in with an org already, go to dashboard
   if (isSignedIn && !hasNoOrg && membershipsReady) {
     router.push("/dashboard");
     return (
@@ -151,6 +198,9 @@ export function ClerkSignUp() {
         password,
       });
 
+      // Store account name BEFORE verification — survives Clerk redirects
+      sessionStorage.setItem(ACCOUNT_NAME_KEY, accountName.trim());
+
       // Send email verification code
       await signUp.prepareEmailAddressVerification({
         strategy: "email_code",
@@ -163,7 +213,7 @@ export function ClerkSignUp() {
     }
   };
 
-  // ── Verify email + create org in one go ─────────
+  // ── Verify email ────────────────────────────────
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!signUp) return;
@@ -173,20 +223,24 @@ export function ClerkSignUp() {
       const result = await signUp.attemptEmailAddressVerification({ code });
 
       if (result.status === "complete" && result.createdSessionId) {
-        // Activate the session
+        // Activate session — Clerk may redirect, but sessionStorage persists.
+        // The useEffect above will pick up the stored account name and
+        // auto-create the org when the component re-renders.
         await setActive({ session: result.createdSessionId });
 
-        // Small delay to let Clerk propagate the session
-        await new Promise((r) => setTimeout(r, 500));
-
-        // Create the organization immediately — we still have accountName in state
-        const org = await clerk.createOrganization({
-          name: accountName.trim(),
-        });
-        await clerk.setActive({ organization: org.id });
-
-        // Go straight to dashboard — no extra steps
-        router.push("/dashboard");
+        // If we're still on the page (no redirect), try creating org directly
+        try {
+          await new Promise((r) => setTimeout(r, 500));
+          const storedName = sessionStorage.getItem(ACCOUNT_NAME_KEY);
+          if (storedName && clerk.loaded) {
+            const org = await clerk.createOrganization({ name: storedName });
+            await clerk.setActive({ organization: org.id });
+            sessionStorage.removeItem(ACCOUNT_NAME_KEY);
+            router.push("/dashboard");
+          }
+        } catch {
+          // If this fails, the useEffect will handle it after redirect
+        }
       } else {
         setError("Verification incomplete. Please try again.");
       }
@@ -455,7 +509,6 @@ function extractMsg(err: unknown): string {
   if (err instanceof Error) return err.message;
   if (typeof err === "object" && err !== null) {
     const obj = err as Record<string, unknown>;
-    // Clerk errors have an "errors" array
     if (Array.isArray(obj.errors) && obj.errors.length > 0) {
       const first = obj.errors[0] as Record<string, unknown>;
       if (typeof first.longMessage === "string") return first.longMessage;
