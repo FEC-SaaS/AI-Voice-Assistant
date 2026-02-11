@@ -14,7 +14,8 @@ export function OrgGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoaded && !organization && !isOnboarding) {
-      router.push("/dashboard/onboarding");
+      // Redirect to signup to complete account creation
+      router.push("/sign-up?step=account");
     }
   }, [isLoaded, organization, isOnboarding, router]);
 
