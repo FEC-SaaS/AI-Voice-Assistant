@@ -1,17 +1,20 @@
 "use client";
 
-import { useSignUp, useClerk, useUser } from "@clerk/nextjs";
+import { useSignUp, useClerk, useUser, useOrganizationList } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
-type Phase = "form" | "verifying" | "account-name";
+type Phase = "form" | "verifying";
 
 export function ClerkSignUp() {
   const { isLoaded, signUp, setActive } = useSignUp();
   const clerk = useClerk();
-  const { user } = useUser();
+  const { isSignedIn, user } = useUser();
+  const { userMemberships } = useOrganizationList({
+    userMemberships: { infinite: true },
+  });
   const router = useRouter();
 
   const [phase, setPhase] = useState<Phase>("form");
@@ -25,9 +28,6 @@ export function ClerkSignUp() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // For OAuth returning users who need to create an account
-  const [oauthAccountName, setOauthAccountName] = useState("");
-
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -35,6 +35,89 @@ export function ClerkSignUp() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
           <p className="mt-4 text-muted-foreground">Loading...</p>
         </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────
+  // PRIORITY CHECK: User is signed in but has no org
+  // This handles OAuth returns AND any edge case where
+  // a user exists without an organization.
+  // ─────────────────────────────────────────────────
+  const membershipsReady = userMemberships.data !== undefined;
+  const hasNoOrg =
+    isSignedIn &&
+    user &&
+    membershipsReady &&
+    (userMemberships.data?.length ?? 0) === 0;
+
+  if (hasNoOrg) {
+    return (
+      <Card>
+        <h1 className="text-2xl font-bold text-foreground text-center">
+          Create Your Account
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground text-center">
+          Welcome{user.firstName ? `, ${user.firstName}` : ""}! Name your account to get started.
+        </p>
+
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const name = accountName.trim();
+            if (!name) {
+              setError("Please enter an account name.");
+              return;
+            }
+            setError("");
+            setLoading(true);
+            try {
+              const org = await clerk.createOrganization({ name });
+              await clerk.setActive({ organization: org.id });
+              router.push("/dashboard");
+            } catch (err: unknown) {
+              setError(extractMsg(err));
+            } finally {
+              setLoading(false);
+            }
+          }}
+          className="mt-6 space-y-4"
+        >
+          <FieldGroup label="Account Name">
+            <input
+              type="text"
+              value={accountName}
+              onChange={(e) => setAccountName(e.target.value)}
+              placeholder="e.g. Acme Corp"
+              required
+              className="input-field"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              This is the name of your business or team
+            </p>
+          </FieldGroup>
+
+          {error && <ErrorMsg msg={error} />}
+
+          <button
+            type="submit"
+            disabled={loading || !accountName.trim()}
+            className="btn-primary"
+          >
+            {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Get Started
+          </button>
+        </form>
+      </Card>
+    );
+  }
+
+  // If user is signed in AND has an org, send them to dashboard
+  if (isSignedIn && !hasNoOrg && membershipsReady) {
+    router.push("/dashboard");
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -47,7 +130,7 @@ export function ClerkSignUp() {
       await signUp.authenticateWithRedirect({
         strategy,
         redirectUrl: "/sign-up/sso-callback",
-        redirectUrlComplete: "/sign-up?step=account",
+        redirectUrlComplete: "/sign-up",
       });
     } catch (err: unknown) {
       setError(extractMsg(err));
@@ -80,20 +163,30 @@ export function ClerkSignUp() {
     }
   };
 
-  // ── Verify email code ───────────────────────────
+  // ── Verify email + create org in one go ─────────
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!signUp) return;
     setError("");
     setLoading(true);
     try {
-      const result = await signUp.attemptEmailAddressVerification({
-        code,
-      });
+      const result = await signUp.attemptEmailAddressVerification({ code });
 
       if (result.status === "complete" && result.createdSessionId) {
+        // Activate the session
         await setActive({ session: result.createdSessionId });
-        setPhase("account-name");
+
+        // Small delay to let Clerk propagate the session
+        await new Promise((r) => setTimeout(r, 500));
+
+        // Create the organization immediately — we still have accountName in state
+        const org = await clerk.createOrganization({
+          name: accountName.trim(),
+        });
+        await clerk.setActive({ organization: org.id });
+
+        // Go straight to dashboard — no extra steps
+        router.push("/dashboard");
       } else {
         setError("Verification incomplete. Please try again.");
       }
@@ -103,125 +196,6 @@ export function ClerkSignUp() {
       setLoading(false);
     }
   };
-
-  // ── Create account (organization) ───────────────
-  const handleCreateAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = accountName.trim() || oauthAccountName.trim();
-    if (!name) {
-      setError("Please enter an account name.");
-      return;
-    }
-    setError("");
-    setLoading(true);
-    try {
-      // Wait briefly for Clerk to be fully loaded after session activation
-      if (!clerk.loaded) {
-        await new Promise((r) => setTimeout(r, 1500));
-      }
-
-      if (!clerk.loaded) {
-        setError("Session is still loading. Please wait a moment and try again.");
-        setLoading(false);
-        return;
-      }
-
-      const org = await clerk.createOrganization({ name });
-      await clerk.setActive({ organization: org.id });
-      router.push("/dashboard");
-    } catch (err: unknown) {
-      setError(extractMsg(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── OAuth callback: user is signed in but has no org ──
-  // Check URL param for OAuth returning users
-  const isOAuthReturn =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("step") === "account";
-
-  if (isOAuthReturn && user) {
-    return (
-      <Card>
-        <h1 className="text-2xl font-bold text-foreground text-center">
-          Create Your Account
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground text-center">
-          One last step — name your account
-        </p>
-
-        <form onSubmit={handleCreateAccount} className="mt-6 space-y-4">
-          <FieldGroup label="Account Name">
-            <input
-              type="text"
-              value={oauthAccountName}
-              onChange={(e) => setOauthAccountName(e.target.value)}
-              placeholder="e.g. Acme Corp"
-              required
-              className="input-field"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              This is the name of your business or team
-            </p>
-          </FieldGroup>
-
-          {error && <ErrorMsg msg={error} />}
-
-          <button
-            type="submit"
-            disabled={loading || !oauthAccountName.trim()}
-            className="btn-primary"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Get Started
-          </button>
-        </form>
-      </Card>
-    );
-  }
-
-  // ── Phase: Account name (after email verification) ──
-  if (phase === "account-name") {
-    return (
-      <Card>
-        <h1 className="text-2xl font-bold text-foreground text-center">
-          Create Your Account
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground text-center">
-          One last step — name your account
-        </p>
-
-        <form onSubmit={handleCreateAccount} className="mt-6 space-y-4">
-          <FieldGroup label="Account Name">
-            <input
-              type="text"
-              value={accountName}
-              onChange={(e) => setAccountName(e.target.value)}
-              placeholder="e.g. Acme Corp"
-              required
-              className="input-field"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              This is the name of your business or team
-            </p>
-          </FieldGroup>
-
-          {error && <ErrorMsg msg={error} />}
-
-          <button
-            type="submit"
-            disabled={loading || !accountName.trim()}
-            className="btn-primary"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Get Started
-          </button>
-        </form>
-      </Card>
-    );
-  }
 
   // ── Phase: Email verification ───────────────────
   if (phase === "verifying") {
@@ -256,7 +230,7 @@ export function ClerkSignUp() {
             className="btn-primary"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Verify Email
+            Verify & Continue
           </button>
 
           <button
