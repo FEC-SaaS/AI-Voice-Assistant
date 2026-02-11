@@ -129,6 +129,18 @@ export async function getInvoices(
   return invoices.data;
 }
 
+// Fetch price amount from Stripe by price ID
+export async function getStripePrice(
+  priceId: string
+): Promise<{ unitAmount: number; currency: string; interval: string | null }> {
+  const price = await stripe.prices.retrieve(priceId);
+  return {
+    unitAmount: price.unit_amount ?? 0,
+    currency: price.currency?.toUpperCase() || "USD",
+    interval: price.recurring?.interval ?? null,
+  };
+}
+
 // Get upcoming invoice (shows pending charges including metered usage)
 export async function getUpcomingInvoice(
   customerId: string

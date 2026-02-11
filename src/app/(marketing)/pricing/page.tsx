@@ -9,8 +9,34 @@ export const metadata: Metadata = {
   description: "Simple, transparent pricing for AI voice agents. Start free, scale as you grow. No hidden fees.",
 };
 
-export default function PricingPage() {
-  const plans = Object.values(PLANS);
+async function getPlansWithLivePrices() {
+  const plans = Object.values(PLANS).filter((p) => p.id !== "enterprise");
+
+  // Only fetch from Stripe if the secret key is configured
+  if (!process.env.STRIPE_SECRET_KEY) return plans;
+
+  try {
+    const { getStripePrice } = await import("@/lib/stripe");
+
+    const updated = await Promise.all(
+      plans.map(async (plan) => {
+        if (!plan.priceId) return plan;
+        try {
+          const sp = await getStripePrice(plan.priceId);
+          return { ...plan, price: Math.round(sp.unitAmount / 100) };
+        } catch {
+          return plan; // Fallback to hardcoded price
+        }
+      })
+    );
+    return updated;
+  } catch {
+    return plans; // Stripe not available, use hardcoded
+  }
+}
+
+export default async function PricingPage() {
+  const plans = await getPlansWithLivePrices();
 
   return (
     <>
@@ -30,7 +56,7 @@ export default function PricingPage() {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            {plans.filter(p => p.id !== "enterprise").map((plan) => {
+            {plans.map((plan) => {
               const isPopular = "popular" in plan && plan.popular;
 
               return (

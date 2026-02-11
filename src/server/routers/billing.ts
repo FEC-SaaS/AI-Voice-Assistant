@@ -11,6 +11,7 @@ import {
   getPaymentMethods,
   getInvoices,
   getUpcomingInvoice,
+  getStripePrice,
 } from "@/lib/stripe";
 import { PLANS, getPlan, OVERAGE_RATE_CENTS } from "@/constants/plans";
 
@@ -296,8 +297,27 @@ export const billingRouter = router({
     return { url: session.url };
   }),
 
-  // Get available plans
-  getPlans: protectedProcedure.query(() => {
-    return Object.values(PLANS).filter((plan) => plan.id !== "enterprise");
+  // Get available plans with live prices from Stripe
+  getPlans: protectedProcedure.query(async () => {
+    const plans = Object.values(PLANS).filter((plan) => plan.id !== "enterprise");
+
+    // Fetch live prices from Stripe for plans that have a priceId
+    const plansWithPrices = await Promise.all(
+      plans.map(async (plan) => {
+        if (!plan.priceId) return plan;
+        try {
+          const stripePrice = await getStripePrice(plan.priceId);
+          return {
+            ...plan,
+            price: Math.round(stripePrice.unitAmount / 100), // cents to dollars
+          };
+        } catch (err) {
+          log.error(`Failed to fetch price for plan ${plan.id}:`, err);
+          return plan; // Fall back to hardcoded price
+        }
+      })
+    );
+
+    return plansWithPrices;
   }),
 });
