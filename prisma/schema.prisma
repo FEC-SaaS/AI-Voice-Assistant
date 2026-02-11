@@ -489,3 +489,19 @@ model ReceptionistMessage {
   @@index([createdAt])
 }
 
+model LandingEvent {
+  id        String   @id @default(cuid())
+  event     String   // button_click, call_start, call_end, call_error
+  agent     String?  // male, female
+  duration  Int?     // seconds
+  location  String?  // city, region, country
+  userAgent String?
+  sessionId String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([event])
+  @@index([createdAt])
+  @@index([agent])
+}
+

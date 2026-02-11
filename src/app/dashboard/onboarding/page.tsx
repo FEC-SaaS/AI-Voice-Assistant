@@ -449,7 +449,7 @@ export default function OnboardingPage() {
                 <Bot className="h-8 w-8" />
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold">
-                Welcome to CallTone AI!
+                Welcome to CallTone!
               </h1>
               <p className="mt-2 text-white/80 max-w-lg mx-auto">
                 Welcome, <span className="font-semibold text-white">{organization?.name}</span>!

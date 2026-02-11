@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | CallTone AI",
-  description: "Learn how CallTone AI collects, uses, and protects your personal information.",
+  title: "Privacy Policy | CallTone",
+  description: "Learn how CallTone collects, uses, and protects your personal information.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -27,7 +27,7 @@ export default function PrivacyPolicyPage() {
             <div>
               <h2 className="text-2xl font-semibold text-foreground">1. Introduction</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                CallTone AI (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to
+                CallTone (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to
                 protecting your privacy. This Privacy Policy explains how we collect, use, disclose,
                 and safeguard your information when you use our AI voice agent platform, website, and
                 related services (collectively, the &quot;Service&quot;).
@@ -180,7 +180,7 @@ export default function PrivacyPolicyPage() {
               <p className="mt-2 text-muted-foreground">
                 Email: privacy@calltone.ai
                 <br />
-                CallTone AI
+                CallTone
                 <br />
                 San Francisco, CA
               </p>

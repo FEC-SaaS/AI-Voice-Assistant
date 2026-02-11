@@ -193,7 +193,7 @@ export default function IntegrationsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Integrations</h1>
-        <p className="text-muted-foreground">Connect CallTone AI with your favorite tools and services</p>
+        <p className="text-muted-foreground">Connect CallTone with your favorite tools and services</p>
       </div>
 
       {/* Webhook Configuration */}

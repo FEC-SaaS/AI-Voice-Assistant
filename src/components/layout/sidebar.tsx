@@ -275,7 +275,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
         })}
         {!poweredByHidden && !collapsed && (
           <p className="mt-2 text-center text-[10px] text-muted-foreground/70">
-            Powered by CallTone AI
+            Powered by CallTone
           </p>
         )}
       </div>

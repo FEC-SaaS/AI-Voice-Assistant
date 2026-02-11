@@ -458,7 +458,7 @@ export default function BrandingSettingsPage() {
             {!poweredByHidden && (
               <div className="border-t px-4 py-2">
                 <p className="text-[10px] text-muted-foreground/70 text-center">
-                  Powered by CallTone AI
+                  Powered by CallTone
                 </p>
               </div>
             )}
@@ -474,7 +474,7 @@ export default function BrandingSettingsPage() {
             White-Label Branding
           </CardTitle>
           <CardDescription>
-            Remove &quot;Powered by CallTone AI&quot; from the sidebar and
+            Remove &quot;Powered by CallTone&quot; from the sidebar and
             public pages.
           </CardDescription>
         </CardHeader>
@@ -483,7 +483,7 @@ export default function BrandingSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-foreground">
-                  Hide &quot;Powered by CallTone AI&quot;
+                  Hide &quot;Powered by CallTone&quot;
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Removes branding from sidebar footer and appointment pages
@@ -507,7 +507,7 @@ export default function BrandingSettingsPage() {
                   </p>
                   <p className="text-sm text-amber-400 mt-1">
                     Upgrade to the Business plan or higher to remove
-                    &quot;Powered by CallTone AI&quot; branding from your
+                    &quot;Powered by CallTone&quot; branding from your
                     dashboard and public pages.
                   </p>
                   <Link href="/dashboard/settings/billing">

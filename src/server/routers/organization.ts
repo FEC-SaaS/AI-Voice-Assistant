@@ -88,7 +88,7 @@ export const organizationRouter = router({
         throw new TRPCError({
           code: "FORBIDDEN",
           message:
-            "Hiding 'Powered by CallTone AI' requires a Business plan or higher.",
+            "Hiding 'Powered by CallTone' requires a Business plan or higher.",
         });
       }
 

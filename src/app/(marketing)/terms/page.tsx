@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | CallTone AI",
-  description: "Read the terms and conditions governing your use of the CallTone AI platform.",
+  title: "Terms of Service | CallTone",
+  description: "Read the terms and conditions governing your use of the CallTone platform.",
 };
 
 export default function TermsOfServicePage() {
@@ -27,7 +27,7 @@ export default function TermsOfServicePage() {
             <div>
               <h2 className="text-2xl font-semibold text-foreground">1. Acceptance of Terms</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                By accessing or using the CallTone AI platform and services (the &quot;Service&quot;),
+                By accessing or using the CallTone platform and services (the &quot;Service&quot;),
                 you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you are using
                 the Service on behalf of an organization, you represent that you have authority to bind
                 that organization to these Terms.
@@ -37,7 +37,7 @@ export default function TermsOfServicePage() {
             <div>
               <h2 className="text-2xl font-semibold text-foreground">2. Description of Service</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                CallTone AI provides an AI-powered voice agent platform that enables businesses to
+                CallTone provides an AI-powered voice agent platform that enables businesses to
                 create, deploy, and manage automated voice agents for inbound and outbound calling.
                 The Service includes agent creation, phone number provisioning, campaign management,
                 call analytics, appointment scheduling, and compliance tools.
@@ -101,7 +101,7 @@ export default function TermsOfServicePage() {
                 <li>Industry-specific regulations (healthcare, financial services, etc.)</li>
               </ul>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                You agree to indemnify CallTone AI against any claims arising from non-compliant use
+                You agree to indemnify CallTone against any claims arising from non-compliant use
                 of the Service.
               </p>
             </div>
@@ -129,7 +129,7 @@ export default function TermsOfServicePage() {
               <h2 className="text-2xl font-semibold text-foreground">9. Intellectual Property</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 The Service, including its design, features, and underlying technology, is owned by
-                CallTone AI and protected by intellectual property laws. Your subscription grants you
+                CallTone and protected by intellectual property laws. Your subscription grants you
                 a limited, non-exclusive, non-transferable license to use the Service for your
                 business purposes.
               </p>
@@ -191,7 +191,7 @@ export default function TermsOfServicePage() {
               <p className="mt-2 text-muted-foreground">
                 Email: legal@calltone.ai
                 <br />
-                CallTone AI
+                CallTone
                 <br />
                 San Francisco, CA
               </p>

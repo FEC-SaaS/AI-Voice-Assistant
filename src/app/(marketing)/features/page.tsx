@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Features | CallTone AI",
+  title: "Features | CallTone",
   description: "Powerful AI voice agent features — agent builder, inbound & outbound calling, conversation intelligence, and enterprise-grade compliance.",
 };
 

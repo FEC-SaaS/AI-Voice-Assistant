@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PLANS } from "@/constants/plans";
 
 export const metadata: Metadata = {
-  title: "Pricing | CallTone AI",
+  title: "Pricing | CallTone",
   description: "Simple, transparent pricing for AI voice agents. Start free, scale as you grow. No hidden fees.",
 };
 

@@ -3,7 +3,7 @@ import { Clock, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Blog | CallTone AI",
+  title: "Blog | CallTone",
   description: "Insights, guides, and best practices for AI voice agents and business communication.",
 };
 
@@ -27,7 +27,7 @@ const BLOG_POSTS = [
   {
     title: "How Cold Calling Automation Increased Our Client's Pipeline by 340%",
     excerpt:
-      "A case study on how one SaaS company used CallTone AI to automate their outbound calling and dramatically increase their sales pipeline within 90 days.",
+      "A case study on how one SaaS company used CallTone to automate their outbound calling and dramatically increase their sales pipeline within 90 days.",
     category: "Case Study",
     readTime: "5 min read",
     date: "Dec 20, 2024",

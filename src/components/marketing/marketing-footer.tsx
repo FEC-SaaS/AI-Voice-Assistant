@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Bot } from "lucide-react";
 
 const FOOTER_LINKS = {
   Product: [
@@ -13,8 +12,8 @@ const FOOTER_LINKS = {
     { href: "/blog", label: "Blog" },
   ],
   Resources: [
-    { href: "/blog", label: "Documentation" },
-    { href: "/blog", label: "API Reference" },
+    { href: "/docs", label: "Documentation" },
+    { href: "/docs", label: "API Reference" },
   ],
   Legal: [
     { href: "/privacy", label: "Privacy Policy" },
@@ -30,11 +29,10 @@ export function MarketingFooter() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-2">
-              <Bot className="h-6 w-6 text-primary" />
-              <span className="font-semibold">CallTone AI</span>
+              <span className="font-semibold gradient-text">CallTone</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">
-              Enterprise-grade AI voice agents for modern businesses.
+              AI voice agents that handle your calls, book appointments, and never take a day off.
             </p>
           </div>
 
@@ -60,7 +58,7 @@ export function MarketingFooter() {
 
         <div className="mt-10 border-t pt-6">
           <p className="text-center text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} CallTone AI. All rights reserved.
+            &copy; {new Date().getFullYear()} CallTone. All rights reserved.
           </p>
         </div>
       </div>
