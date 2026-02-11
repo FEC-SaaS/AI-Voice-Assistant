@@ -52,6 +52,7 @@ export function TalkToAgent() {
   const [agentType, setAgentType] = useState<"male" | "female" | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const vapiRef = useRef<InstanceType<
     typeof import("@vapi-ai/web").default
@@ -103,6 +104,11 @@ export function TalkToAgent() {
 
     if (!publicKey || !assistantId) {
       setAgentType(agent);
+      setErrorMessage(
+        !publicKey
+          ? "Demo coming soon — Vapi public key not configured"
+          : "Demo coming soon — assistant ID not configured"
+      );
       setStatus("error");
       return;
     }
@@ -140,6 +146,13 @@ export function TalkToAgent() {
 
       vapi.on("error", (error: unknown) => {
         console.error("[TalkToAgent] Vapi error:", error);
+        const msg =
+          error instanceof Error
+            ? error.message
+            : typeof error === "object" && error !== null && "message" in error
+            ? String((error as { message: unknown }).message)
+            : String(error);
+        setErrorMessage(msg);
         setStatus("error");
         stopTimer();
         setIsSpeaking(false);
@@ -152,6 +165,9 @@ export function TalkToAgent() {
       await vapi.start(assistantId);
     } catch (error) {
       console.error("[TalkToAgent] Failed to start call:", error);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to start call"
+      );
       setStatus("error");
       trackEvent({ event: "call_error", agent });
     }
@@ -177,6 +193,7 @@ export function TalkToAgent() {
     setAgentType(null);
     setElapsed(0);
     setIsSpeaking(false);
+    setErrorMessage(null);
     vapiRef.current = null;
   };
 
@@ -289,10 +306,13 @@ export function TalkToAgent() {
   return (
     <div className="flex flex-col items-center gap-5">
       <p className="text-base sm:text-lg text-muted-foreground">
-        {!process.env.NEXT_PUBLIC_VAPI_PUBLIC_KEY
-          ? "Demo coming soon"
-          : "Something went wrong. Please try again."}
+        Something went wrong. Please try again.
       </p>
+      {errorMessage && (
+        <p className="max-w-md text-xs text-muted-foreground/60 font-mono bg-secondary/50 rounded-lg px-4 py-2 text-center">
+          {errorMessage}
+        </p>
+      )}
       <button
         onClick={handleReset}
         className="inline-flex items-center justify-center gap-3 rounded-2xl border-2 border-border px-8 py-4 text-base font-semibold text-foreground transition-all duration-300 hover:border-primary/30 hover:bg-primary/5 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-10 sm:py-5"
