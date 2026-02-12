@@ -1091,7 +1091,7 @@ export default function PhoneNumbersPage() {
                   <span className="text-sm font-medium text-purple-400">TCPA Compliance</span>
                 </div>
                 <p className="ml-6 text-sm text-purple-400">
-                  Ensure prior express consent before making AI-assisted outbound calls. Maintain Do Not Call lists and honor opt-out requests.
+                  Ensure prior express consent before making automated outbound calls. Maintain Do Not Call lists and honor opt-out requests.
                 </p>
               </div>
             </div>
