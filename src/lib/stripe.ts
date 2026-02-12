@@ -80,11 +80,7 @@ export async function createCheckoutSession(
     line_items: lineItems,
     success_url: successUrl,
     cancel_url: cancelUrl,
-    payment_method_types: [
-      "card",
-      "paypal",
-      "link",
-    ],
+    payment_method_types: ["card"],
     allow_promotion_codes: true,
     billing_address_collection: "required",
     tax_id_collection: { enabled: true },
