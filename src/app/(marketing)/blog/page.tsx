@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Blog | CallTone",
-  description: "Insights, guides, and best practices for AI voice agents and business communication.",
+  description: "Insights, guides, and best practices for voice agents and business communication.",
 };
 
 const BLOG_POSTS = [
   {
-    title: "The Complete Guide to AI Voice Agents in 2025",
+    title: "The Complete Guide to Voice Agents in 2025",
     excerpt:
-      "Learn how AI voice agents are transforming business communications, from cold calling to customer support, and how to get started with your first agent.",
+      "Learn how voice agents are transforming business communications, from cold calling to customer support, and how to get started with your first agent.",
     category: "Guide",
     readTime: "8 min read",
     date: "Jan 15, 2025",
@@ -19,7 +19,7 @@ const BLOG_POSTS = [
   {
     title: "TCPA Compliance for Automated Calling: What You Need to Know",
     excerpt:
-      "Stay compliant with telemarketing regulations. This guide covers DNC lists, consent requirements, calling hour restrictions, and best practices for AI-powered outreach.",
+      "Stay compliant with telemarketing regulations. This guide covers DNC lists, consent requirements, calling hour restrictions, and best practices for automated outreach.",
     category: "Compliance",
     readTime: "6 min read",
     date: "Jan 8, 2025",
@@ -33,9 +33,9 @@ const BLOG_POSTS = [
     date: "Dec 20, 2024",
   },
   {
-    title: "Measuring ROI on AI Voice Agents: A Framework for Business Leaders",
+    title: "Measuring ROI on Voice Agents: A Framework for Business Leaders",
     excerpt:
-      "How to calculate the return on investment for AI voice technology. Includes cost comparisons, KPI tracking, and a downloadable ROI calculator.",
+      "How to calculate the return on investment for voice technology. Includes cost comparisons, KPI tracking, and a downloadable ROI calculator.",
     category: "Business",
     readTime: "7 min read",
     date: "Dec 12, 2024",
@@ -49,7 +49,7 @@ const BLOG_POSTS = [
     date: "Nov 28, 2024",
   },
   {
-    title: "Building Effective AI Agent Scripts: Tips from Top-Performing Campaigns",
+    title: "Building Effective Voice Agent Scripts: Tips from Top-Performing Campaigns",
     excerpt:
       "Best practices for crafting conversation flows that sound natural, handle objections gracefully, and drive higher conversion rates in automated campaigns.",
     category: "Best Practices",
@@ -77,7 +77,7 @@ export default function BlogPage() {
             Blog & Resources
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Insights, guides, and best practices for AI voice technology and business automation.
+            Insights, guides, and best practices for voice technology and business automation.
           </p>
         </div>
       </section>
@@ -132,7 +132,7 @@ export default function BlogPage() {
           <div className="mx-auto mt-16 max-w-2xl rounded-2xl bg-gray-900 p-8 text-center text-white md:p-12">
             <h2 className="text-2xl font-bold">Stay Updated</h2>
             <p className="mt-3 text-gray-400">
-              Get the latest insights on AI voice technology and automation delivered to your inbox.
+              Get the latest insights on voice technology and automation delivered to your inbox.
             </p>
             <div className="mt-6 flex gap-3 sm:mx-auto sm:max-w-md">
               <input

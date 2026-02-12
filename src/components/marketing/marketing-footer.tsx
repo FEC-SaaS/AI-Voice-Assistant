@@ -32,7 +32,7 @@ export function MarketingFooter() {
               <span className="font-semibold gradient-text">CallTone</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">
-              AI voice agents that handle your calls, book appointments, and never take a day off.
+              Voice agents that handle your calls, book appointments, and never take a day off.
             </p>
           </div>
 

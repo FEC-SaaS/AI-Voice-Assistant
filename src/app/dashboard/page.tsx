@@ -22,7 +22,7 @@ export default async function DashboardPage() {
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold">Welcome back!</h1>
             <p className="mt-1 text-white/80 text-sm lg:text-base">
-              Get started by creating your first AI agent or launch a campaign.
+              Get started by creating your first voice agent or launch a campaign.
             </p>
           </div>
           <Link
@@ -47,7 +47,7 @@ export default async function DashboardPage() {
       <div>
         <h2 className="mb-4 text-lg font-semibold text-foreground">Quick Actions</h2>
         <div className="grid gap-3 lg:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <QuickActionCard title="Create Agent" description="Build a new AI voice agent" href="/dashboard/agents/new" icon={Bot} />
+          <QuickActionCard title="Create Agent" description="Build a new voice agent" href="/dashboard/agents/new" icon={Bot} />
           <QuickActionCard title="Start Campaign" description="Launch outbound calls" href="/dashboard/campaigns/new" icon={Megaphone} />
           <QuickActionCard title="View Analytics" description="Track performance" href="/dashboard/analytics" icon={BarChart3} />
         </div>

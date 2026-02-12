@@ -125,7 +125,7 @@ export default function IntelligencePage() {
             Conversation Intelligence
           </h1>
           <p className="text-muted-foreground mt-1">
-            AI-powered insights from your call conversations — competitor
+            Smart insights from your call conversations — competitor
             tracking, objection analysis, buying signals, and coaching
             recommendations.
           </p>

@@ -53,7 +53,7 @@ export default function AgentsPage() {
           <p className="text-muted-foreground">
             {agents?.length
               ? `${agents.length} agent${agents.length !== 1 ? "s" : ""}`
-              : "Create your first AI voice agent"}
+              : "Create your first voice agent"}
           </p>
         </div>
         <Link href="/dashboard/agents/new">
@@ -84,7 +84,7 @@ export default function AgentsPage() {
           </div>
           <h3 className="mt-4 text-lg font-semibold text-foreground">No agents yet</h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-            Get started by creating your first AI voice agent to handle calls.
+            Get started by creating your first voice agent to handle calls.
           </p>
           <Link href="/dashboard/agents/new" className="mt-6 inline-block">
             <Button className="rounded-xl shadow-md shadow-primary/20">

@@ -94,7 +94,7 @@ const INTEGRATIONS: Integration[] = [
   {
     id: "calendly",
     name: "Calendly",
-    description: "Integrate appointment scheduling with your AI agents",
+    description: "Integrate appointment scheduling with your voice agents",
     icon: "📆",
     status: "coming_soon",
     category: "calendar",
@@ -106,7 +106,7 @@ const WEBHOOK_EVENTS = [
   { event: "call.ended", description: "When a call completes" },
   { event: "call.failed", description: "When a call fails" },
   { event: "transcript.ready", description: "When transcript is available" },
-  { event: "analysis.complete", description: "When AI analysis finishes" },
+  { event: "analysis.complete", description: "When call analysis finishes" },
 ];
 
 function IntegrationCard({ integration }: { integration: Integration }) {

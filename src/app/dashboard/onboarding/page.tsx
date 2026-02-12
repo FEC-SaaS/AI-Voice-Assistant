@@ -29,7 +29,7 @@ import { toast } from "sonner";
 // ─── Steps ──────────────────────────────────────────────────────
 const STEPS = [
   { id: 1, title: "Welcome", description: "Overview of your setup" },
-  { id: 2, title: "Create Agent", description: "Build your AI voice agent" },
+  { id: 2, title: "Create Agent", description: "Build your voice agent" },
   { id: 3, title: "Phone Number", description: "Give your agent a number" },
   { id: 4, title: "Knowledge Base", description: "Teach your agent" },
   { id: 5, title: "Test Call", description: "Hear your agent in action" },
@@ -453,7 +453,7 @@ export default function OnboardingPage() {
               </h1>
               <p className="mt-2 text-white/80 max-w-lg mx-auto">
                 Welcome, <span className="font-semibold text-white">{organization?.name}</span>!
-                Let&apos;s get your first AI voice agent up and running. This guided setup takes
+                Let&apos;s get your first voice agent up and running. This guided setup takes
                 about 5 minutes.
               </p>
             </div>
@@ -466,7 +466,7 @@ export default function OnboardingPage() {
                   {
                     step: 1,
                     icon: Bot,
-                    title: "Create Your AI Agent",
+                    title: "Create Your Voice Agent",
                     desc: "Choose a template and customize your agent's personality and behavior.",
                     required: true,
                   },
@@ -670,7 +670,7 @@ export default function OnboardingPage() {
               </div>
               <CardTitle>Provision a Phone Number</CardTitle>
               <CardDescription>
-                Your AI agent needs a phone number to make and receive calls. Without a number,
+                Your voice agent needs a phone number to make and receive calls. Without a number,
                 your agent can&apos;t communicate with anyone. Choose how you&apos;d like to get one:
               </CardDescription>
             </CardHeader>
@@ -1081,7 +1081,7 @@ export default function OnboardingPage() {
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-xs font-bold flex-shrink-0 mt-0.5">2</span>
-                        <span>Your AI agent will answer and greet you</span>
+                        <span>Your voice agent will answer and greet you</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white text-xs font-bold flex-shrink-0 mt-0.5">3</span>
@@ -1177,7 +1177,7 @@ export default function OnboardingPage() {
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold">You&apos;re All Set!</h1>
             <p className="mt-2 text-white/90 max-w-lg mx-auto">
-              Your AI voice agent is live and ready to handle calls. Here&apos;s a summary of
+              Your voice agent is live and ready to handle calls. Here&apos;s a summary of
               what we set up:
             </p>
           </div>
@@ -1189,7 +1189,7 @@ export default function OnboardingPage() {
                   <Check className="h-4 w-4 text-green-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-sm">AI Agent Created</p>
+                  <p className="font-medium text-sm">Voice Agent Created</p>
                   <p className="text-xs text-muted-foreground">{agentName}</p>
                 </div>
               </div>

@@ -89,7 +89,7 @@ export default function StaffPage() {
         <div className="rounded-lg border bg-card p-12 text-center">
           <User className="mx-auto h-12 w-12 text-muted-foreground/70" />
           <h3 className="mt-3 text-lg font-medium text-foreground">No staff members yet</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Add staff members so your AI receptionist can look them up and transfer calls</p>
+          <p className="mt-1 text-sm text-muted-foreground">Add staff members so your virtual receptionist can look them up and transfer calls</p>
           <Button className="mt-4" onClick={() => setShowForm(true)}>
             <Plus className="mr-2 h-4 w-4" />Add First Staff Member
           </Button>

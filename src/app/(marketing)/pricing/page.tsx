@@ -6,7 +6,7 @@ import { PLANS } from "@/constants/plans";
 
 export const metadata: Metadata = {
   title: "Pricing | CallTone",
-  description: "Simple, transparent pricing for AI voice agents. Start free, scale as you grow. No hidden fees.",
+  description: "Simple, transparent pricing for voice agents. Start free, scale as you grow. No hidden fees.",
 };
 
 async function getPlansWithLivePrices() {
@@ -162,7 +162,7 @@ export default async function PricingPage() {
             />
             <FaqItem
               question="What's included in the free trial?"
-              answer="The free trial includes 1 AI agent, 100 minutes, and full access to all features for 14 days. No credit card required."
+              answer="The free trial includes 1 voice agent, 100 minutes, and full access to all features for 14 days. No credit card required."
             />
             <FaqItem
               question="Can I cancel anytime?"

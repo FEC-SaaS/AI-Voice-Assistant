@@ -18,7 +18,7 @@ export default function LeadsPage() {
           <h1 className="text-2xl font-bold text-foreground">Lead Pipeline</h1>
         </div>
         <p className="mt-1 text-muted-foreground">
-          AI-powered lead scoring and pipeline management
+          Smart lead scoring and pipeline management
         </p>
       </div>
 

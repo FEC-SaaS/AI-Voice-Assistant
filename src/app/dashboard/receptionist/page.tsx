@@ -31,7 +31,7 @@ export default function ReceptionistDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Receptionist</h1>
-          <p className="text-muted-foreground">Manage your AI receptionist, departments, and messages</p>
+          <p className="text-muted-foreground">Manage your virtual receptionist, departments, and messages</p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/receptionist/departments">

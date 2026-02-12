@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 
 const MESSAGES = [
-  "Your AI receptionist never takes a day off",
+  "Your receptionist never takes a day off",
   "Turn every missed call into revenue",
   "Handle 100 calls at once — zero hold time",
-  "AI that sounds like your best employee",
+  "Technology that sounds like your best employee",
   "Book appointments while you sleep",
   "Never put a caller on hold again",
   "Your phones answered in under one second",

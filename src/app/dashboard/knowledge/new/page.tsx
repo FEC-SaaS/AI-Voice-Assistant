@@ -172,7 +172,7 @@ export default function NewKnowledgePage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Add Knowledge</h1>
-          <p className="text-muted-foreground">Train your AI agents with your business information</p>
+          <p className="text-muted-foreground">Train your voice agents with your business information</p>
         </div>
       </div>
 

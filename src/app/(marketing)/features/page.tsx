@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Features | CallTone",
-  description: "Powerful AI voice agent features — agent builder, inbound & outbound calling, conversation intelligence, and enterprise-grade compliance.",
+  description: "Powerful voice agent features — agent builder, inbound & outbound calling, conversation intelligence, and enterprise-grade compliance.",
 };
 
 export default function FeaturesPage() {
@@ -32,7 +32,7 @@ export default function FeaturesPage() {
             Powerful Features for Modern Business
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Everything you need to deploy, manage, and scale AI voice agents.
+            Everything you need to deploy, manage, and scale voice agents.
           </p>
         </div>
       </section>
@@ -43,13 +43,13 @@ export default function FeaturesPage() {
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
               <span className="text-sm font-semibold uppercase tracking-wide text-primary">
-                AI Agents
+                Voice Agents
               </span>
               <h2 className="mt-2 text-3xl font-bold text-foreground">
                 Build Intelligent Voice Agents in Minutes
               </h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                Create sophisticated AI agents with natural language capabilities.
+                Create sophisticated voice agents with natural language capabilities.
                 No coding required - just describe what you want and deploy.
               </p>
               <ul className="mt-8 space-y-4">
@@ -130,7 +130,7 @@ export default function FeaturesPage() {
                 Analytics & Intelligence
               </span>
               <h2 className="mt-2 text-3xl font-bold text-foreground">
-                AI-Powered Conversation Intelligence
+                Conversation Intelligence
               </h2>
               <p className="mt-4 text-lg text-muted-foreground">
                 Gain deep insights from every conversation with automated analysis,
@@ -145,7 +145,7 @@ export default function FeaturesPage() {
                 <FeatureListItem
                   icon={Zap}
                   title="Automated Lead Scoring"
-                  description="AI scores leads based on conversation content and engagement"
+                  description="Automatically scores leads based on conversation content and engagement"
                 />
                 <FeatureListItem
                   icon={FileText}

@@ -10,7 +10,7 @@ export const PLANS = {
     phoneNumbers: 1,
     campaigns: 1,
     features: [
-      "1 AI Agent",
+      "1 Voice Agent",
       "100 minutes/month",
       "1 Phone Number",
       "Basic Analytics",
@@ -28,7 +28,7 @@ export const PLANS = {
     phoneNumbers: 1,
     campaigns: 5,
     features: [
-      "1 AI Agent",
+      "1 Voice Agent",
       "500 minutes/month",
       "1 Phone Number",
       "5 Campaigns",
@@ -47,7 +47,7 @@ export const PLANS = {
     phoneNumbers: 3,
     campaigns: 20,
     features: [
-      "3 AI Agents",
+      "3 Voice Agents",
       "2,000 minutes/month",
       "3 Phone Numbers",
       "20 Campaigns",
@@ -68,7 +68,7 @@ export const PLANS = {
     phoneNumbers: 10,
     campaigns: -1, // Unlimited
     features: [
-      "10 AI Agents",
+      "10 Voice Agents",
       "5,000 minutes/month",
       "10 Phone Numbers",
       "Unlimited Campaigns",

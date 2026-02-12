@@ -23,7 +23,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
               CallTone
             </h1>
             <p className="text-base sm:text-lg text-muted-foreground text-center">
-              AI Voice Agents for Modern Business
+              Voice Agents for Modern Business
             </p>
             <div className="mt-4 hidden sm:block">
               <RotatingValueMessages />

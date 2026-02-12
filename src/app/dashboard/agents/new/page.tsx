@@ -66,7 +66,7 @@ export default function NewAgentPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Create Agent</h1>
-          <p className="text-muted-foreground">Configure your AI voice agent</p>
+          <p className="text-muted-foreground">Configure your voice agent</p>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export default function NewAgentPage() {
             <textarea
               id="firstMessage"
               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              placeholder="Hello! This is an AI assistant calling from..."
+              placeholder="Hello! This is a representative calling from..."
               {...register("firstMessage")}
             />
           </div>
@@ -135,7 +135,7 @@ export default function NewAgentPage() {
         </div>
 
         <div className="rounded-lg border bg-card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">AI Model</h2>
+          <h2 className="text-lg font-semibold text-foreground">Language Model</h2>
           <div className="space-y-2">
             <Label htmlFor="model">Model</Label>
             <select
@@ -176,7 +176,7 @@ export default function NewAgentPage() {
             <div>
               <Label htmlFor="enableReceptionist" className="text-base">Enable Receptionist Mode</Label>
               <p className="text-sm text-muted-foreground">
-                AI receptionist that greets callers, looks up departments, transfers calls, and takes messages
+                Virtual receptionist that greets callers, looks up departments, transfers calls, and takes messages
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">

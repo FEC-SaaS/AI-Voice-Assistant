@@ -36,7 +36,7 @@ export function CoachingRecommendations({
           Coaching Recommendations
         </CardTitle>
         <CardDescription>
-          AI-generated coaching themes ranked by frequency across calls
+          Auto-generated coaching themes ranked by frequency across calls
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -197,7 +197,7 @@ export const VOICES: Voice[] = [
 
 export const VOICE_PROVIDERS = [
   { id: "vapi", name: "Standard (Recommended)", premium: false, description: "Free built-in voices, no setup required" },
-  { id: "deepgram", name: "Deepgram", premium: false, description: "High-quality AI voices" },
+  { id: "deepgram", name: "Deepgram", premium: false, description: "High-quality premium voices" },
 ] as const;
 
 export function getVoice(voiceId: string): Voice | undefined {

@@ -77,7 +77,7 @@ export default function DepartmentsPage() {
         <div className="rounded-lg border bg-card p-12 text-center">
           <Building2 className="mx-auto h-12 w-12 text-muted-foreground/70" />
           <h3 className="mt-3 text-lg font-medium text-foreground">No departments yet</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Create departments so your AI receptionist can direct callers</p>
+          <p className="mt-1 text-sm text-muted-foreground">Create departments so your virtual receptionist can direct callers</p>
           <Button className="mt-4" onClick={() => setShowForm(true)}>
             <Plus className="mr-2 h-4 w-4" />Create First Department
           </Button>

@@ -28,7 +28,7 @@ export default function MessagesPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-foreground">Messages</h1>
-            <p className="text-muted-foreground">Messages taken by your AI receptionist</p>
+            <p className="text-muted-foreground">Messages taken by your virtual receptionist</p>
           </div>
         </div>
       </div>

@@ -29,7 +29,7 @@ export function SetupGuideBanner() {
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-foreground">Setup Guide</h3>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Follow our step-by-step guide to set up your first AI agent, provision a phone
+            Follow our step-by-step guide to set up your first voice agent, provision a phone
             number, and get everything ready for calls.
           </p>
         </div>

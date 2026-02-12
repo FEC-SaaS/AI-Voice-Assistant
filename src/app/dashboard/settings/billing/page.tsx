@@ -263,7 +263,7 @@ export default function BillingPage() {
             <div className="grid gap-4">
               {usage && (
                 <>
-                  <UsageBar used={usage.agents.used} limit={usage.agents.limit} label="AI Agents" />
+                  <UsageBar used={usage.agents.used} limit={usage.agents.limit} label="Voice Agents" />
                   <UsageBar used={usage.phoneNumbers.used} limit={usage.phoneNumbers.limit} label="Phone Numbers" />
                   <UsageBar used={usage.campaigns.used} limit={usage.campaigns.limit} label="Campaigns" />
                   <UsageBar used={usage.minutes.used} limit={usage.minutes.limit} label="Minutes Used" />

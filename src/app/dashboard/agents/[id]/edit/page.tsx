@@ -163,7 +163,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
         </div>
 
         <div className="rounded-lg border bg-card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">AI Model</h2>
+          <h2 className="text-lg font-semibold text-foreground">Language Model</h2>
           <select
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             {...register("model")}
@@ -200,7 +200,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
             <div>
               <Label htmlFor="enableReceptionist" className="text-base">Enable Receptionist Mode</Label>
               <p className="text-sm text-muted-foreground">
-                AI receptionist that greets callers, looks up departments, transfers calls, and takes messages
+                Virtual receptionist that greets callers, looks up departments, transfers calls, and takes messages
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">

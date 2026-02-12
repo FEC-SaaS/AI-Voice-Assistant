@@ -74,7 +74,7 @@ export function InsightsOverview({ data, isLoading }: InsightsOverviewProps) {
         title="Total Analyzed Calls"
         icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
         value={data?.totalAnalyzedCalls ?? 0}
-        subtitle="Calls processed by AI"
+        subtitle="Calls processed"
         isLoading={isLoading}
       />
       <MetricCard

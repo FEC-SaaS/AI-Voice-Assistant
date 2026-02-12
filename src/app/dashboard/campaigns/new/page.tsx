@@ -70,7 +70,7 @@ export default function NewCampaignPage() {
     }
 
     if (!formData.agentId) {
-      toast.error("Please select an AI agent for this campaign");
+      toast.error("Please select a voice agent for this campaign");
       return;
     }
 
@@ -113,9 +113,9 @@ export default function NewCampaignPage() {
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
             <div>
-              <h3 className="font-medium text-yellow-400">No AI agents available</h3>
+              <h3 className="font-medium text-yellow-400">No voice agents available</h3>
               <p className="mt-1 text-sm text-yellow-400">
-                You need to create an AI agent before you can create a campaign.
+                You need to create a voice agent before you can create a campaign.
               </p>
               <Link href="/dashboard/agents/new">
                 <Button size="sm" className="mt-3">
@@ -162,7 +162,7 @@ export default function NewCampaignPage() {
             </div>
 
             <div>
-              <Label htmlFor="agentId">AI Agent *</Label>
+              <Label htmlFor="agentId">Voice Agent *</Label>
               <select
                 id="agentId"
                 value={formData.agentId}
@@ -178,7 +178,7 @@ export default function NewCampaignPage() {
                 ))}
               </select>
               <p className="mt-1 text-xs text-muted-foreground">
-                The AI agent that will make calls for this campaign
+                The voice agent that will make calls for this campaign
               </p>
             </div>
           </div>

@@ -305,7 +305,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
               <p className="text-sm text-foreground">{voice?.name || agent.voiceId} ({agent.voiceProvider})</p>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase text-muted-foreground/70">AI Model</span>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Language Model</span>
               <p className="text-sm text-foreground">{agent.model} ({agent.modelProvider})</p>
             </div>
             <div>

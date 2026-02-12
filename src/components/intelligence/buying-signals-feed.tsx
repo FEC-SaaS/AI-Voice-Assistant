@@ -55,7 +55,7 @@ export function BuyingSignalsFeed({ alerts }: BuyingSignalsFeedProps) {
           Buying Signal Alerts
         </CardTitle>
         <CardDescription>
-          Recent calls with strong buying intent detected by AI
+          Recent calls with strong buying intent detected automatically
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -65,7 +65,7 @@ export function BuyingSignalsFeed({ alerts }: BuyingSignalsFeedProps) {
               <Zap className="mx-auto h-12 w-12 text-muted-foreground/70" />
               <p className="mt-4">No buying signal alerts</p>
               <p className="text-sm">
-                Alerts will appear when AI detects strong buying intent
+                Alerts will appear when strong buying intent is detected
               </p>
             </div>
           </div>

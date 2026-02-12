@@ -65,7 +65,7 @@ export default function SettingsPage() {
   const [timezone, setTimezone] = useState("America/New_York");
   const [callingHours, setCallingHours] = useState("09:00-17:00");
   const [aiDisclosure, setAiDisclosure] = useState(
-    "This call may be recorded for quality assurance. You are speaking with an AI assistant."
+    "This call may be recorded for quality assurance. You are speaking with a virtual assistant."
   );
   const [isSaving, setIsSaving] = useState(false);
 
@@ -94,7 +94,7 @@ export default function SettingsPage() {
       setCallingHours(settings?.defaultCallingHours || "09:00-17:00");
       setAiDisclosure(
         settings?.aiDisclosure ||
-          "This call may be recorded for quality assurance. You are speaking with an AI assistant."
+          "This call may be recorded for quality assurance. You are speaking with a virtual assistant."
       );
     }
   }, [currentUser]);
@@ -267,7 +267,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="aiDisclosure">AI Disclosure Message</Label>
+                <Label htmlFor="aiDisclosure">Call Disclosure Message</Label>
                 <textarea
                   id="aiDisclosure"
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"

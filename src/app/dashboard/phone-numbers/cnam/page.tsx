@@ -222,7 +222,7 @@ export default function CnamPage() {
             <p className="font-medium text-foreground">How CNAM works</p>
             <p>
               CNAM (Caller Name) registration adds your business name to the
-              national caller ID database. When your AI agent calls someone,
+              national caller ID database. When your voice agent calls someone,
               they&apos;ll see your business name instead of just a phone number.
             </p>
             <p>

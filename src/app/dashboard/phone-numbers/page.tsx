@@ -291,7 +291,7 @@ export default function PhoneNumbersPage() {
           <p className="text-muted-foreground">
             {phoneNumbers?.length
               ? `${phoneNumbers.length} phone number${phoneNumbers.length !== 1 ? "s" : ""}`
-              : "Get phone numbers for your AI agents"}
+              : "Get phone numbers for your voice agents"}
           </p>
         </div>
         <Button onClick={() => setShowPanel(!showPanel)}>
@@ -367,7 +367,7 @@ export default function PhoneNumbersPage() {
                   <span className="font-medium">Import from Twilio</span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Use your existing Twilio phone number with your AI agents.
+                  Use your existing Twilio phone number with your voice agents.
                 </p>
               </button>
             </div>
@@ -827,7 +827,7 @@ export default function PhoneNumbersPage() {
           <Hash className="mx-auto h-12 w-12 text-muted-foreground/70" />
           <h3 className="mt-4 text-lg font-semibold text-foreground">No phone numbers yet</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Get a phone number to enable voice calls with your AI agents.
+            Get a phone number to enable voice calls with your voice agents.
           </p>
           <Button className="mt-6" onClick={() => setShowPanel(true)}>
             <Plus className="mr-2 h-4 w-4" />
@@ -1108,8 +1108,8 @@ export default function PhoneNumbersPage() {
             <ul className="mt-2 list-disc list-inside text-sm text-blue-400 space-y-1">
               <li><strong>Managed numbers:</strong> We provision and bill you monthly. Simplest option.</li>
               <li><strong>Imported numbers:</strong> Use your own Twilio numbers. You pay Twilio directly.</li>
-              <li>All numbers support inbound and outbound calling with your AI agents.</li>
-              <li>Numbers are automatically connected for voice AI with STIR/SHAKEN verification.</li>
+              <li>All numbers support inbound and outbound calling with your voice agents.</li>
+              <li>Numbers are automatically connected for voice calling with STIR/SHAKEN verification.</li>
             </ul>
           </div>
         </div>

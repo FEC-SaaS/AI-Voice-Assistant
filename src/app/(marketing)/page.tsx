@@ -18,10 +18,10 @@ import { AudioWave } from "@/components/marketing/audio-wave";
 import { TalkToAgent } from "@/components/marketing/talk-to-agent";
 
 const HEADLINES = [
-  "Your AI receptionist never takes a day off",
+  "Your receptionist never takes a day off",
   "Turn every missed call into a booked appointment",
   "Handle 100 calls simultaneously while you focus on growth",
-  "Let AI handle the phones. You handle the business.",
+  "Let CallTone handle the phones. You handle the business.",
 ];
 
 // Hook to observe elements and add .is-visible when they enter viewport
@@ -100,9 +100,9 @@ export default function HomePage() {
             <RotatingHeadline />
           </h1>
           <p className="reveal is-visible reveal-delay-1 mx-auto mt-6 max-w-2xl text-base sm:text-lg text-foreground/70 leading-relaxed px-2">
-            CallTone is an AI voice agent that answers your calls, books
+            CallTone is a voice agent that answers your calls, books
             appointments, and handles customer inquiries — 24/7, with
-            human-like conversation.
+            natural conversation.
           </p>
           <div className="reveal is-visible reveal-delay-2 mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4 sm:px-0">
             <Link href="/docs">
@@ -160,7 +160,7 @@ export default function HomePage() {
             <StepCard
               step={1}
               title="Describe Your Agent"
-              description="Tell us about your business and how you want your AI agent to sound."
+              description="Tell us about your business and how you want your agent to sound."
               delay={1}
             />
             <StepCard
@@ -196,13 +196,13 @@ export default function HomePage() {
             <FeatureCard
               icon={Phone}
               title="Never Miss a Call Again"
-              description="Your AI agent answers every call instantly, 24/7, even on holidays and weekends."
+              description="Your agent answers every call instantly, 24/7, even on holidays and weekends."
               delay={1}
             />
             <FeatureCard
               icon={Calendar}
               title="Appointments on Autopilot"
-              description="AI books appointments directly into your calendar and sends confirmation emails."
+              description="Automatically books appointments into your calendar and sends confirmation emails."
               delay={2}
             />
             <FeatureCard
@@ -214,7 +214,7 @@ export default function HomePage() {
             <FeatureCard
               icon={Brain}
               title="Intelligence From Every Call"
-              description="Get AI-generated summaries, sentiment analysis, and lead scores after every conversation."
+              description="Get instant summaries, sentiment analysis, and lead scores after every conversation."
               delay={4}
             />
             <FeatureCard
@@ -226,7 +226,7 @@ export default function HomePage() {
             <FeatureCard
               icon={Users}
               title="Scale Without Hiring"
-              description="Handle 100 simultaneous calls with a single AI agent. No new hires needed."
+              description="Handle 100 simultaneous calls with a single agent. No new hires needed."
               delay={1}
             />
           </div>
@@ -243,7 +243,7 @@ export default function HomePage() {
             Hear the Difference Yourself
           </h2>
           <p className="reveal reveal-delay-1 mx-auto mt-4 max-w-xl text-foreground/60 px-2">
-            Talk to our AI agent right now. No signup needed.
+            Talk to our voice agent right now. No signup needed.
           </p>
           <div className="reveal reveal-delay-2 mt-10">
             <TalkToAgent />

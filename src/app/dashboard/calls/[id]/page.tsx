@@ -249,7 +249,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            AI Analysis
+            Smart Analysis
           </h2>
           {call.transcript && (
             <Button
@@ -263,7 +263,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               ) : call.sentiment ? (
                 <><Sparkles className="mr-2 h-4 w-4" /> Re-analyze</>
               ) : (
-                <><Sparkles className="mr-2 h-4 w-4" /> Analyze with AI</>
+                <><Sparkles className="mr-2 h-4 w-4" /> Run Analysis</>
               )}
             </Button>
           )}
@@ -520,7 +520,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
                   {analyzeMutation.isPending ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>
                   ) : (
-                    <><Sparkles className="mr-2 h-4 w-4" /> Analyze with AI</>
+                    <><Sparkles className="mr-2 h-4 w-4" /> Run Analysis</>
                   )}
                 </Button>
               </div>

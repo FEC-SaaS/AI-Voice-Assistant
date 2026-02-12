@@ -82,7 +82,7 @@ export default function AnalyticsPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
           <p className="text-muted-foreground">
-            Track performance and insights across your AI agents
+            Track performance and insights across your voice agents
           </p>
         </div>
         <div className="flex items-center gap-3">

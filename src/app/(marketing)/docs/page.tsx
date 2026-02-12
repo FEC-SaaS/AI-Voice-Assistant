@@ -18,7 +18,7 @@ import {
 export const metadata: Metadata = {
   title: "Documentation | CallTone",
   description:
-    "Learn how to create AI voice agents, manage campaigns, book appointments, and integrate CallTone into your workflow.",
+    "Learn how to create voice agents, manage campaigns, book appointments, and integrate CallTone into your workflow.",
 };
 
 const QUICK_START = [
@@ -48,7 +48,7 @@ const QUICK_START = [
 const TOPICS = [
   {
     title: "Creating Agents",
-    description: "Build and configure AI voice agents with custom personalities, prompts, and behaviors.",
+    description: "Build and configure voice agents with custom personalities, prompts, and behaviors.",
     icon: Bot,
     href: "/docs",
   },
@@ -66,7 +66,7 @@ const TOPICS = [
   },
   {
     title: "Appointments",
-    description: "Let your AI agent book appointments directly into calendars with confirmation emails.",
+    description: "Let your voice agent book appointments directly into calendars with confirmation emails.",
     icon: Calendar,
     href: "/docs",
   },
@@ -106,7 +106,7 @@ export default function DocsPage() {
             Documentation
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Everything you need to build, deploy, and scale AI voice agents with
+            Everything you need to build, deploy, and scale voice agents with
             CallTone.
           </p>
         </div>
