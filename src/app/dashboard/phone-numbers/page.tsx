@@ -8,7 +8,6 @@ import {
   Trash2,
   Plus,
   Globe,
-  Search,
   ExternalLink,
   RefreshCw,
   AlertCircle,
@@ -17,7 +16,6 @@ import {
   ShieldCheck,
   Building2,
   Save,
-  Info,
   Pencil,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -26,91 +24,44 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-// ── Hardcoded data (no tRPC dependency for these) ───────────────
-type NumberType = "local" | "toll-free" | "mobile";
-
-const COUNTRIES = [
-  { code: "US", name: "United States", flag: "\u{1F1FA}\u{1F1F8}", types: ["local", "toll-free"] as NumberType[] },
-  { code: "CA", name: "Canada", flag: "\u{1F1E8}\u{1F1E6}", types: ["local", "toll-free"] as NumberType[] },
-  { code: "GB", name: "United Kingdom", flag: "\u{1F1EC}\u{1F1E7}", types: ["local", "mobile"] as NumberType[] },
-] as const;
-
-function getCountryTypes(code: string): NumberType[] {
-  const c = COUNTRIES.find((c) => c.code === code);
-  return c ? [...c.types] : ["local"];
-}
-
-type ProvisionMethod = "pool" | "instant" | "import";
-
-interface AvailableNumber {
-  phone_number: string;
-  friendly_name: string;
-  locality: string;
-  region: string;
-  iso_country: string;
-}
+type ProvisionMethod = "service" | "import";
 
 // ── Component ───────────────────────────────────────────────────
 export default function PhoneNumbersPage() {
   const { data: phoneNumbers, isLoading, refetch } = trpc.phoneNumbers.list.useQuery();
   const { data: agents } = trpc.agents.list.useQuery();
   const { data: twilioStatus, refetch: refetchTwilioStatus } = trpc.phoneNumbers.getTwilioStatus.useQuery();
-  const { data: poolStatus } = trpc.phoneNumbers.hasPoolNumbers.useQuery();
-  const { data: poolNumbers, refetch: refetchPool } = trpc.phoneNumbers.listPoolNumbers.useQuery(undefined, {
-    enabled: !!poolStatus?.available,
-  });
+  const { data: serviceNumbers, isLoading: serviceLoading, refetch: refetchService } = trpc.phoneNumbers.listServiceNumbers.useQuery();
 
   // Panel state
   const [showPanel, setShowPanel] = useState(false);
-  const [provisionMethod, setProvisionMethod] = useState<ProvisionMethod>(
-    poolStatus?.available ? "pool" : "instant"
-  );
+  const [provisionMethod, setProvisionMethod] = useState<ProvisionMethod>("service");
   const [showCredentialForm, setShowCredentialForm] = useState(false);
   const [credSid, setCredSid] = useState("");
   const [credToken, setCredToken] = useState("");
 
-  // Instant purchase state
-  const [selectedCountry, setSelectedCountry] = useState("US");
-  const [selectedType, setSelectedType] = useState<NumberType>("local");
-  const [areaCode, setAreaCode] = useState("");
-  const [searchResults, setSearchResults] = useState<AvailableNumber[]>([]);
-  const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
+  // Service number claim state
+  const [selectedServiceNumber, setSelectedServiceNumber] = useState<string | null>(null);
+  const [selectedServiceSid, setSelectedServiceSid] = useState<string | null>(null);
   const [friendlyName, setFriendlyName] = useState("");
   const [callerIdName, setCallerIdName] = useState("");
-  const [pricing, setPricing] = useState<{ monthlyBase: number; monthlySaaS: number } | null>(null);
 
   // Import state
   const [twilioAccountSid, setTwilioAccountSid] = useState("");
   const [twilioAuthToken, setTwilioAuthToken] = useState("");
   const [importPhoneNumber, setImportPhoneNumber] = useState("");
 
-  // Pool state
-  const [selectedPoolNumber, setSelectedPoolNumber] = useState<string | null>(null);
-
   // Inline edit state
   const [editingCallerId, setEditingCallerId] = useState<string | null>(null);
   const [editCallerIdValue, setEditCallerIdValue] = useState("");
 
-  // Derived
-  const numberTypes = getCountryTypes(selectedCountry);
-
   // ── Mutations ───────────────────────────────────────────────
-  const searchAvailable = trpc.phoneNumbers.searchAvailable.useMutation({
-    onSuccess: (data) => {
-      setSearchResults(data.numbers);
-      setPricing(data.pricing);
-      if (data.numbers.length === 0) {
-        toast.info("No numbers available. Try a different area code or number type.");
-      }
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  const buyNumber = trpc.phoneNumbers.buyNumber.useMutation({
+  const claimServiceNumber = trpc.phoneNumbers.claimServiceNumber.useMutation({
     onSuccess: () => {
-      toast.success("Phone number purchased successfully!");
+      toast.success("Phone number activated successfully!");
       resetForm();
       refetch();
+      refetchService();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -120,16 +71,6 @@ export default function PhoneNumbersPage() {
       toast.success("Phone number imported successfully!");
       resetForm();
       refetch();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  const claimPoolNumber = trpc.phoneNumbers.claimPoolNumber.useMutation({
-    onSuccess: () => {
-      toast.success("Phone number activated successfully!");
-      resetForm();
-      refetch();
-      refetchPool();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -146,6 +87,7 @@ export default function PhoneNumbersPage() {
     onSuccess: () => {
       toast.success("Phone number released");
       refetch();
+      refetchService();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -182,43 +124,21 @@ export default function PhoneNumbersPage() {
   // ── Handlers ────────────────────────────────────────────────
   const resetForm = () => {
     setShowPanel(false);
-    setProvisionMethod(poolStatus?.available ? "pool" : "instant");
-    setSelectedNumber(null);
-    setSelectedPoolNumber(null);
-    setSearchResults([]);
-    setPricing(null);
+    setProvisionMethod("service");
+    setSelectedServiceNumber(null);
+    setSelectedServiceSid(null);
     setFriendlyName("");
     setCallerIdName("");
-    setAreaCode("");
     setTwilioAccountSid("");
     setTwilioAuthToken("");
     setImportPhoneNumber("");
   };
 
-  const handleSearch = () => {
-    searchAvailable.mutate({
-      countryCode: selectedCountry,
-      type: selectedType,
-      areaCode: areaCode || undefined,
-      limit: 10,
-    });
-  };
-
-  const handleBuy = () => {
-    if (!selectedNumber) return;
-    buyNumber.mutate({
-      phoneNumber: selectedNumber,
-      countryCode: selectedCountry,
-      type: selectedType,
-      friendlyName: friendlyName || undefined,
-      callerIdName: callerIdName || undefined,
-    });
-  };
-
-  const handleClaimPool = () => {
-    if (!selectedPoolNumber) return;
-    claimPoolNumber.mutate({
-      poolNumberId: selectedPoolNumber,
+  const handleClaimService = () => {
+    if (!selectedServiceNumber || !selectedServiceSid) return;
+    claimServiceNumber.mutate({
+      phoneNumber: selectedServiceNumber,
+      twilioSid: selectedServiceSid,
       friendlyName: friendlyName || undefined,
       callerIdName: callerIdName || undefined,
     });
@@ -281,6 +201,9 @@ export default function PhoneNumbersPage() {
     );
   }
 
+  const availableServiceNumbers = serviceNumbers?.numbers || [];
+  const hasMessagingService = serviceNumbers?.hasService ?? false;
+
   // ── Render ──────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -303,53 +226,28 @@ export default function PhoneNumbersPage() {
       {/* ── Provision Panel ────────────────────────────────── */}
       {showPanel && (
         <div className="rounded-lg border bg-card p-6 shadow-sm">
-          {/* Method tabs */}
+          {/* Method tabs — only show both options when messaging service is configured */}
           <div className="mb-6">
             <Label className="text-base font-semibold">How would you like to get a phone number?</Label>
-            <div className={`mt-3 grid gap-3 ${poolStatus?.available ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
-              {poolStatus?.available && (
-                <button
-                  type="button"
-                  onClick={() => setProvisionMethod("pool")}
-                  className={`flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors ${
-                    provisionMethod === "pool"
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-border"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-emerald-500" />
-                    <span className="font-medium">Choose from Pool</span>
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">
-                      Recommended
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Pre-registered numbers with A2P SMS compliance. Instant activation.
-                  </p>
-                </button>
-              )}
-
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() => setProvisionMethod("instant")}
+                onClick={() => setProvisionMethod("service")}
                 className={`flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors ${
-                  provisionMethod === "instant"
+                  provisionMethod === "service"
                     ? "border-primary bg-primary/5"
                     : "border-border hover:border-border"
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-primary" />
-                  <span className="font-medium">Get Number Instantly</span>
-                  {!poolStatus?.available && (
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-400">
-                      Recommended
-                    </span>
-                  )}
+                  <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                  <span className="font-medium">Get Phone Number</span>
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">
+                    Recommended
+                  </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Search and purchase phone numbers from US, Canada, or UK.
+                  Pre-registered numbers with A2P SMS compliance. Ready for voice and SMS.
                 </p>
               </button>
 
@@ -373,8 +271,8 @@ export default function PhoneNumbersPage() {
             </div>
           </div>
 
-          {/* ── Choose from Pool ──────────────────────────── */}
-          {provisionMethod === "pool" && poolNumbers && (
+          {/* ── Get Phone Number (Messaging Service) ────── */}
+          {provisionMethod === "service" && (
             <div className="space-y-4">
               <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
                 <div className="flex items-center gap-2 text-sm text-emerald-700">
@@ -386,40 +284,63 @@ export default function PhoneNumbersPage() {
                 </div>
               </div>
 
-              {poolNumbers.length === 0 ? (
+              {serviceLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/70" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading available numbers...</span>
+                </div>
+              ) : !hasMessagingService ? (
                 <div className="py-8 text-center text-muted-foreground">
-                  <p>No pool numbers available right now. Try &quot;Get Number Instantly&quot; instead.</p>
+                  <AlertCircle className="mx-auto h-8 w-8 text-amber-500 mb-2" />
+                  <p>Messaging service not configured. Please contact support.</p>
+                </div>
+              ) : availableServiceNumbers.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <Phone className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+                  <p>All numbers are currently in use. Please contact support for additional numbers.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label>Available Numbers ({poolNumbers.length})</Label>
+                    <Label>Available Numbers ({availableServiceNumbers.length})</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => refetchService()}
+                      className="text-xs"
+                    >
+                      <RefreshCw className="mr-1 h-3 w-3" />
+                      Refresh
+                    </Button>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {poolNumbers.map((pn) => (
+                    {availableServiceNumbers.map((sn) => (
                       <button
-                        key={pn.id}
+                        key={sn.sid}
                         type="button"
-                        onClick={() => setSelectedPoolNumber(pn.id)}
+                        onClick={() => {
+                          setSelectedServiceNumber(sn.phoneNumber);
+                          setSelectedServiceSid(sn.sid);
+                        }}
                         className={`flex items-center justify-between rounded-lg border p-3 text-left transition-colors ${
-                          selectedPoolNumber === pn.id
+                          selectedServiceNumber === sn.phoneNumber
                             ? "border-primary bg-primary/5"
                             : "border-border hover:border-border"
                         }`}
                       >
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-mono font-medium">{pn.number}</span>
+                            <span className="font-mono font-medium">{sn.phoneNumber}</span>
                             <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
                               A2P
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {pn.locality && `${pn.locality}, `}{pn.region || pn.areaCode ? `Area ${pn.areaCode}` : pn.countryCode}
-                            {pn.saasMonthlyCost > 0 && ` · $${(pn.saasMonthlyCost / 100).toFixed(2)}/mo`}
+                            {sn.areaCode ? `Area ${sn.areaCode}` : sn.countryCode}
+                            {sn.type === "toll_free" ? " · Toll-Free" : " · Local"}
                           </p>
                         </div>
-                        {selectedPoolNumber === pn.id && (
+                        {selectedServiceNumber === sn.phoneNumber && (
                           <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
                         )}
                       </button>
@@ -429,7 +350,7 @@ export default function PhoneNumbersPage() {
               )}
 
               {/* Configure & Activate */}
-              {selectedPoolNumber && (
+              {selectedServiceNumber && (
                 <div className="space-y-4 rounded-lg bg-secondary p-4">
                   <h4 className="flex items-center gap-2 font-medium text-foreground">
                     <Building2 className="h-4 w-4" />
@@ -437,9 +358,9 @@ export default function PhoneNumbersPage() {
                   </h4>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="poolCallerIdName">Business Caller ID Name</Label>
+                      <Label htmlFor="serviceCallerIdName">Business Caller ID Name</Label>
                       <Input
-                        id="poolCallerIdName"
+                        id="serviceCallerIdName"
                         placeholder="e.g., ACME INC"
                         value={callerIdName}
                         onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
@@ -450,9 +371,9 @@ export default function PhoneNumbersPage() {
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="poolFriendlyName">Internal Label (optional)</Label>
+                      <Label htmlFor="serviceFriendlyName">Internal Label (optional)</Label>
                       <Input
-                        id="poolFriendlyName"
+                        id="serviceFriendlyName"
                         placeholder="e.g., Sales Line, Support"
                         value={friendlyName}
                         onChange={(e) => setFriendlyName(e.target.value)}
@@ -463,169 +384,11 @@ export default function PhoneNumbersPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Button onClick={handleClaimPool} disabled={claimPoolNumber.isPending}>
-                      {claimPoolNumber.isPending ? (
+                    <Button onClick={handleClaimService} disabled={claimServiceNumber.isPending}>
+                      {claimServiceNumber.isPending ? (
                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Activating...</>
                       ) : (
-                        <>Activate Number</>
-                      )}
-                    </Button>
-                    <Button variant="outline" onClick={resetForm}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Instant Purchase ───────────────────────────── */}
-          {provisionMethod === "instant" && (
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-3">
-                {/* Country */}
-                <div className="space-y-2">
-                  <Label>Country</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    value={selectedCountry}
-                    onChange={(e) => {
-                      setSelectedCountry(e.target.value);
-                      const types = getCountryTypes(e.target.value);
-                      setSelectedType(types[0] || "local");
-                      setSearchResults([]);
-                      setSelectedNumber(null);
-                    }}
-                  >
-                    {COUNTRIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Number Type */}
-                <div className="space-y-2">
-                  <Label>Number Type</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    value={selectedType}
-                    onChange={(e) => {
-                      setSelectedType(e.target.value as NumberType);
-                      setSearchResults([]);
-                      setSelectedNumber(null);
-                    }}
-                  >
-                    {numberTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type === "toll-free" ? "Toll-Free" : type.charAt(0).toUpperCase() + type.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Area Code + Search */}
-                <div className="space-y-2">
-                  <Label htmlFor="areaCode">Area Code (optional)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="areaCode"
-                      placeholder="e.g., 415"
-                      value={areaCode}
-                      onChange={(e) => setAreaCode(e.target.value)}
-                    />
-                    <Button onClick={handleSearch} disabled={searchAvailable.isPending}>
-                      {searchAvailable.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Search className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Search Results */}
-              {searchResults.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label>Available Numbers</Label>
-                    {pricing && (
-                      <span className="text-sm text-muted-foreground">
-                        ${pricing.monthlySaaS.toFixed(2)}/month per number
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {searchResults.map((num) => (
-                      <button
-                        key={num.phone_number}
-                        type="button"
-                        onClick={() => setSelectedNumber(num.phone_number)}
-                        className={`flex items-center justify-between rounded-lg border p-3 text-left transition-colors ${
-                          selectedNumber === num.phone_number
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-border"
-                        }`}
-                      >
-                        <div>
-                          <span className="font-mono font-medium">{num.phone_number}</span>
-                          <p className="text-xs text-muted-foreground">
-                            {num.locality && `${num.locality}, `}{num.region}
-                          </p>
-                        </div>
-                        {selectedNumber === num.phone_number && (
-                          <CheckCircle className="h-5 w-5 text-primary" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Configure & Purchase */}
-              {selectedNumber && (
-                <div className="space-y-4 rounded-lg bg-secondary p-4">
-                  <h4 className="flex items-center gap-2 font-medium text-foreground">
-                    <Building2 className="h-4 w-4" />
-                    Business Branding & Caller ID
-                  </h4>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="callerIdName">
-                        Business Caller ID Name
-                      </Label>
-                      <Input
-                        id="callerIdName"
-                        placeholder="e.g., ACME INC"
-                        value={callerIdName}
-                        onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
-                        maxLength={15}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Max 15 chars. Shown on recipient&apos;s phone screen during calls.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="friendlyName">Internal Label (optional)</Label>
-                      <Input
-                        id="friendlyName"
-                        placeholder="e.g., Sales Line, Support"
-                        value={friendlyName}
-                        onChange={(e) => setFriendlyName(e.target.value)}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        For your own reference only. Not visible to callers.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Button onClick={handleBuy} disabled={buyNumber.isPending}>
-                      {buyNumber.isPending ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Purchasing...</>
-                      ) : (
-                        <>Purchase {selectedNumber}</>
+                        <>Activate {selectedServiceNumber}</>
                       )}
                     </Button>
                     <Button variant="outline" onClick={resetForm}>
@@ -1048,41 +811,12 @@ export default function PhoneNumbersPage() {
 
               <div>
                 <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4 text-amber-500" />
-                  <span className="text-sm font-medium text-purple-400">A2P 10DLC Registration (SMS)</span>
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium text-purple-400">A2P 10DLC Registered (SMS)</span>
                 </div>
                 <p className="ml-6 text-sm text-purple-400">
-                  US carriers require A2P 10DLC registration for business SMS. This improves deliverability and avoids filtering.
+                  Phone numbers are registered under our A2P 10DLC campaign for compliant SMS delivery. Messages go through Twilio Messaging Service for maximum deliverability.
                 </p>
-                <div className="ml-6 mt-1 flex flex-wrap gap-2">
-                  <a
-                    href="https://www.twilio.com/docs/messaging/guides/10dlc"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-400 hover:bg-purple-200"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Twilio 10DLC Guide
-                  </a>
-                  <a
-                    href="https://www.twilio.com/docs/messaging/guides/10dlc/10dlc-brand-registration"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-400 hover:bg-purple-200"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Register Your Brand
-                  </a>
-                  <a
-                    href="https://www.twilio.com/docs/messaging/guides/10dlc/10dlc-campaign-registration"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-1 text-xs font-medium text-purple-400 hover:bg-purple-200"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Register SMS Campaign
-                  </a>
-                </div>
               </div>
 
               <div>
@@ -1106,7 +840,7 @@ export default function PhoneNumbersPage() {
           <div>
             <h4 className="font-medium text-blue-400">Phone Number Options</h4>
             <ul className="mt-2 list-disc list-inside text-sm text-blue-400 space-y-1">
-              <li><strong>Managed numbers:</strong> We provision and bill you monthly. Simplest option.</li>
+              <li><strong>Managed numbers:</strong> Pre-registered A2P numbers with SMS and voice support. We handle compliance.</li>
               <li><strong>Imported numbers:</strong> Use your own Twilio numbers. You pay Twilio directly.</li>
               <li>All numbers support inbound and outbound calling with your voice agents.</li>
               <li>Numbers are automatically connected for voice calling with STIR/SHAKEN verification.</li>

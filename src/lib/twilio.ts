@@ -379,6 +379,55 @@ export function getNumberPrice(countryCode: string, type: "local" | "toll-free" 
 }
 
 // ============================================
+// Messaging Service — List Pre-Registered Numbers
+// ============================================
+
+const TWILIO_MESSAGING_API_URL = "https://messaging.twilio.com/v1";
+
+export interface MessagingServicePhoneNumber {
+  sid: string;
+  phone_number: string;
+  country_code: string;
+  capabilities: string[];
+  date_created: string;
+}
+
+/**
+ * List all phone numbers assigned to a Twilio Messaging Service.
+ * These are the pre-registered, A2P-compliant numbers.
+ */
+export async function listMessagingServiceNumbers(
+  messagingServiceSid: string,
+  accountSid?: string,
+  authToken?: string
+): Promise<MessagingServicePhoneNumber[]> {
+  const sid = accountSid || process.env.TWILIO_ACCOUNT_SID || "";
+  const token = authToken || process.env.TWILIO_AUTH_TOKEN || "";
+
+  if (!sid || !token) {
+    throw new Error("Twilio credentials missing");
+  }
+
+  const url = `${TWILIO_MESSAGING_API_URL}/Services/${messagingServiceSid}/PhoneNumbers?PageSize=100`;
+  const authHeader = `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`;
+
+  console.log(`[Twilio] Fetching Messaging Service numbers for ${messagingServiceSid}`);
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { Authorization: authHeader },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(`Twilio Messaging API error: ${response.status} - ${error.message || JSON.stringify(error)}`);
+  }
+
+  const data = await response.json();
+  return data.phone_numbers || [];
+}
+
+// ============================================
 // SMS Messaging
 // ============================================
 

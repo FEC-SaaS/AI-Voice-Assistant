@@ -12,6 +12,7 @@ import {
   releasePhoneNumber as releaseTwilioNumber,
   updatePhoneNumber as updateTwilioNumber,
   listPhoneNumbers as listTwilioNumbers,
+  listMessagingServiceNumbers,
   SUPPORTED_COUNTRIES,
   getCountryNumberTypes,
   getNumberPrice,
@@ -758,6 +759,145 @@ export const phoneNumbersRouter = router({
       });
 
       return updated;
+    }),
+
+  // ================================================================
+  // Messaging Service Numbers (primary provisioning flow)
+  // ================================================================
+
+  // List available numbers from the Twilio Messaging Service
+  // These are pre-registered A2P-compliant numbers ready for SMS
+  listServiceNumbers: protectedProcedure.query(async ({ ctx }) => {
+    const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+    if (!messagingServiceSid) {
+      return { numbers: [], hasService: false };
+    }
+
+    try {
+      // Fetch all numbers in the Messaging Service
+      const serviceNumbers = await listMessagingServiceNumbers(messagingServiceSid);
+
+      // Get all numbers already assigned to any org in the DB
+      const assignedNumbers = await ctx.db.phoneNumber.findMany({
+        select: { number: true },
+      });
+      const assignedSet = new Set(assignedNumbers.map((n) => n.number));
+
+      // Filter out already-assigned numbers
+      const available = serviceNumbers
+        .filter((sn) => !assignedSet.has(sn.phone_number))
+        .map((sn) => {
+          // Extract area code from US/CA numbers
+          let areaCode: string | undefined;
+          if (sn.phone_number.startsWith("+1") && sn.phone_number.length === 12) {
+            areaCode = sn.phone_number.slice(2, 5);
+          }
+
+          // Determine type
+          let type = "local";
+          const num = sn.phone_number;
+          if (num.startsWith("+1800") || num.startsWith("+1888") || num.startsWith("+1877") ||
+              num.startsWith("+1866") || num.startsWith("+1855") || num.startsWith("+1844") ||
+              num.startsWith("+1833") || num.startsWith("+1822")) {
+            type = "toll_free";
+          }
+
+          return {
+            sid: sn.sid,
+            phoneNumber: sn.phone_number,
+            countryCode: sn.country_code || "US",
+            capabilities: sn.capabilities || [],
+            areaCode,
+            type,
+          };
+        });
+
+      return { numbers: available, hasService: true };
+    } catch (error) {
+      log.error("Failed to list Messaging Service numbers:", error);
+      return { numbers: [], hasService: true };
+    }
+  }),
+
+  // Claim a number from the Messaging Service for the org
+  claimServiceNumber: protectedProcedure
+    .input(
+      z.object({
+        phoneNumber: z.string().regex(/^\+[1-9]\d{1,14}$/, "Invalid phone number format"),
+        twilioSid: z.string(), // The SID from the Messaging Service listing
+        friendlyName: z.string().optional(),
+        callerIdName: z.string().max(15, "Caller ID name must be 15 characters or fewer").optional(),
+      })
+    )
+    .use(enforcePhoneNumberLimit)
+    .mutation(async ({ ctx, input }) => {
+      // Check if this number is already claimed
+      const existing = await ctx.db.phoneNumber.findFirst({
+        where: { number: input.phoneNumber },
+      });
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This number is no longer available. Please select another.",
+        });
+      }
+
+      // Import to Vapi for voice using parent account credentials
+      const parentSid = process.env.TWILIO_ACCOUNT_SID;
+      const parentToken = process.env.TWILIO_AUTH_TOKEN;
+
+      let vapiPhone;
+      if (parentSid && parentToken) {
+        try {
+          vapiPhone = await importTwilioPhoneNumber({
+            twilioAccountSid: parentSid,
+            twilioAuthToken: parentToken,
+            phoneNumber: input.phoneNumber,
+            name: input.friendlyName || undefined,
+          });
+          log.info(`Imported service number ${input.phoneNumber} to Vapi as ${vapiPhone.id}`);
+        } catch (error) {
+          log.error("Failed to import service number to Vapi:", error);
+          // Non-fatal — number is claimed, Vapi import can be retried
+        }
+      }
+
+      // Determine type and area code
+      let type = "local";
+      let areaCode: string | undefined;
+      const num = input.phoneNumber;
+      if (num.startsWith("+1800") || num.startsWith("+1888") || num.startsWith("+1877") ||
+          num.startsWith("+1866") || num.startsWith("+1855") || num.startsWith("+1844") ||
+          num.startsWith("+1833") || num.startsWith("+1822")) {
+        type = "toll_free";
+      } else if (num.startsWith("+1") && num.length === 12) {
+        areaCode = num.slice(2, 5);
+      }
+
+      let countryCode = "US";
+      if (num.startsWith("+44")) countryCode = "GB";
+      else if (num.startsWith("+1")) countryCode = "US";
+
+      const basePrice = getNumberPrice(countryCode, type === "toll_free" ? "toll-free" : "local");
+      const monthlyCost = Math.ceil(basePrice * 1.5 * 100); // 50% markup, in cents
+
+      // Create PhoneNumber record
+      const phoneNumber = await ctx.db.phoneNumber.create({
+        data: {
+          organizationId: ctx.orgId,
+          vapiPhoneId: vapiPhone?.id || null,
+          twilioSid: input.twilioSid,
+          number: input.phoneNumber,
+          friendlyName: input.friendlyName || null,
+          callerIdName: input.callerIdName || null,
+          type,
+          provider: "pool", // Uses parent account, A2P compliant
+          countryCode,
+          monthlyCost,
+        },
+      });
+
+      return phoneNumber;
     }),
 
   // ================================================================
