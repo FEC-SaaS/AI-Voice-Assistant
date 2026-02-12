@@ -40,7 +40,7 @@ function getCountryTypes(code: string): NumberType[] {
   return c ? [...c.types] : ["local"];
 }
 
-type ProvisionMethod = "instant" | "import";
+type ProvisionMethod = "pool" | "instant" | "import";
 
 interface AvailableNumber {
   phone_number: string;
@@ -55,10 +55,16 @@ export default function PhoneNumbersPage() {
   const { data: phoneNumbers, isLoading, refetch } = trpc.phoneNumbers.list.useQuery();
   const { data: agents } = trpc.agents.list.useQuery();
   const { data: twilioStatus, refetch: refetchTwilioStatus } = trpc.phoneNumbers.getTwilioStatus.useQuery();
+  const { data: poolStatus } = trpc.phoneNumbers.hasPoolNumbers.useQuery();
+  const { data: poolNumbers, refetch: refetchPool } = trpc.phoneNumbers.listPoolNumbers.useQuery(undefined, {
+    enabled: !!poolStatus?.available,
+  });
 
   // Panel state
   const [showPanel, setShowPanel] = useState(false);
-  const [provisionMethod, setProvisionMethod] = useState<ProvisionMethod>("instant");
+  const [provisionMethod, setProvisionMethod] = useState<ProvisionMethod>(
+    poolStatus?.available ? "pool" : "instant"
+  );
   const [showCredentialForm, setShowCredentialForm] = useState(false);
   const [credSid, setCredSid] = useState("");
   const [credToken, setCredToken] = useState("");
@@ -77,6 +83,9 @@ export default function PhoneNumbersPage() {
   const [twilioAccountSid, setTwilioAccountSid] = useState("");
   const [twilioAuthToken, setTwilioAuthToken] = useState("");
   const [importPhoneNumber, setImportPhoneNumber] = useState("");
+
+  // Pool state
+  const [selectedPoolNumber, setSelectedPoolNumber] = useState<string | null>(null);
 
   // Inline edit state
   const [editingCallerId, setEditingCallerId] = useState<string | null>(null);
@@ -111,6 +120,16 @@ export default function PhoneNumbersPage() {
       toast.success("Phone number imported successfully!");
       resetForm();
       refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const claimPoolNumber = trpc.phoneNumbers.claimPoolNumber.useMutation({
+    onSuccess: () => {
+      toast.success("Phone number activated successfully!");
+      resetForm();
+      refetch();
+      refetchPool();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -163,8 +182,9 @@ export default function PhoneNumbersPage() {
   // ── Handlers ────────────────────────────────────────────────
   const resetForm = () => {
     setShowPanel(false);
-    setProvisionMethod("instant");
+    setProvisionMethod(poolStatus?.available ? "pool" : "instant");
     setSelectedNumber(null);
+    setSelectedPoolNumber(null);
     setSearchResults([]);
     setPricing(null);
     setFriendlyName("");
@@ -195,6 +215,15 @@ export default function PhoneNumbersPage() {
     });
   };
 
+  const handleClaimPool = () => {
+    if (!selectedPoolNumber) return;
+    claimPoolNumber.mutate({
+      poolNumberId: selectedPoolNumber,
+      friendlyName: friendlyName || undefined,
+      callerIdName: callerIdName || undefined,
+    });
+  };
+
   const handleImport = () => {
     importTwilio.mutate({
       twilioAccountSid,
@@ -207,6 +236,13 @@ export default function PhoneNumbersPage() {
 
   const getProviderBadge = (provider: string) => {
     switch (provider) {
+      case "pool":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">
+            <ShieldCheck className="h-3 w-3" />
+            A2P Verified
+          </span>
+        );
       case "twilio-managed":
         return (
           <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-400">
@@ -270,7 +306,30 @@ export default function PhoneNumbersPage() {
           {/* Method tabs */}
           <div className="mb-6">
             <Label className="text-base font-semibold">How would you like to get a phone number?</Label>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className={`mt-3 grid gap-3 ${poolStatus?.available ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+              {poolStatus?.available && (
+                <button
+                  type="button"
+                  onClick={() => setProvisionMethod("pool")}
+                  className={`flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors ${
+                    provisionMethod === "pool"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-border"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                    <span className="font-medium">Choose from Pool</span>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">
+                      Recommended
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Pre-registered numbers with A2P SMS compliance. Instant activation.
+                  </p>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setProvisionMethod("instant")}
@@ -283,9 +342,11 @@ export default function PhoneNumbersPage() {
                 <div className="flex items-center gap-2">
                   <Globe className="h-5 w-5 text-primary" />
                   <span className="font-medium">Get Number Instantly</span>
-                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-400">
-                    Recommended
-                  </span>
+                  {!poolStatus?.available && (
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-400">
+                      Recommended
+                    </span>
+                  )}
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Search and purchase phone numbers from US, Canada, or UK.
@@ -311,6 +372,112 @@ export default function PhoneNumbersPage() {
               </button>
             </div>
           </div>
+
+          {/* ── Choose from Pool ──────────────────────────── */}
+          {provisionMethod === "pool" && poolNumbers && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+                <div className="flex items-center gap-2 text-sm text-emerald-700">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="font-medium">A2P SMS Ready</span>
+                  <span className="text-emerald-600">
+                    — These numbers are pre-registered for compliant SMS delivery. No carrier blocking.
+                  </span>
+                </div>
+              </div>
+
+              {poolNumbers.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <p>No pool numbers available right now. Try &quot;Get Number Instantly&quot; instead.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Available Numbers ({poolNumbers.length})</Label>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {poolNumbers.map((pn) => (
+                      <button
+                        key={pn.id}
+                        type="button"
+                        onClick={() => setSelectedPoolNumber(pn.id)}
+                        className={`flex items-center justify-between rounded-lg border p-3 text-left transition-colors ${
+                          selectedPoolNumber === pn.id
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-border"
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-medium">{pn.number}</span>
+                            <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
+                              A2P
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {pn.locality && `${pn.locality}, `}{pn.region || pn.areaCode ? `Area ${pn.areaCode}` : pn.countryCode}
+                            {pn.saasMonthlyCost > 0 && ` · $${(pn.saasMonthlyCost / 100).toFixed(2)}/mo`}
+                          </p>
+                        </div>
+                        {selectedPoolNumber === pn.id && (
+                          <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Configure & Activate */}
+              {selectedPoolNumber && (
+                <div className="space-y-4 rounded-lg bg-secondary p-4">
+                  <h4 className="flex items-center gap-2 font-medium text-foreground">
+                    <Building2 className="h-4 w-4" />
+                    Business Branding & Caller ID
+                  </h4>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="poolCallerIdName">Business Caller ID Name</Label>
+                      <Input
+                        id="poolCallerIdName"
+                        placeholder="e.g., ACME INC"
+                        value={callerIdName}
+                        onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
+                        maxLength={15}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Max 15 chars. Shown on recipient&apos;s phone screen during calls.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="poolFriendlyName">Internal Label (optional)</Label>
+                      <Input
+                        id="poolFriendlyName"
+                        placeholder="e.g., Sales Line, Support"
+                        value={friendlyName}
+                        onChange={(e) => setFriendlyName(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        For your own reference only. Not visible to callers.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button onClick={handleClaimPool} disabled={claimPoolNumber.isPending}>
+                      {claimPoolNumber.isPending ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Activating...</>
+                      ) : (
+                        <>Activate Number</>
+                      )}
+                    </Button>
+                    <Button variant="outline" onClick={resetForm}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* ── Instant Purchase ───────────────────────────── */}
           {provisionMethod === "instant" && (

@@ -44,6 +44,7 @@ model Organization {
   staffMembers       StaffMember[]
   receptionistMessages ReceptionistMessage[]
   cnamProfile          CnamProfile?
+  poolNumbers          PhoneNumberPool[]
 
   @@index([slug])
   @@index([clerkOrgId])
@@ -543,5 +544,29 @@ model LandingEvent {
   @@index([event])
   @@index([createdAt])
   @@index([agent])
+}
+
+model PhoneNumberPool {
+  id              String        @id @default(cuid())
+  twilioSid       String        @unique
+  number          String        @unique
+  friendlyName    String?
+  type            String        @default("local") // local, toll_free, mobile
+  countryCode     String        @default("US")
+  areaCode        String?
+  region          String?
+  locality        String?
+  status          String        @default("available") // available, assigned
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  assignedAt      DateTime?
+  monthlyCost     Int           @default(0) // Twilio cost in cents
+  saasMonthlyCost Int           @default(0) // What we charge, in cents
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status])
+  @@index([countryCode, type])
+  @@index([organizationId])
 }
 

@@ -396,9 +396,10 @@ export interface SmsMessage {
 
 export interface SendSmsOptions {
   to: string; // E.164 format
-  from: string; // E.164 format - must be a Twilio number
+  from: string; // E.164 format - must be a Twilio number (ignored when messagingServiceSid is set)
   body: string; // Max 1600 characters
   statusCallback?: string; // URL to receive delivery status updates
+  messagingServiceSid?: string; // Twilio Messaging Service SID (A2P compliant) — overrides From
   // For subaccount
   accountSid?: string;
   authToken?: string;
@@ -414,13 +415,14 @@ export interface SendSmsResult {
  * Send an SMS message
  */
 export async function sendSms(options: SendSmsOptions): Promise<SendSmsResult> {
-  const { to, from, body, statusCallback, accountSid, authToken } = options;
+  const { to, from, body, statusCallback, messagingServiceSid, accountSid, authToken } = options;
 
-  // Validate phone numbers
+  // Validate To number
   if (!to.startsWith("+")) {
     return { success: false, error: "To number must be in E.164 format (e.g., +1234567890)" };
   }
-  if (!from.startsWith("+")) {
+  // Only validate From when not using a Messaging Service
+  if (!messagingServiceSid && !from.startsWith("+")) {
     return { success: false, error: "From number must be in E.164 format (e.g., +1234567890)" };
   }
 
@@ -432,9 +434,15 @@ export async function sendSms(options: SendSmsOptions): Promise<SendSmsResult> {
   try {
     const smsBody: Record<string, string> = {
       To: to,
-      From: from,
       Body: body,
     };
+
+    // Use Messaging Service for A2P compliance when available; fall back to raw From
+    if (messagingServiceSid) {
+      smsBody.MessagingServiceSid = messagingServiceSid;
+    } else {
+      smsBody.From = from;
+    }
 
     if (statusCallback) {
       smsBody.StatusCallback = statusCallback;
@@ -448,7 +456,7 @@ export async function sendSms(options: SendSmsOptions): Promise<SendSmsResult> {
       authToken,
     });
 
-    console.log(`[Twilio SMS] Sent message ${message.sid} to ${to}`);
+    console.log(`[Twilio SMS] Sent message ${message.sid} to ${to}${messagingServiceSid ? " via Messaging Service" : ""}`);
     return { success: true, message };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

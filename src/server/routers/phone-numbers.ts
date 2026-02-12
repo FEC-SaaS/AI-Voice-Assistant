@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../trpc";
+import { router, protectedProcedure, adminProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { createLogger } from "@/lib/logger";
 
@@ -11,6 +11,7 @@ import {
   buyPhoneNumber as buyTwilioNumber,
   releasePhoneNumber as releaseTwilioNumber,
   updatePhoneNumber as updateTwilioNumber,
+  listPhoneNumbers as listTwilioNumbers,
   SUPPORTED_COUNTRIES,
   getCountryNumberTypes,
   getNumberPrice,
@@ -498,8 +499,19 @@ export const phoneNumbersRouter = router({
         }
       }
 
-      // Release from Twilio if SaaS-managed
-      if (phoneNumber.provider === "twilio-managed" && phoneNumber.twilioSid) {
+      // Pool numbers: return to the pool instead of deleting from Twilio
+      if (phoneNumber.provider === "pool" && phoneNumber.twilioSid) {
+        await ctx.db.phoneNumberPool.updateMany({
+          where: { twilioSid: phoneNumber.twilioSid },
+          data: {
+            status: "available",
+            organizationId: null,
+            assignedAt: null,
+          },
+        });
+        log.info(`Returned pool number ${phoneNumber.twilioSid} to available pool`);
+      } else if (phoneNumber.provider === "twilio-managed" && phoneNumber.twilioSid) {
+        // Release from Twilio if SaaS-managed
         const org = await ctx.db.organization.findUnique({
           where: { id: ctx.orgId },
         });
@@ -552,30 +564,48 @@ export const phoneNumbersRouter = router({
         });
       }
 
-      if (phoneNumber.provider !== "twilio-managed") {
+      if (!["twilio-managed", "pool"].includes(phoneNumber.provider)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Only SaaS-managed numbers can be retried.",
+          message: "Only managed and pool numbers can be retried.",
         });
       }
 
-      const org = await ctx.db.organization.findUnique({
-        where: { id: ctx.orgId },
-      });
+      // Pool numbers use parent account credentials; managed use subaccount
+      let twilioAccountSid: string;
+      let twilioAuthToken: string;
 
-      if (!org?.twilioSubaccountSid || !org?.twilioAuthToken) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Organization Twilio account not configured.",
+      if (phoneNumber.provider === "pool") {
+        const parentSid = process.env.TWILIO_ACCOUNT_SID;
+        const parentToken = process.env.TWILIO_AUTH_TOKEN;
+        if (!parentSid || !parentToken) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Twilio parent account not configured.",
+          });
+        }
+        twilioAccountSid = parentSid;
+        twilioAuthToken = parentToken;
+      } else {
+        const org = await ctx.db.organization.findUnique({
+          where: { id: ctx.orgId },
         });
+        if (!org?.twilioSubaccountSid || !org?.twilioAuthToken) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Organization Twilio account not configured.",
+          });
+        }
+        twilioAccountSid = org.twilioSubaccountSid;
+        twilioAuthToken = org.twilioAuthToken;
       }
 
       // Try to import to Vapi
       let vapiPhone;
       try {
         vapiPhone = await importTwilioPhoneNumber({
-          twilioAccountSid: org.twilioSubaccountSid,
-          twilioAuthToken: org.twilioAuthToken,
+          twilioAccountSid,
+          twilioAuthToken,
           phoneNumber: phoneNumber.number,
           name: phoneNumber.friendlyName || undefined,
         });
@@ -728,5 +758,199 @@ export const phoneNumbersRouter = router({
       });
 
       return updated;
+    }),
+
+  // ================================================================
+  // Pool Number Procedures
+  // ================================================================
+
+  // Check if any pool numbers are available (drives UI tab visibility)
+  hasPoolNumbers: protectedProcedure.query(async ({ ctx }) => {
+    const count = await ctx.db.phoneNumberPool.count({
+      where: { status: "available" },
+    });
+    return { available: count > 0, count };
+  }),
+
+  // Browse available pool numbers with optional filters
+  listPoolNumbers: protectedProcedure
+    .input(
+      z.object({
+        countryCode: z.string().length(2).optional(),
+        type: z.string().optional(),
+        areaCode: z.string().optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const where: Record<string, unknown> = { status: "available" };
+      if (input?.countryCode) where.countryCode = input.countryCode;
+      if (input?.type) where.type = input.type;
+      if (input?.areaCode) where.areaCode = input.areaCode;
+
+      const numbers = await ctx.db.phoneNumberPool.findMany({
+        where,
+        orderBy: [{ countryCode: "asc" }, { areaCode: "asc" }, { number: "asc" }],
+      });
+      return numbers;
+    }),
+
+  // Atomically claim a pool number for the org
+  claimPoolNumber: protectedProcedure
+    .input(
+      z.object({
+        poolNumberId: z.string(),
+        friendlyName: z.string().optional(),
+        callerIdName: z.string().max(15).optional(),
+      })
+    )
+    .use(enforcePhoneNumberLimit)
+    .mutation(async ({ ctx, input }) => {
+      // Atomic claim: only update if still available
+      const { count } = await ctx.db.phoneNumberPool.updateMany({
+        where: {
+          id: input.poolNumberId,
+          status: "available",
+        },
+        data: {
+          status: "assigned",
+          organizationId: ctx.orgId,
+          assignedAt: new Date(),
+        },
+      });
+
+      if (count === 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This number is no longer available. Please select another.",
+        });
+      }
+
+      // Fetch the claimed pool number
+      const poolNumber = await ctx.db.phoneNumberPool.findUnique({
+        where: { id: input.poolNumberId },
+      });
+
+      if (!poolNumber) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to retrieve claimed number.",
+        });
+      }
+
+      // Import to Vapi for voice using parent account credentials
+      const parentSid = process.env.TWILIO_ACCOUNT_SID;
+      const parentToken = process.env.TWILIO_AUTH_TOKEN;
+
+      let vapiPhone;
+      if (parentSid && parentToken) {
+        try {
+          vapiPhone = await importTwilioPhoneNumber({
+            twilioAccountSid: parentSid,
+            twilioAuthToken: parentToken,
+            phoneNumber: poolNumber.number,
+            name: input.friendlyName || poolNumber.friendlyName || undefined,
+          });
+          log.info(`Imported pool number ${poolNumber.number} to Vapi as ${vapiPhone.id}`);
+        } catch (error) {
+          log.error("Failed to import pool number to Vapi:", error);
+          // Non-fatal — number is claimed, Vapi import can be retried
+        }
+      }
+
+      // Create PhoneNumber record for the org
+      const phoneNumber = await ctx.db.phoneNumber.create({
+        data: {
+          organizationId: ctx.orgId,
+          vapiPhoneId: vapiPhone?.id || null,
+          twilioSid: poolNumber.twilioSid,
+          number: poolNumber.number,
+          friendlyName: input.friendlyName || poolNumber.friendlyName,
+          callerIdName: input.callerIdName || null,
+          type: poolNumber.type,
+          provider: "pool",
+          countryCode: poolNumber.countryCode,
+          monthlyCost: poolNumber.saasMonthlyCost,
+        },
+      });
+
+      return phoneNumber;
+    }),
+
+  // Admin: seed pool numbers from the parent Twilio account
+  seedPoolNumbers: adminProcedure
+    .input(
+      z.object({
+        twilioSids: z.array(z.string()).optional(), // Specific SIDs to add, or all if empty
+      }).optional()
+    )
+    .mutation(async ({ ctx }) => {
+      const parentSid = process.env.TWILIO_ACCOUNT_SID;
+      const parentToken = process.env.TWILIO_AUTH_TOKEN;
+
+      if (!parentSid || !parentToken) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Twilio parent account not configured.",
+        });
+      }
+
+      // List all numbers on the parent account
+      const twilioNumbers = await listTwilioNumbers(parentSid, parentToken);
+
+      let added = 0;
+      let skipped = 0;
+
+      for (const tn of twilioNumbers) {
+        // Skip if already in pool
+        const exists = await ctx.db.phoneNumberPool.findUnique({
+          where: { twilioSid: tn.sid },
+        });
+        if (exists) {
+          skipped++;
+          continue;
+        }
+
+        // Also skip if already assigned to an org as a regular PhoneNumber
+        const assignedAsPhoneNumber = await ctx.db.phoneNumber.findFirst({
+          where: { twilioSid: tn.sid },
+        });
+        if (assignedAsPhoneNumber) {
+          skipped++;
+          continue;
+        }
+
+        // Determine type and area code from the number
+        let type = "local";
+        let areaCode: string | undefined;
+        const num = tn.phone_number;
+
+        if (num.startsWith("+1800") || num.startsWith("+1888") || num.startsWith("+1877") ||
+            num.startsWith("+1866") || num.startsWith("+1855") || num.startsWith("+1844") ||
+            num.startsWith("+1833") || num.startsWith("+1822")) {
+          type = "toll_free";
+        } else if (num.startsWith("+1") && num.length === 12) {
+          areaCode = num.slice(2, 5);
+        }
+
+        const basePrice = getNumberPrice("US", type === "toll_free" ? "toll-free" : "local");
+
+        await ctx.db.phoneNumberPool.create({
+          data: {
+            twilioSid: tn.sid,
+            number: tn.phone_number,
+            friendlyName: tn.friendly_name,
+            type,
+            countryCode: "US",
+            areaCode,
+            status: "available",
+            monthlyCost: Math.ceil(basePrice * 100),
+            saasMonthlyCost: Math.ceil(basePrice * 1.5 * 100),
+          },
+        });
+        added++;
+      }
+
+      log.info(`Seeded pool: ${added} added, ${skipped} skipped`);
+      return { added, skipped, total: twilioNumbers.length };
     }),
 });

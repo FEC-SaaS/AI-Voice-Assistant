@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
         to: webhookData.From,
         from: webhookData.To,
         body: result.response,
+        messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID,
       });
       console.log(`[Twilio SMS Webhook] Sent reply: "${result.response}"`);
     }

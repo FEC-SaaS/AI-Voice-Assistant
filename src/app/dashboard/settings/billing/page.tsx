@@ -426,7 +426,7 @@ export default function BillingPage() {
                     Payment Methods
                   </CardTitle>
                   <CardDescription>
-                    Cards, PayPal, Apple Pay, Google Pay, and Link are accepted at checkout
+                    Cards, Apple Pay, and Google Pay are accepted at checkout
                   </CardDescription>
                 </div>
                 {isPaidPlan && (
@@ -448,10 +448,8 @@ export default function BillingPage() {
                     <span>Visa</span>
                     <span>Mastercard</span>
                     <span>Amex</span>
-                    <span>PayPal</span>
                     <span>Apple Pay</span>
                     <span>Google Pay</span>
-                    <span>Link</span>
                   </div>
                 </div>
               ) : (
@@ -579,7 +577,7 @@ export default function BillingPage() {
               </p>
               <div className="flex items-center gap-2 text-xs text-blue-400">
                 <Shield className="h-3.5 w-3.5" />
-                Accepted payment methods: Visa, Mastercard, Amex, PayPal, Apple Pay, Google Pay, Stripe Link
+                Accepted payment methods: Visa, Mastercard, Amex, Apple Pay, Google Pay
               </div>
             </div>
           </div>
@@ -640,7 +638,7 @@ export default function BillingPage() {
                   Secure checkout powered by Stripe
                 </p>
                 <p className="text-xs text-muted-foreground pl-6">
-                  You can pay with credit/debit card, PayPal, Apple Pay, Google Pay, or Link
+                  You can pay with credit/debit card, Apple Pay, or Google Pay
                 </p>
               </div>
             </div>

@@ -141,9 +141,32 @@ interface SendAppointmentSmsResult extends SendSmsResult {
  */
 async function getOrganizationSmsConfig(organizationId: string): Promise<{
   fromNumber: string;
+  messagingServiceSid?: string;
   accountSid?: string;
   authToken?: string;
 } | null> {
+  // When a Messaging Service SID is configured, use it with parent account
+  // credentials. This is the A2P-compliant path — carriers won't block these.
+  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+  if (messagingServiceSid) {
+    // We still need a fromNumber for the record, but the Messaging Service
+    // will pick the actual sending number from its pool.
+    const anyNumber = await db.phoneNumber.findFirst({
+      where: { organizationId, isActive: true },
+      select: { number: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return {
+      fromNumber: anyNumber?.number || "",
+      messagingServiceSid,
+      // Use parent account credentials — the Messaging Service lives on the parent account
+      accountSid: process.env.TWILIO_ACCOUNT_SID,
+      authToken: process.env.TWILIO_AUTH_TOKEN,
+    };
+  }
+
+  // Fallback: send from a raw number (legacy / non-A2P path)
   // Get org's Twilio credentials (if stored)
   const org = await db.organization.findUnique({
     where: { id: organizationId },
@@ -155,7 +178,7 @@ async function getOrganizationSmsConfig(organizationId: string): Promise<{
     where: {
       organizationId,
       isActive: true,
-      provider: { in: ["twilio-managed", "twilio-imported"] },
+      provider: { in: ["twilio-managed", "twilio-imported", "pool"] },
     },
     select: { number: true, provider: true },
     orderBy: { createdAt: "asc" },
@@ -175,6 +198,15 @@ async function getOrganizationSmsConfig(organizationId: string): Promise<{
         fromNumber: twilioNumber.number,
         accountSid: org.twilioSubaccountSid,
         authToken: org.twilioAuthToken,
+      };
+    }
+
+    // Pool numbers belong to the parent account
+    if (twilioNumber.provider === "pool") {
+      return {
+        fromNumber: twilioNumber.number,
+        accountSid: process.env.TWILIO_ACCOUNT_SID,
+        authToken: process.env.TWILIO_AUTH_TOKEN,
       };
     }
 
@@ -346,6 +378,7 @@ export async function sendAppointmentSms(
       to: normalizedPhone,
       from: fromNumber,
       body: messageBody,
+      messagingServiceSid: smsConfig.messagingServiceSid,
       accountSid: smsConfig.accountSid,
       authToken: smsConfig.authToken,
     });
@@ -443,6 +476,7 @@ export async function sendPostCallFollowUpSms(
       to: normalizedCustomerPhone,
       from: smsConfig.fromNumber,
       body: messageBody,
+      messagingServiceSid: smsConfig.messagingServiceSid,
       accountSid: smsConfig.accountSid,
       authToken: smsConfig.authToken,
     });
@@ -614,6 +648,7 @@ export async function sendReceptionistMessageSms(
       to: normalizedToPhone,
       from: smsConfig.fromNumber,
       body: messageBody,
+      messagingServiceSid: smsConfig.messagingServiceSid,
       accountSid: smsConfig.accountSid,
       authToken: smsConfig.authToken,
     });

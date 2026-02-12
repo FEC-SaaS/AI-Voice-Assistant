@@ -136,7 +136,46 @@ export default function TermsOfServicePage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-semibold text-foreground">10. Service Level</h2>
+              <h2 className="text-2xl font-semibold text-foreground">10. SMS Messaging Terms</h2>
+              <p className="mt-3 text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">Program Name:</strong> CallTone Notifications
+              </p>
+              <p className="mt-2 text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">Description:</strong> By providing your phone number
+                and consenting to receive text messages, you agree to receive transactional SMS messages
+                from CallTone, including appointment reminders, appointment confirmations, missed call
+                notifications, and post-call follow-ups.
+              </p>
+              <ul className="mt-3 list-disc space-y-2 pl-6 text-muted-foreground">
+                <li>
+                  <strong className="text-foreground">Message frequency varies</strong> based on your
+                  interactions (e.g., appointments booked, calls received).
+                </li>
+                <li>
+                  <strong className="text-foreground">Message and data rates may apply.</strong> Check
+                  with your wireless carrier for details.
+                </li>
+                <li>
+                  Text <strong className="text-foreground">STOP</strong> to any message to opt out and
+                  stop receiving messages.
+                </li>
+                <li>
+                  Text <strong className="text-foreground">HELP</strong> to any message for support
+                  information.
+                </li>
+                <li>
+                  For support, contact us at support@calltone.ai.
+                </li>
+              </ul>
+              <p className="mt-3 text-muted-foreground leading-relaxed">
+                Carriers are not liable for delayed or undelivered messages. You may opt in to receive
+                messages by booking an appointment, calling a CallTone-powered phone number, or texting
+                START to a CallTone number. Consent is not a condition of purchase.
+              </p>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-semibold text-foreground">11. Service Level</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 We strive for 99.9% uptime but do not guarantee uninterrupted service. Scheduled
                 maintenance windows will be communicated in advance. We are not liable for downtime
@@ -146,7 +185,7 @@ export default function TermsOfServicePage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-semibold text-foreground">11. Limitation of Liability</h2>
+              <h2 className="text-2xl font-semibold text-foreground">12. Limitation of Liability</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 TO THE MAXIMUM EXTENT PERMITTED BY LAW, CALLTONE AI SHALL NOT BE LIABLE FOR ANY
                 INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS
@@ -156,7 +195,7 @@ export default function TermsOfServicePage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-semibold text-foreground">12. Termination</h2>
+              <h2 className="text-2xl font-semibold text-foreground">13. Termination</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 Either party may terminate the agreement at any time. You may cancel your subscription
                 through the dashboard settings. We may suspend or terminate your account for violation
@@ -166,7 +205,7 @@ export default function TermsOfServicePage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-semibold text-foreground">13. Modifications</h2>
+              <h2 className="text-2xl font-semibold text-foreground">14. Modifications</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 We may modify these Terms at any time. Material changes will be communicated via email
                 or in-app notification at least 30 days in advance. Continued use of the Service after
@@ -175,7 +214,7 @@ export default function TermsOfServicePage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-semibold text-foreground">14. Governing Law</h2>
+              <h2 className="text-2xl font-semibold text-foreground">15. Governing Law</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 These Terms are governed by the laws of the State of California, without regard to
                 conflict of law principles. Any disputes shall be resolved through binding arbitration
@@ -184,7 +223,7 @@ export default function TermsOfServicePage() {
             </div>
 
             <div>
-              <h2 className="text-2xl font-semibold text-foreground">15. Contact</h2>
+              <h2 className="text-2xl font-semibold text-foreground">16. Contact</h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 For questions about these Terms, contact us at:
               </p>
