@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,16 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-
-const settingsNav = [
-  { title: "General", href: "/dashboard/settings" },
-  { title: "Branding", href: "/dashboard/settings/branding" },
-  { title: "Email Branding", href: "/dashboard/settings/email" },
-  { title: "Calendar", href: "/dashboard/settings/calendar" },
-  { title: "Team", href: "/dashboard/settings/team" },
-  { title: "Billing", href: "/dashboard/settings/billing" },
-  { title: "API Keys", href: "/dashboard/settings/api-keys" },
-];
 
 const TIMEZONES = [
   { value: "America/New_York", label: "Eastern Time (ET)" },
@@ -53,7 +40,6 @@ interface OrgSettings {
 }
 
 export default function SettingsPage() {
-  const pathname = usePathname();
   const utils = trpc.useUtils();
 
   // Fetch current user and organization data
@@ -141,180 +127,149 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your organization settings and preferences
-        </p>
-      </div>
+      {/* Organization Details Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Organization Details</CardTitle>
+          <CardDescription>
+            Update your organization&apos;s basic information
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="orgName">Organization Name</Label>
+            <Input
+              id="orgName"
+              placeholder="Acme Corp"
+              value={orgName}
+              onChange={(e) => setOrgName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="website">Website</Label>
+            <Input
+              id="website"
+              placeholder="https://acme.com"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Organization ID</Label>
+            <Input
+              value={currentUser?.organization?.id || ""}
+              disabled
+              className="font-mono text-sm bg-secondary"
+            />
+            <p className="text-xs text-muted-foreground">
+              Use this ID for API integrations
+            </p>
+          </div>
+          <Button onClick={handleSaveGeneral} disabled={isSaving}>
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save Changes
+          </Button>
+        </CardContent>
+      </Card>
 
-      <div className="flex gap-8">
-        {/* Sidebar */}
-        <nav className="w-48 space-y-1">
-          {settingsNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "block rounded-md px-3 py-2 text-sm font-medium",
-                pathname === item.href
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-secondary"
-              )}
-            >
-              {item.title}
-            </Link>
-          ))}
-        </nav>
+      {/* Default Settings Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Default Settings</CardTitle>
+          <CardDescription>
+            Configure default behavior for your agents and campaigns
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="timezone">Default Timezone</Label>
+            <Select value={timezone} onValueChange={setTimezone}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select timezone" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIMEZONES.map((tz) => (
+                  <SelectItem key={tz.value} value={tz.value}>
+                    {tz.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Used for campaign scheduling and calling hours
+            </p>
+          </div>
 
-        {/* Content */}
-        <div className="flex-1 space-y-6">
-          {/* Organization Details Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Organization Details</CardTitle>
-              <CardDescription>
-                Update your organization&apos;s basic information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="orgName">Organization Name</Label>
-                <Input
-                  id="orgName"
-                  placeholder="Acme Corp"
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  placeholder="https://acme.com"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Organization ID</Label>
-                <Input
-                  value={currentUser?.organization?.id || ""}
-                  disabled
-                  className="font-mono text-sm bg-secondary"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Use this ID for API integrations
-                </p>
-              </div>
-              <Button onClick={handleSaveGeneral} disabled={isSaving}>
-                {isSaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Save Changes
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="space-y-2">
+            <Label htmlFor="callingHours">Default Calling Hours</Label>
+            <Select value={callingHours} onValueChange={setCallingHours}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select calling hours" />
+              </SelectTrigger>
+              <SelectContent>
+                {CALLING_HOURS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              TCPA requires calls between 8am-9pm local time
+            </p>
+          </div>
 
-          {/* Default Settings Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Default Settings</CardTitle>
-              <CardDescription>
-                Configure default behavior for your agents and campaigns
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="timezone">Default Timezone</Label>
-                <Select value={timezone} onValueChange={setTimezone}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select timezone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIMEZONES.map((tz) => (
-                      <SelectItem key={tz.value} value={tz.value}>
-                        {tz.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Used for campaign scheduling and calling hours
-                </p>
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="aiDisclosure">Call Disclosure Message</Label>
+            <textarea
+              id="aiDisclosure"
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              placeholder="This call may be recorded..."
+              value={aiDisclosure}
+              onChange={(e) => setAiDisclosure(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Required disclosure at the start of each call (FTC compliance)
+            </p>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="callingHours">Default Calling Hours</Label>
-                <Select value={callingHours} onValueChange={setCallingHours}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select calling hours" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CALLING_HOURS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  TCPA requires calls between 8am-9pm local time
-                </p>
-              </div>
+          <Button onClick={handleSaveDefaults} disabled={isSaving}>
+            {isSaving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save Defaults
+          </Button>
+        </CardContent>
+      </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="aiDisclosure">Call Disclosure Message</Label>
-                <textarea
-                  id="aiDisclosure"
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  placeholder="This call may be recorded..."
-                  value={aiDisclosure}
-                  onChange={(e) => setAiDisclosure(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Required disclosure at the start of each call (FTC compliance)
-                </p>
-              </div>
-
-              <Button onClick={handleSaveDefaults} disabled={isSaving}>
-                {isSaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                Save Defaults
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Danger Zone */}
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle className="text-red-400">Danger Zone</CardTitle>
-              <CardDescription>
-                Irreversible actions for your organization
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border border-border bg-red-500/10 p-4">
-                <div>
-                  <h4 className="font-medium text-red-400">Delete Organization</h4>
-                  <p className="text-sm text-red-400">
-                    Permanently delete your organization and all its data
-                  </p>
-                </div>
-                <Button variant="destructive" disabled>
-                  Delete
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      {/* Danger Zone */}
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="text-red-400">Danger Zone</CardTitle>
+          <CardDescription>
+            Irreversible actions for your organization
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-lg border border-border bg-red-500/10 p-4">
+            <div>
+              <h4 className="font-medium text-red-400">Delete Organization</h4>
+              <p className="text-sm text-red-400">
+                Permanently delete your organization and all its data
+              </p>
+            </div>
+            <Button variant="destructive" disabled>
+              Delete
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
