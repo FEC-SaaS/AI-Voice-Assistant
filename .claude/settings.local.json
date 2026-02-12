@@ -20,7 +20,8 @@
       "WebFetch(domain:docs.vapi.ai)",
       "WebFetch(domain:vapi.ai)",
       "Bash(npx prisma db execute:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(test:*)"
     ]
   }
 }

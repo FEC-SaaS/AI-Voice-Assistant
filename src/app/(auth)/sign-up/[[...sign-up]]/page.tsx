@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ClerkSignUp } from "@/components/auth/clerk-sign-up";
+import { AuthLayout } from "@/components/auth/auth-layout";
 
 const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary">
+    <AuthLayout>
       {isClerkConfigured ? (
         <ClerkSignUp />
       ) : (
@@ -19,7 +20,7 @@ export default function SignUpPage() {
           </Link>
         </div>
       )}
-    </div>
+    </AuthLayout>
   );
 }
 

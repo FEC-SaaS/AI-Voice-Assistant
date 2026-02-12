@@ -73,6 +73,9 @@ async function fetchLocation(): Promise<string | undefined> {
   }
 }
 
+const agentName = (t: "male" | "female" | null) =>
+  t === "male" ? "Adam" : "Leah";
+
 export function TalkToAgent() {
   const [status, setStatus] = useState<Status>("idle");
   const [agentType, setAgentType] = useState<"male" | "female" | null>(null);
@@ -230,14 +233,14 @@ export function TalkToAgent() {
           className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-blue-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-10 sm:py-5"
         >
           <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
-          Talk to Male Agent
+          Talk to Adam
         </button>
         <button
           onClick={() => handleStartCall("female")}
           className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-purple-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-purple-600/25 transition-all duration-300 hover:bg-purple-700 hover:shadow-xl hover:shadow-purple-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-10 sm:py-5"
         >
           <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
-          Talk to Female Agent
+          Talk to Leah
         </button>
       </div>
     );
@@ -256,8 +259,15 @@ export function TalkToAgent() {
           Just a sec...
         </p>
         <p className="text-sm text-muted-foreground">
-          Connecting to {agentType === "male" ? "Male" : "Female"} Agent
+          Connecting to {agentName(agentType)}...
         </p>
+        <button
+          onClick={handleEndCall}
+          className="inline-flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-10 py-4 text-base font-semibold text-white shadow-lg shadow-red-600/25 transition-all duration-300 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-12 sm:py-5"
+        >
+          <PhoneOff className="h-5 w-5 sm:h-6 sm:w-6" />
+          Click to End Call
+        </button>
       </div>
     );
   }
@@ -286,7 +296,7 @@ export function TalkToAgent() {
         </div>
         <div className="text-center">
           <p className="text-base sm:text-lg font-medium text-foreground">
-            Speaking with {agentType === "male" ? "Male" : "Female"} Agent
+            Speaking with {agentName(agentType)}
           </p>
           <p className="text-3xl sm:text-4xl font-mono font-bold text-primary mt-2">
             {formatTime(elapsed)}
