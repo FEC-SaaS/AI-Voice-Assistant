@@ -1365,12 +1365,12 @@ export async function POST(req: NextRequest) {
             });
             log.info(`Call started: updated existing record ${existingId}`);
           }
-        } else {
+        } else if (organizationId) {
           // Create new record (inbound calls)
           await db.call.create({
             data: {
               vapiCallId: call.id,
-              organizationId: organizationId || "",
+              organizationId,
               agentId: agent?.id,
               campaignId: campaignId || null,
               contactId: contactId || null,
@@ -1382,6 +1382,8 @@ export async function POST(req: NextRequest) {
             },
           });
           log.info(`Call started: created new ${callDirection} record for ${call.id}`);
+        } else {
+          log.warn(`Call started: skipping DB record — no organizationId for call ${call.id}`);
         }
 
         // Update contact status if applicable
@@ -1505,12 +1507,12 @@ export async function POST(req: NextRequest) {
             },
           });
           log.info(`Call ended: updated existing record ${existingEndId}`);
-        } else {
+        } else if (organizationId) {
           // Create new record (shouldn't normally happen, but handles edge cases)
           updatedCall = await db.call.create({
             data: {
               vapiCallId: call.id,
-              organizationId: organizationId || "",
+              organizationId,
               agentId: agent?.id,
               campaignId: campaignId || null,
               contactId: contactId || null,
@@ -1528,6 +1530,8 @@ export async function POST(req: NextRequest) {
             },
           });
           log.info(`Call ended: created new record for ${call.id}`);
+        } else {
+          log.warn(`Call ended: skipping DB record — no organizationId for call ${call.id}`);
         }
 
         // Update contact status based on call outcome
@@ -1545,10 +1549,11 @@ export async function POST(req: NextRequest) {
         }
 
         // Trigger async call analysis if we have a transcript
-        if (transcriptText && updatedCall.id) {
+        if (transcriptText && updatedCall?.id) {
           // Fire and forget - analyze in background
+          const callId = updatedCall.id;
           getAnalyzeCall().then((analyzeCall) => {
-            analyzeCall(updatedCall.id).catch((error) => {
+            analyzeCall(callId).catch((error) => {
               log.error("Call analysis failed:", error);
             });
           });

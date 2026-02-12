@@ -7,11 +7,13 @@ const log = createLogger("Billing");
 import {
   createCheckoutSession,
   createBillingPortalSession,
+  createStripeCustomer,
   getSubscription,
   getPaymentMethods,
   getInvoices,
   getUpcomingInvoice,
   getStripePrice,
+  stripe,
 } from "@/lib/stripe";
 import { PLANS, getPlan, OVERAGE_RATE_CENTS } from "@/constants/plans";
 
@@ -251,13 +253,6 @@ export const billingRouter = router({
         });
       }
 
-      if (!org.stripeCustomerId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No Stripe customer found. Please contact support.",
-        });
-      }
-
       const plan = PLANS[input.planId as keyof typeof PLANS];
       if (!plan || !plan.priceId) {
         throw new TRPCError({
@@ -266,8 +261,42 @@ export const billingRouter = router({
         });
       }
 
+      // Ensure a valid Stripe customer exists
+      let customerId = org.stripeCustomerId;
+
+      if (customerId) {
+        // Verify the stored customer still exists in Stripe
+        try {
+          await stripe.customers.retrieve(customerId);
+        } catch {
+          log.warn(`Stale Stripe customer ${customerId} for org ${org.id}, will create new one`);
+          customerId = null;
+        }
+      }
+
+      if (!customerId) {
+        // Look up the current user's email to create the customer
+        const user = await ctx.db.user.findFirst({
+          where: { clerkId: ctx.userId },
+          select: { email: true, name: true },
+        });
+
+        const customer = await createStripeCustomer(
+          user?.email || "",
+          org.name,
+          { organizationId: org.id }
+        );
+        customerId = customer.id;
+
+        await ctx.db.organization.update({
+          where: { id: org.id },
+          data: { stripeCustomerId: customerId },
+        });
+        log.info(`Created Stripe customer ${customerId} for org ${org.id}`);
+      }
+
       const session = await createCheckoutSession(
-        org.stripeCustomerId,
+        customerId,
         plan.priceId,
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing?success=true`,
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing?canceled=true`
