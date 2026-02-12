@@ -90,6 +90,7 @@ export async function createCheckoutSession(
     tax_id_collection: { enabled: true },
     customer_update: {
       name: "auto",
+      address: "auto",
     },
     subscription_data: {
       metadata: { customerId },
