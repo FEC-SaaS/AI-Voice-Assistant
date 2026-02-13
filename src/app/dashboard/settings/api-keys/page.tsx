@@ -223,7 +223,7 @@ export default function ApiKeysPage() {
           <div>
             <h4 className="font-medium text-foreground">Base URL</h4>
             <code className="mt-1 block rounded bg-secondary p-3 text-sm">
-              {process.env.NEXT_PUBLIC_APP_URL || "https://app.calltone.ai"}/api/v1
+              {process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai"}/api/v1
             </code>
           </div>
           <div>
@@ -239,7 +239,7 @@ export default function ApiKeysPage() {
             <h4 className="font-medium text-foreground">Example Request</h4>
             <pre className="mt-2 rounded bg-secondary p-3 text-sm text-foreground/90 overflow-x-auto">
 {`curl -X GET \\
-  ${process.env.NEXT_PUBLIC_APP_URL || "https://app.calltone.ai"}/api/v1/agents \\
+  ${process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai"}/api/v1/agents \\
   -H "Authorization: Bearer vxf_your_api_key_here" \\
   -H "Content-Type: application/json"`}
             </pre>
