@@ -27,21 +27,21 @@ const QUICK_START = [
     description:
       "Set up your account, create your first agent, and make a test call in minutes.",
     icon: BookOpen,
-    href: "/docs",
+    href: "/docs/getting-started",
   },
   {
     title: "API Reference",
     description:
       "Comprehensive REST API docs for building custom integrations and automations.",
     icon: Code,
-    href: "/docs",
+    href: "/docs/api-reference",
   },
   {
     title: "Tutorials",
     description:
       "Step-by-step guides for common use cases like appointment booking and lead qualification.",
     icon: GraduationCap,
-    href: "/docs",
+    href: "/docs/tutorials",
   },
 ];
 
@@ -50,49 +50,49 @@ const TOPICS = [
     title: "Creating Agents",
     description: "Build and configure voice agents with custom personalities, prompts, and behaviors.",
     icon: Bot,
-    href: "/docs",
+    href: "/docs/agents",
   },
   {
     title: "Campaigns",
     description: "Launch automated calling campaigns with intelligent scheduling and contact management.",
     icon: Megaphone,
-    href: "/docs",
+    href: "/docs/campaigns",
   },
   {
     title: "Phone Numbers",
-    description: "Provision local, toll-free, and international numbers or import your existing Twilio numbers.",
+    description: "Provision local numbers or import your existing Twilio numbers for voice and SMS.",
     icon: Phone,
-    href: "/docs",
+    href: "/docs/phone-numbers",
   },
   {
     title: "Appointments",
     description: "Let your voice agent book appointments directly into calendars with confirmation emails.",
     icon: Calendar,
-    href: "/docs",
+    href: "/docs/appointments",
   },
   {
     title: "Analytics",
     description: "Track call outcomes, sentiment, lead scores, and agent performance in real time.",
     icon: BarChart3,
-    href: "/docs",
+    href: "/docs/analytics",
   },
   {
     title: "Team Management",
     description: "Invite team members, assign roles, and manage permissions across your organization.",
     icon: Users,
-    href: "/docs",
+    href: "/docs/team",
   },
   {
     title: "Compliance",
     description: "DNC list management, consent tracking, calling hour restrictions, and TCPA tools.",
     icon: Shield,
-    href: "/docs",
+    href: "/docs/compliance",
   },
   {
     title: "Webhooks & Integrations",
     description: "Connect CallTone to your CRM, Slack, Zapier, and custom systems via webhooks and API.",
     icon: Webhook,
-    href: "/docs",
+    href: "/docs/webhooks",
   },
 ];
 
@@ -192,7 +192,7 @@ export default function DocsPage() {
           </p>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             <Link
-              href="/docs"
+              href="/docs/api-reference"
               className="group rounded-xl border border-border/50 bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
             >
               <div className="flex items-center gap-3">
@@ -210,7 +210,7 @@ export default function DocsPage() {
               </div>
             </Link>
             <Link
-              href="/docs"
+              href="/docs/webhooks"
               className="group rounded-xl border border-border/50 bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1"
             >
               <div className="flex items-center gap-3">

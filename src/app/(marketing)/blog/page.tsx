@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Clock, ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Blog | CallTone",
@@ -9,52 +8,52 @@ export const metadata: Metadata = {
 
 const BLOG_POSTS = [
   {
-    title: "The Complete Guide to Voice Agents in 2025",
+    title: "The Complete Guide to Voice Agents in 2026",
     excerpt:
-      "Learn how voice agents are transforming business communications, from cold calling to customer support, and how to get started with your first agent.",
+      "Voice agents are reshaping business communications across every industry. From handling inbound support calls to running outbound sales campaigns, they operate around the clock without breaks, sick days, or scheduling conflicts. This guide covers how voice agents work, what makes them effective, and how businesses of every size are using them to save time and close more deals.",
     category: "Guide",
     readTime: "8 min read",
-    date: "Jan 15, 2025",
+    date: "Feb 10, 2026",
   },
   {
     title: "TCPA Compliance for Automated Calling: What You Need to Know",
     excerpt:
-      "Stay compliant with telemarketing regulations. This guide covers DNC lists, consent requirements, calling hour restrictions, and best practices for automated outreach.",
+      "The Telephone Consumer Protection Act sets strict rules for automated and prerecorded calls. Violations can cost up to $1,500 per call. This guide breaks down DNC list requirements, prior express consent rules, calling hour restrictions (8am-9pm local time), and how CallTone's built-in compliance tools help you stay on the right side of the law.",
     category: "Compliance",
     readTime: "6 min read",
-    date: "Jan 8, 2025",
+    date: "Feb 5, 2026",
   },
   {
     title: "How Cold Calling Automation Increased Our Client's Pipeline by 340%",
     excerpt:
-      "A case study on how one SaaS company used CallTone to automate their outbound calling and dramatically increase their sales pipeline within 90 days.",
+      "A regional insurance agency was spending 30 hours a week on manual cold calls and booking just 4 meetings. After deploying a CallTone voice agent with a tailored script and automated follow-ups, they booked 18 meetings in the first week alone. Here's exactly how they set it up and what you can learn from their approach.",
     category: "Case Study",
     readTime: "5 min read",
-    date: "Dec 20, 2024",
+    date: "Jan 28, 2026",
   },
   {
     title: "Measuring ROI on Voice Agents: A Framework for Business Leaders",
     excerpt:
-      "How to calculate the return on investment for voice technology. Includes cost comparisons, KPI tracking, and a downloadable ROI calculator.",
+      "How much is a missed call really costing you? The average small business misses 62% of inbound calls, and each missed call represents $200-$1,000 in lost revenue. This article walks through a practical ROI framework: calculate your cost-per-call, compare agent vs. human staffing costs, and track the metrics that matter — answer rate, booking rate, and revenue per call.",
     category: "Business",
     readTime: "7 min read",
-    date: "Dec 12, 2024",
+    date: "Jan 20, 2026",
   },
   {
     title: "Sentiment Analysis in Voice Calls: Beyond Simple Keywords",
     excerpt:
-      "How modern NLP models analyze tone, context, and emotion in real-time conversations to provide actionable insights for sales and support teams.",
+      "Modern voice analytics go far beyond keyword spotting. CallTone's conversation intelligence analyzes tone, pacing, interruptions, and context to determine caller sentiment in real time. Learn how sentiment scoring works, what the data reveals about your customer interactions, and how to use these insights to coach your team and improve call scripts.",
     category: "Technology",
     readTime: "10 min read",
-    date: "Nov 28, 2024",
+    date: "Jan 12, 2026",
   },
   {
     title: "Building Effective Voice Agent Scripts: Tips from Top-Performing Campaigns",
     excerpt:
-      "Best practices for crafting conversation flows that sound natural, handle objections gracefully, and drive higher conversion rates in automated campaigns.",
+      "The difference between a 5% and a 25% conversion rate often comes down to the script. After analyzing thousands of outbound campaigns on CallTone, we identified the patterns that work: lead with value in the first 10 seconds, handle the top 5 objections naturally, and always offer a clear next step. Here are the specific techniques and example prompts you can use today.",
     category: "Best Practices",
     readTime: "6 min read",
-    date: "Nov 15, 2024",
+    date: "Jan 5, 2026",
   },
 ];
 
@@ -103,9 +102,6 @@ export default function BlogPage() {
                     >
                       {post.category}
                     </span>
-                    <Badge variant="secondary" className="text-xs">
-                      Coming Soon
-                    </Badge>
                   </div>
 
                   <h2 className="mt-3 text-lg font-semibold text-foreground group-hover:text-primary transition-colors">

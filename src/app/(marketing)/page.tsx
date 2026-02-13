@@ -112,7 +112,7 @@ export default function HomePage() {
                 className="w-full sm:w-auto px-8 border-border/50 hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-300"
               >
                 <BookOpen className="mr-2 h-4 w-4" />
-                Read the Docs
+                Read Docs
               </Button>
             </Link>
           </div>
