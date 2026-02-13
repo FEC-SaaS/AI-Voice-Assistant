@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Clock, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Blog | CallTone",
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
 
 const BLOG_POSTS = [
   {
+    slug: "complete-guide-voice-agents-2026",
     title: "The Complete Guide to Voice Agents in 2026",
     excerpt:
       "Voice agents are reshaping business communications across every industry. From handling inbound support calls to running outbound sales campaigns, they operate around the clock without breaks, sick days, or scheduling conflicts. This guide covers how voice agents work, what makes them effective, and how businesses of every size are using them to save time and close more deals.",
@@ -16,6 +18,7 @@ const BLOG_POSTS = [
     date: "Feb 10, 2026",
   },
   {
+    slug: "tcpa-compliance-automated-calling",
     title: "TCPA Compliance for Automated Calling: What You Need to Know",
     excerpt:
       "The Telephone Consumer Protection Act sets strict rules for automated and prerecorded calls. Violations can cost up to $1,500 per call. This guide breaks down DNC list requirements, prior express consent rules, calling hour restrictions (8am-9pm local time), and how CallTone's built-in compliance tools help you stay on the right side of the law.",
@@ -24,6 +27,7 @@ const BLOG_POSTS = [
     date: "Feb 5, 2026",
   },
   {
+    slug: "cold-calling-automation-pipeline-340-percent",
     title: "How Cold Calling Automation Increased Our Client's Pipeline by 340%",
     excerpt:
       "A regional insurance agency was spending 30 hours a week on manual cold calls and booking just 4 meetings. After deploying a CallTone voice agent with a tailored script and automated follow-ups, they booked 18 meetings in the first week alone. Here's exactly how they set it up and what you can learn from their approach.",
@@ -32,6 +36,7 @@ const BLOG_POSTS = [
     date: "Jan 28, 2026",
   },
   {
+    slug: "measuring-roi-voice-agents",
     title: "Measuring ROI on Voice Agents: A Framework for Business Leaders",
     excerpt:
       "How much is a missed call really costing you? The average small business misses 62% of inbound calls, and each missed call represents $200-$1,000 in lost revenue. This article walks through a practical ROI framework: calculate your cost-per-call, compare agent vs. human staffing costs, and track the metrics that matter — answer rate, booking rate, and revenue per call.",
@@ -40,6 +45,7 @@ const BLOG_POSTS = [
     date: "Jan 20, 2026",
   },
   {
+    slug: "sentiment-analysis-voice-calls",
     title: "Sentiment Analysis in Voice Calls: Beyond Simple Keywords",
     excerpt:
       "Modern voice analytics go far beyond keyword spotting. CallTone's conversation intelligence analyzes tone, pacing, interruptions, and context to determine caller sentiment in real time. Learn how sentiment scoring works, what the data reveals about your customer interactions, and how to use these insights to coach your team and improve call scripts.",
@@ -48,6 +54,7 @@ const BLOG_POSTS = [
     date: "Jan 12, 2026",
   },
   {
+    slug: "building-effective-voice-agent-scripts",
     title: "Building Effective Voice Agent Scripts: Tips from Top-Performing Campaigns",
     excerpt:
       "The difference between a 5% and a 25% conversion rate often comes down to the script. After analyzing thousands of outbound campaigns on CallTone, we identified the patterns that work: lead with value in the first 10 seconds, handle the top 5 objections naturally, and always offer a clear next step. Here are the specific techniques and example prompts you can use today.",
@@ -86,41 +93,40 @@ export default function BlogPage() {
         <div className="container mx-auto px-4">
           <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-2 lg:grid-cols-3">
             {BLOG_POSTS.map((post) => (
-              <article
-                key={post.title}
-                className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md"
-              >
-                {/* Image placeholder */}
-                <div className="aspect-[16/9] bg-gradient-to-br from-secondary to-secondary/50" />
+              <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
+                <article className="relative flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-shadow hover:shadow-md">
+                  {/* Image placeholder */}
+                  <div className="aspect-[16/9] bg-gradient-to-br from-secondary to-secondary/50" />
 
-                <div className="flex flex-1 flex-col p-6">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        CATEGORY_COLORS[post.category] || "bg-secondary text-foreground/80"
-                      }`}
-                    >
-                      {post.category}
-                    </span>
+                  <div className="flex flex-1 flex-col p-6">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          CATEGORY_COLORS[post.category] || "bg-secondary text-foreground/80"
+                        }`}
+                      >
+                        {post.category}
+                      </span>
+                    </div>
+
+                    <h2 className="mt-3 text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {post.title}
+                    </h2>
+
+                    <p className="mt-2 flex-1 text-sm text-muted-foreground line-clamp-3">
+                      {post.excerpt}
+                    </p>
+
+                    <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{post.date}</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {post.readTime}
+                      </span>
+                    </div>
                   </div>
-
-                  <h2 className="mt-3 text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                    {post.title}
-                  </h2>
-
-                  <p className="mt-2 flex-1 text-sm text-muted-foreground line-clamp-3">
-                    {post.excerpt}
-                  </p>
-
-                  <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{post.date}</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {post.readTime}
-                    </span>
-                  </div>
-                </div>
-              </article>
+                </article>
+              </Link>
             ))}
           </div>
 
