@@ -227,23 +227,23 @@ export function TalkToAgent() {
   // ────── Idle ──────
   if (status === "idle") {
     return (
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <div className="flex flex-row gap-3 sm:gap-4 justify-center">
         <button
           onClick={() => handleStartCall("male")}
-          className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-2xl bg-blue-600 px-8 py-4 text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
+          className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-2xl bg-blue-600 px-5 py-3 text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
         >
-          <span className="flex items-center gap-3 text-base font-semibold sm:text-lg">
-            <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
+          <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg">
+            <Phone className="h-4 w-4 sm:h-6 sm:w-6" />
             Talk to Atlas
           </span>
           <span className="text-xs font-medium text-white/70">[Male]</span>
         </button>
         <button
           onClick={() => handleStartCall("female")}
-          className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-2xl bg-purple-600 px-8 py-4 text-white shadow-lg shadow-purple-600/25 transition-all duration-300 hover:bg-purple-700 hover:shadow-xl hover:shadow-purple-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
+          className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-2xl bg-purple-600 px-5 py-3 text-white shadow-lg shadow-purple-600/25 transition-all duration-300 hover:bg-purple-700 hover:shadow-xl hover:shadow-purple-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
         >
-          <span className="flex items-center gap-3 text-base font-semibold sm:text-lg">
-            <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
+          <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg">
+            <Phone className="h-4 w-4 sm:h-6 sm:w-6" />
             Talk to Aria
           </span>
           <span className="text-xs font-medium text-white/70">[Female]</span>
