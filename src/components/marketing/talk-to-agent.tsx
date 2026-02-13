@@ -155,6 +155,22 @@ export function TalkToAgent() {
     trackEvent({ event: "button_click", agent });
 
     try {
+      // Request microphone permission upfront before starting the Vapi call.
+      // This ensures the browser shows the permission prompt and we get a
+      // valid audio stream. Without this, some browsers silently fail to
+      // send audio to the WebRTC connection.
+      let micStream: MediaStream;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (micError) {
+        setErrorMessage(
+          "Microphone access is required for the demo. Please allow microphone access and try again."
+        );
+        setStatus("error");
+        trackEvent({ event: "call_error", agent });
+        return;
+      }
+
       const VapiModule = await import("@vapi-ai/web");
       const Vapi = VapiModule.default;
 
@@ -162,6 +178,8 @@ export function TalkToAgent() {
       vapiRef.current = vapi;
 
       vapi.on("call-start", () => {
+        // Release our mic stream — Vapi's Daily.co now owns the audio
+        micStream.getTracks().forEach((t) => t.stop());
         setStatus("connected");
         startTimer();
         locationPromise.then((location) => {
@@ -181,6 +199,7 @@ export function TalkToAgent() {
 
       vapi.on("error", (error: unknown) => {
         console.error("[TalkToAgent] Vapi error (raw):", JSON.stringify(error, null, 2));
+        micStream.getTracks().forEach((t) => t.stop());
         setErrorMessage(extractErrorMessage(error));
         setStatus("error");
         stopTimer();
