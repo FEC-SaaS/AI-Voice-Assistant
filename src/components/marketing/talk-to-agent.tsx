@@ -155,22 +155,6 @@ export function TalkToAgent() {
     trackEvent({ event: "button_click", agent });
 
     try {
-      // Request microphone permission upfront before starting the Vapi call.
-      // This triggers the browser's permission prompt immediately on user
-      // click, ensuring the mic is available when Daily.co needs it.
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Release immediately — Vapi/Daily.co will open its own stream
-        stream.getTracks().forEach((t) => t.stop());
-      } catch {
-        setErrorMessage(
-          "Microphone access is required for the demo. Please allow microphone access in your browser settings and try again."
-        );
-        setStatus("error");
-        trackEvent({ event: "call_error", agent });
-        return;
-      }
-
       const VapiModule = await import("@vapi-ai/web");
       const Vapi = VapiModule.default;
 
@@ -197,7 +181,15 @@ export function TalkToAgent() {
 
       vapi.on("error", (error: unknown) => {
         console.error("[TalkToAgent] Vapi error (raw):", JSON.stringify(error, null, 2));
-        setErrorMessage(extractErrorMessage(error));
+        const msg = extractErrorMessage(error);
+        // Provide user-friendly message for common audio errors
+        if (msg.includes("NotAllowedError") || msg.includes("Permission")) {
+          setErrorMessage(
+            "Microphone access is required for the demo. Please allow microphone access in your browser settings and try again."
+          );
+        } else {
+          setErrorMessage(msg);
+        }
         setStatus("error");
         stopTimer();
         setIsSpeaking(false);
