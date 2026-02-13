@@ -30,6 +30,7 @@ scripts/fix-user-role.ts
 .env
 .env.*
 !.env.example
+.claude
 
 # Debug logs
 npm-debug.log*
@@ -92,14 +93,3 @@ storybook-static/
 .cache/
 tmp/
 temp/
-
-1. Go to Clerk Dashboard > Sessions
-  2. Set Session lifetime — e.g., 7 days (how long until the
-   user must re-authenticate)
-  3. Set Inactivity timeout — e.g., 24 hours (how long an   
-  idle session lasts)
-
-  Recommended settings for a business app:
-  - Session lifetime: 7 days
-  - Inactivity timeout: 1-24 hours (depending on security   
-  needs)
