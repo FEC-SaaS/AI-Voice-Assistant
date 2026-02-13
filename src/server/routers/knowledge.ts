@@ -3,8 +3,58 @@ import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { updateAssistant } from "@/lib/vapi";
 import { createLogger } from "@/lib/logger";
+import * as cheerio from "cheerio";
 
 const log = createLogger("Knowledge");
+
+const MAX_CONTENT_LENGTH = 50_000;
+
+async function scrapeUrlContent(url: string): Promise<string> {
+  const response = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; VoxForgeBot/1.0)",
+      Accept: "text/html,application/xhtml+xml",
+    },
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+  }
+
+  const html = await response.text();
+  const $ = cheerio.load(html);
+
+  // Remove non-content elements
+  $("script, style, nav, header, footer, iframe, noscript, svg, form").remove();
+
+  // Try to get main content area first, fall back to body
+  let text = "";
+  const mainSelectors = ["main", "article", '[role="main"]', ".content", "#content"];
+  for (const selector of mainSelectors) {
+    const el = $(selector);
+    if (el.length && el.text().trim().length > 100) {
+      text = el.text();
+      break;
+    }
+  }
+
+  if (!text) {
+    text = $("body").text();
+  }
+
+  // Clean up whitespace
+  text = text
+    .replace(/\s+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  if (!text) {
+    throw new Error("No readable content found on the page");
+  }
+
+  return text.slice(0, MAX_CONTENT_LENGTH);
+}
 
 // Helper function to sync knowledge to agent's voice assistant
 async function syncKnowledgeToAgent(
@@ -121,6 +171,21 @@ export const knowledgeRouter = router({
         }
       }
 
+      // For URL type, scrape the content from the URL
+      let content = input.content;
+      if (input.type === "url" && input.sourceUrl) {
+        try {
+          content = await scrapeUrlContent(input.sourceUrl);
+          log.info(`Scraped ${content.length} chars from ${input.sourceUrl}`);
+        } catch (error) {
+          log.error("URL scraping failed:", error);
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Failed to scrape URL: ${error instanceof Error ? error.message : "Unknown error"}`,
+          });
+        }
+      }
+
       const document = await ctx.db.knowledgeDocument.create({
         data: {
           organizationId: ctx.orgId,
@@ -128,9 +193,14 @@ export const knowledgeRouter = router({
           name: input.name,
           type: input.type,
           sourceUrl: input.sourceUrl,
-          content: input.content,
+          content,
         },
       });
+
+      // Auto-sync to agent if assigned
+      if (document.agentId) {
+        await syncKnowledgeToAgent(ctx.db, document.agentId, ctx.orgId);
+      }
 
       return document;
     }),
@@ -263,6 +333,56 @@ export const knowledgeRouter = router({
       // Also sync the previous agent (if it had this document and we're removing it)
       if (previousAgentId && previousAgentId !== input.agentId) {
         await syncKnowledgeToAgent(ctx.db, previousAgentId, ctx.orgId);
+      }
+
+      return updated;
+    }),
+
+  // Re-scrape a URL document
+  scrapeUrl: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const document = await ctx.db.knowledgeDocument.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.orgId,
+        },
+      });
+
+      if (!document) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Document not found",
+        });
+      }
+
+      if (document.type !== "url" || !document.sourceUrl) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This document is not a URL type or has no source URL",
+        });
+      }
+
+      let content: string;
+      try {
+        content = await scrapeUrlContent(document.sourceUrl);
+        log.info(`Re-scraped ${content.length} chars from ${document.sourceUrl}`);
+      } catch (error) {
+        log.error("URL re-scraping failed:", error);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Failed to scrape URL: ${error instanceof Error ? error.message : "Unknown error"}`,
+        });
+      }
+
+      const updated = await ctx.db.knowledgeDocument.update({
+        where: { id: input.id },
+        data: { content },
+      });
+
+      // Auto-sync to agent if assigned
+      if (updated.agentId) {
+        await syncKnowledgeToAgent(ctx.db, updated.agentId, ctx.orgId);
       }
 
       return updated;

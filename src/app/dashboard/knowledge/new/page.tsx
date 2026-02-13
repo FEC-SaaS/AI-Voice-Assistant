@@ -87,7 +87,6 @@ export default function NewKnowledgePage() {
       name: urlName,
       type: "url",
       sourceUrl: sourceUrl,
-      content: `Content from: ${sourceUrl}\n\n(URL scraping will be implemented in a future update. For now, please add the content manually after creating this entry.)`,
     });
   };
 
@@ -285,7 +284,7 @@ A: You can reach our support team at support@example.com or call 1-800-EXAMPLE."
                 className="w-full"
               >
                 {createMutation.isPending ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Scraping URL...</>
                 ) : (
                   "Add URL"
                 )}

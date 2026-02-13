@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { uploadKnowledgeDocument } from "@/lib/storage";
+import { PDFParse } from "pdf-parse";
+import { extractRawText } from "mammoth";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "application/pdf": "pdf",
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
     const docName = name || file.name.replace(/\.[^.]+$/, "");
     const docType = ALLOWED_TYPES[file.type] || "manual";
 
-    // For text-based files, extract content directly
+    // Extract text content based on file type
     let content: string | undefined;
     if (
       file.type === "text/plain" ||
@@ -69,6 +71,34 @@ export async function POST(request: NextRequest) {
       file.name.endsWith(".txt")
     ) {
       content = new TextDecoder().decode(buffer);
+    } else if (file.type === "application/pdf") {
+      try {
+        const pdf = new PDFParse({ data: new Uint8Array(buffer), verbosity: 0 });
+        const result = await pdf.getText();
+        const text = result.text;
+        if (text && text.trim().length > 0) {
+          content = text.trim();
+        } else {
+          content = `[PDF uploaded: ${file.name}]\n\nText extraction returned empty results. This PDF may contain only images or scanned content. Please add a text summary manually.`;
+        }
+        await pdf.destroy();
+      } catch {
+        content = `[PDF uploaded: ${file.name}]\n\nAutomatic text extraction failed. Please add a text summary manually.`;
+      }
+    } else if (
+      file.type ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
+      try {
+        const result = await extractRawText({ buffer });
+        if (result.value && result.value.trim().length > 0) {
+          content = result.value.trim();
+        } else {
+          content = `[DOCX uploaded: ${file.name}]\n\nText extraction returned empty results. Please add content manually.`;
+        }
+      } catch {
+        content = `[DOCX uploaded: ${file.name}]\n\nAutomatic text extraction failed. Please add content manually.`;
+      }
     }
 
     // Upload file to R2 storage
@@ -86,7 +116,7 @@ export async function POST(request: NextRequest) {
         name: docName,
         type: docType,
         sourceUrl: uploadResult.url,
-        content: content || `[File uploaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)]\n\nThis document has been uploaded to storage. For PDF and DOCX files, please add a text summary in the content field to make it searchable by your AI agent.`,
+        content: content || `[File uploaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)]`,
       },
     });
 
