@@ -161,12 +161,37 @@ export function TalkToAgent() {
       const vapi = new Vapi(publicKey);
       vapiRef.current = vapi;
 
+      // Debug: track all start stages
+      vapi.on("call-start-progress", (progress: unknown) => {
+        console.log("[TalkToAgent] Progress:", JSON.stringify(progress));
+      });
+
       vapi.on("call-start", () => {
         setStatus("connected");
         startTimer();
         locationPromise.then((location) => {
           trackEvent({ event: "call_start", agent, location });
         });
+
+        // Debug: check microphone track state via Daily call object
+        try {
+          const dailyCall = vapi.getDailyCallObject?.();
+          if (dailyCall) {
+            const participants = dailyCall.participants?.();
+            const local = participants?.local;
+            console.log("[TalkToAgent] Local participant:", JSON.stringify({
+              audio: local?.audio,
+              tracks: {
+                audio: {
+                  state: local?.tracks?.audio?.state,
+                  subscribed: local?.tracks?.audio?.subscribed,
+                },
+              },
+            }));
+          }
+        } catch (e) {
+          console.log("[TalkToAgent] Could not inspect daily call:", e);
+        }
       });
 
       vapi.on("call-end", () => {
