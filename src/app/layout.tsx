@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider
-      signUpForceRedirectUrl="/sign-up"
+      signUpForceRedirectUrl="/dashboard/onboarding"
       afterSignOutUrl="/"
     >
       <html lang="en" suppressHydrationWarning>
