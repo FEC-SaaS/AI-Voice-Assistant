@@ -10,6 +10,8 @@ const isPublicRoute = createRouteMatcher([
   "/api/vapi(.*)",
   "/api/v1(.*)",
   "/api/appointments/public(.*)",
+  "/api/appointments/actions(.*)",
+  "/appointment(.*)",
   "/docs(.*)",
   "/blog(.*)",
   "/pricing",

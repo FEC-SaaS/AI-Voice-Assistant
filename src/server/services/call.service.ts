@@ -3,6 +3,7 @@ import { createCall, getCall as getVapiCall } from "@/lib/vapi";
 import { checkMinutesLimit, recordCallUsage } from "./billing.service";
 import { TRPCError } from "@trpc/server";
 import { createLogger } from "@/lib/logger";
+import { getOutboundCallPrompt, getOutboundFirstMessage } from "@/lib/vapi-tools";
 
 const log = createLogger("CallService");
 
@@ -100,17 +101,11 @@ export async function initiateCall(input: InitiateCallInput) {
   });
 
   try {
-    // Initiate call via Vapi
     // Build outbound-specific overrides for the assistant
     const contactName = input.metadata?.contactName;
     const businessName = agent.organization.name;
-    // Always use the agent's configured name
     const agentName = agent.name;
-    // Avoid redundant "X from X" when agent name = business name
-    const showFromBusiness = agentName.toLowerCase() !== businessName.toLowerCase();
-    const outboundFirstMessage = contactName
-      ? `Hi ${contactName}, this is ${agentName}${showFromBusiness ? ` from ${businessName}` : ""}. Do you have a moment to talk?`
-      : `Hi there, this is ${agentName}${showFromBusiness ? ` from ${businessName}` : ""} calling. Do you have a moment to talk?`;
+    const outboundFirstMessage = getOutboundFirstMessage(agentName, businessName, contactName);
 
     const vapiCall = await createCall({
       assistantId: agent.vapiAssistantId,
@@ -127,33 +122,15 @@ export async function initiateCall(input: InitiateCallInput) {
       assistantOverrides: {
         firstMessage: outboundFirstMessage,
         firstMessageMode: "assistant-speaks-first",
+        serverUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai"}/api/webhooks/vapi`,
+        serverUrlSecret: process.env.VAPI_WEBHOOK_SECRET,
         model: {
           provider: agent.modelProvider || "openai",
           model: agent.model || "gpt-4o",
           messages: [
             {
               role: "system",
-              content: `${agent.systemPrompt}${knowledgeContent}
-
-IMPORTANT CONTEXT — OUTBOUND CALL:
-You are calling on behalf of ${businessName}. YOU initiated this call, the customer did NOT call you.
-Your name is ${agentName}. ALWAYS use this name when introducing yourself or when asked your name. NEVER use any other name.
-
-CALL GUIDELINES:
-1. OPENING: Introduce yourself and the business naturally. State the purpose of your call clearly and concisely within the first 15 seconds.
-2. KNOWLEDGE-DRIVEN CONVERSATION: Your conversation MUST be strictly based on the knowledge base content provided above. ONLY discuss products, services, and offerings that are described in the knowledge base. NEVER invent, fabricate, or assume products/services that are not in the knowledge base.
-3. DISCOVERY: Ask open-ended questions to understand the customer's needs, challenges, and goals. Listen actively and acknowledge their responses.
-4. VALUE PROPOSITION: Based on what you learn, position relevant products/services from the knowledge base as solutions. Explain specific benefits that address their stated needs.
-5. OBJECTION HANDLING: When facing objections, acknowledge concerns, ask clarifying questions, and provide evidence-based responses from the knowledge base.
-6. CLOSING: Guide the conversation toward a clear next step — scheduling a meeting, sending information, or a follow-up call.
-7. PROFESSIONALISM: Be warm, confident, and respectful of the customer's time. If they're busy, offer to call back at a convenient time.
-8. If the customer is not interested, thank them politely and end the call gracefully.
-
-STRICT RULES:
-- NEVER say "Thank you for calling" or "How can I help you today?" — YOU are the one calling THEM.
-- NEVER discuss products, services, or offers that are NOT in the knowledge base.
-- Keep your responses concise and conversational — avoid long monologues.
-- Use the customer's name naturally throughout the conversation when known.`,
+              content: `${agent.systemPrompt}${getOutboundCallPrompt(agentName, businessName, knowledgeContent)}`,
             },
           ],
         },
