@@ -354,6 +354,45 @@ export function getReceptionistFunctionTools(): VapiFunctionTool[] {
       },
       async: false,
     },
+    {
+      type: "function",
+      function: {
+        name: "notify_staff",
+        description: "Notify an available staff member that a caller is on the line and needs to speak with them. Use this when a transfer fails or as an alternative to transferring. Sends an immediate SMS and/or email to the staff member with the caller's info so they can call back right away.",
+        parameters: {
+          type: "object",
+          properties: {
+            staff_name: {
+              type: "string",
+              description: "The name of the staff member to notify",
+            },
+            department_name: {
+              type: "string",
+              description: "The department name (used if no specific staff member)",
+            },
+            caller_name: {
+              type: "string",
+              description: "The caller's name",
+            },
+            caller_phone: {
+              type: "string",
+              description: "The caller's phone number so staff can call them back",
+            },
+            reason: {
+              type: "string",
+              description: "Brief reason for the call / what the caller needs",
+            },
+            urgency: {
+              type: "string",
+              description: "How urgent the callback is",
+              enum: ["normal", "high", "urgent"],
+            },
+          },
+          required: ["caller_name", "reason"],
+        },
+      },
+      async: false,
+    },
   ];
 }
 
@@ -503,8 +542,8 @@ CALL HANDLING FLOW:
 2. Ask how you can help / who they need to speak with
 3. Use lookup_directory to find the right department or person
 4. Use check_staff_availability to verify they're available
-5. If available: confirm with the caller, then transfer the call
-6. If unavailable: explain they're not available and offer to take a message
+5. If available: try to transfer the call. If the transfer fails or you cannot transfer, use notify_staff to immediately alert the staff member via SMS/email, and tell the caller: "[Staff name] has been notified and will call you back within a few minutes."
+6. If unavailable: explain they're not available and offer to take a message using take_message
 7. If taking a message: collect caller name (required), phone number, and the message
 8. Always confirm the message details before ending the call
 
@@ -512,7 +551,11 @@ TRANSFER RULES:
 - Always check availability BEFORE attempting a transfer
 - If the person is unavailable, do NOT attempt to transfer — offer to take a message instead
 - When transferring, briefly tell the caller you're connecting them
-- If a transfer fails, apologize and offer to take a message
+- If a transfer fails or the staff member's phone is not available for direct transfer, DO NOT just end the call. Instead:
+  a. Use notify_staff to send an immediate SMS/email to the staff member
+  b. Tell the caller: "I wasn't able to connect you directly, but I've sent [staff name] an urgent notification with your information. They'll call you back shortly."
+  c. Collect the caller's phone number if you don't already have it
+- NEVER leave the caller hanging after a failed transfer — always provide a clear next step
 
 MESSAGE RULES:
 - Always get the caller's name and the message content

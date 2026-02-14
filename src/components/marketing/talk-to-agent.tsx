@@ -10,10 +10,12 @@ type Message = {
   text: string;
 };
 
+// ── Scripts focused on VALUE, no pricing ──
+
 const ATLAS_SCRIPT: Message[] = [
   {
     role: "agent",
-    text: "Hey there! Thanks for checking out CallTone. I'm Atlas \u2014 think of me as your AI-powered business phone assistant. What kind of business are you running?",
+    text: "Hey there! Thanks for checking out CallTone. I'm Atlas, your AI-powered business phone assistant. What kind of business are you running?",
   },
   {
     role: "customer",
@@ -21,11 +23,11 @@ const ATLAS_SCRIPT: Message[] = [
   },
   {
     role: "agent",
-    text: "Oh yeah, that's super common with dental offices. You're literally hands-in-mouth, can't pick up the phone \u2014 and every missed call is potentially a new patient walking to your competitor.",
+    text: "That's super common with dental offices. You're literally hands-in-mouth, can't pick up the phone. And every missed call is potentially a new patient walking to your competitor.",
   },
   {
     role: "agent",
-    text: "That's actually exactly what I handle. I pick up every single call, 24/7 \u2014 I can answer questions about your services, book appointments right into your calendar, and even send the caller a confirmation text. All while you're focused on your patients.",
+    text: "That's exactly what I handle. I pick up every single call, 24/7. I answer questions about your services, book appointments right into your calendar, and send the caller a confirmation text. All while you focus on your patients.",
   },
   {
     role: "customer",
@@ -33,34 +35,38 @@ const ATLAS_SCRIPT: Message[] = [
   },
   {
     role: "agent",
-    text: "It's really simple \u2014 I ask the caller for their preferred date and time, check your real-time availability, and book it on the spot. They get an instant confirmation email and text. No back-and-forth, no phone tag.",
+    text: "I ask the caller for their preferred date and time, check your real-time availability, and book it on the spot. They get an instant confirmation by email and text. No back-and-forth, no phone tag.",
   },
   {
     role: "customer",
-    text: "What about pricing? Is there a contract?",
+    text: "What if someone calls after hours or on weekends?",
   },
   {
     role: "agent",
-    text: "No long-term contracts at all. We have plans starting at just forty-nine dollars a month, and you only pay for what you use. Most dental practices save way more than that just from the new patients they stop losing.",
-  },
-  {
-    role: "agent",
-    text: "Tell you what \u2014 you can try it completely free for 14 days, no credit card needed. Just sign up on our website and you'll have your own AI receptionist live in about 2 minutes. Sound good?",
+    text: "I never sleep! Nights, weekends, holidays, I'm always here. After-hours callers get the same friendly, professional experience. I can even text you a summary of every call so you start your morning fully caught up.",
   },
   {
     role: "customer",
-    text: "Yeah, I'll definitely check that out. Thanks Atlas!",
+    text: "Wow, that would save us so much time. How do I get started?",
   },
   {
     role: "agent",
-    text: "Awesome! You're going to love it. Thanks for chatting with me, and welcome to CallTone. Have a great day!",
+    text: "It's really easy. Just sign up on our website and you can build your own AI phone agent in about two minutes. You'll be up and running before your next patient walks in!",
+  },
+  {
+    role: "customer",
+    text: "That sounds awesome. Thanks, Atlas!",
+  },
+  {
+    role: "agent",
+    text: "You're welcome! You're going to love having me on your team. Thanks for chatting and welcome to CallTone. Have a great day!",
   },
 ];
 
 const ARIA_SCRIPT: Message[] = [
   {
     role: "agent",
-    text: "Hi! I'm Aria, your AI voice agent from CallTone. I help businesses never miss a customer call again. What industry are you in?",
+    text: "Hi there! I'm Aria, your AI voice agent from CallTone. I help businesses never miss a customer call. What industry are you in?",
   },
   {
     role: "customer",
@@ -68,11 +74,11 @@ const ARIA_SCRIPT: Message[] = [
   },
   {
     role: "agent",
-    text: "Plumbing \u2014 that's one of the busiest industries for inbound calls. Emergencies don't wait, and neither should your customers. I can answer those calls instantly, day or night.",
+    text: "Plumbing is one of the busiest industries for inbound calls. Emergencies don't wait, and neither should your customers. I answer those calls instantly, day or night.",
   },
   {
     role: "agent",
-    text: "I'll gather the caller's info, describe your services, and schedule a visit based on your crew's availability. If it's an emergency, I can flag it as high priority so you see it right away.",
+    text: "I gather the caller's info, describe your services, and schedule a visit based on your crew's availability. If it's an emergency, I flag it as high priority so you see it right away.",
   },
   {
     role: "customer",
@@ -80,88 +86,99 @@ const ARIA_SCRIPT: Message[] = [
   },
   {
     role: "agent",
-    text: "That's actually where I shine \u2014 I work 24/7, weekends and holidays included. After-hours callers get the same professional experience as during business hours. I can even send you a text alert for urgent calls so nothing falls through the cracks.",
+    text: "That's where I really shine. I work 24/7, weekends and holidays included. After-hours callers get the same professional experience. And I can send you a text alert for urgent calls so nothing falls through the cracks.",
   },
   {
     role: "customer",
-    text: "Nice. And how much does something like this cost?",
+    text: "That's huge. We've definitely lost jobs because nobody picked up the phone.",
   },
   {
     role: "agent",
-    text: "Plans start at forty-nine dollars a month with no long-term contracts. When you think about how much a single missed service call costs your business \u2014 probably hundreds of dollars \u2014 it pays for itself pretty quickly.",
-  },
-  {
-    role: "agent",
-    text: "We also offer a completely free 14-day trial so you can see the results before committing to anything. No credit card required, and setup takes about 2 minutes.",
+    text: "Exactly, and that's the real cost of missed calls. Every unanswered ring is a job that goes to your competitor. With me handling your phones, you capture every single lead, even when your whole crew is out on jobs.",
   },
   {
     role: "customer",
-    text: "That sounds like a no-brainer. I'll give it a shot!",
+    text: "Alright, I'm sold. How do I set this up?",
   },
   {
     role: "agent",
-    text: "Wonderful! I think you're really going to see a difference. Thanks so much for chatting with me today. Welcome to CallTone, and have a fantastic day!",
+    text: "Super easy! Sign up on our website and you'll have your own AI receptionist live in about two minutes. Your team will wonder how they ever managed without it.",
+  },
+  {
+    role: "customer",
+    text: "Love it. Thanks, Aria!",
+  },
+  {
+    role: "agent",
+    text: "Thank you! I think you're really going to see a difference. Welcome to CallTone and have a fantastic day!",
   },
 ];
 
-/** Speak text using the browser's built-in Speech Synthesis API (free, no network). */
+// ── Cached voices so we don't re-scan every utterance ──
+let cachedVoices: { male: SpeechSynthesisVoice | null; female: SpeechSynthesisVoice | null } | null = null;
+
+function getVoices(): { male: SpeechSynthesisVoice | null; female: SpeechSynthesisVoice | null } {
+  if (cachedVoices) return cachedVoices;
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    return { male: null, female: null };
+  }
+
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length === 0) return { male: null, female: null };
+
+  const english = voices.filter(
+    (v) => v.lang.startsWith("en") && !v.name.includes("Whisper")
+  );
+
+  const findVoice = (keywords: string[]) =>
+    english.find((v) => {
+      const n = v.name.toLowerCase();
+      return keywords.some((k) => n.includes(k));
+    });
+
+  const female =
+    findVoice(["samantha", "karen", "tessa", "moira", "fiona", "victoria", "zira", "female"]) ||
+    null;
+  const male =
+    findVoice(["daniel", "james", "david", "mark", "alex", "tom", "male"]) ||
+    null;
+
+  // Fallback: if we only found one, use different english voices
+  const fallback1 = english[0] || voices[0] || null;
+  const fallback2 = english[1] || english[0] || voices[0] || null;
+
+  cachedVoices = {
+    male: male || fallback1,
+    female: female || fallback2,
+  };
+  return cachedVoices;
+}
+
+/** Speak text using the browser's built-in Speech Synthesis API (free, zero network). */
 function speak(
   text: string,
   voiceGender: "male" | "female",
   onEnd: () => void
-): SpeechSynthesisUtterance | null {
+): void {
   if (typeof window === "undefined" || !window.speechSynthesis) {
     onEnd();
-    return null;
+    return;
   }
 
-  // Cancel any ongoing speech first
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 1.05;
-  utterance.pitch = voiceGender === "female" ? 1.15 : 0.9;
+  utterance.rate = 1.08;
+  utterance.pitch = voiceGender === "female" ? 1.12 : 0.88;
   utterance.volume = 1;
 
-  // Try to pick a matching voice
-  const voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    // Prefer English voices, then match gender-ish heuristics
-    const englishVoices = voices.filter(
-      (v) => v.lang.startsWith("en") && !v.name.includes("Whisper")
-    );
-    const preferred = englishVoices.find((v) => {
-      const name = v.name.toLowerCase();
-      if (voiceGender === "female") {
-        return (
-          name.includes("female") ||
-          name.includes("samantha") ||
-          name.includes("karen") ||
-          name.includes("tessa") ||
-          name.includes("moira") ||
-          name.includes("fiona") ||
-          name.includes("victoria") ||
-          name.includes("zira")
-        );
-      }
-      return (
-        name.includes("male") ||
-        name.includes("daniel") ||
-        name.includes("james") ||
-        name.includes("david") ||
-        name.includes("mark") ||
-        name.includes("alex") ||
-        name.includes("tom")
-      );
-    });
-    utterance.voice = preferred || englishVoices[0] || voices[0] || null;
-  }
+  const v = getVoices();
+  utterance.voice = voiceGender === "female" ? v.female : v.male;
 
   utterance.onend = onEnd;
   utterance.onerror = onEnd;
 
   window.speechSynthesis.speak(utterance);
-  return utterance;
 }
 
 function getSessionId(): string {
@@ -206,16 +223,20 @@ export function TalkToAgent() {
   const scriptIndexRef = useRef(0);
   const playbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const activeRef = useRef(false); // tracks if playback is active
+  const activeRef = useRef(false);
 
-  // Load voices early (some browsers need this)
+  // Pre-load voices (some browsers need a getVoices() call first)
   useEffect(() => {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
-    }
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.getVoices();
+    const handler = () => {
+      cachedVoices = null; // bust cache so next getVoices() re-scans
+      getVoices();
+    };
+    window.speechSynthesis.onvoiceschanged = handler;
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
   }, []);
 
   // Auto-scroll chat to bottom
@@ -263,20 +284,17 @@ export function TalkToAgent() {
   }, []);
 
   const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
-      .toString()
-      .padStart(2, "0");
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
     const s = (seconds % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
 
   const playNextMessage = useCallback(
-    (script: Message[], gender: "male" | "female") => {
+    (script: Message[], agentGender: "male" | "female") => {
       if (!activeRef.current) return;
 
       const index = scriptIndexRef.current;
       if (index >= script.length) {
-        // Script finished — auto-end after a short pause
         setIsSpeaking(false);
         playbackRef.current = setTimeout(() => {
           if (!activeRef.current) return;
@@ -287,48 +305,42 @@ export function TalkToAgent() {
           setStatus("ended");
           stopTimer();
           setIsSpeaking(false);
-          trackEvent({
-            event: "call_end",
-            agent: gender,
-            duration,
-          });
+          trackEvent({ event: "call_end", agent: agentGender, duration });
         }, 1500);
         return;
       }
 
       const msg = script[index]!;
+      const isAgent = msg.role === "agent";
+      // Customer uses the opposite gender voice for contrast
+      const customerGender: "male" | "female" =
+        agentGender === "male" ? "female" : "male";
+      const speakGender = isAgent ? agentGender : customerGender;
 
-      // Show typing indicator briefly
+      // Show typing indicator
       setIsTyping(true);
-      if (msg.role === "agent") setIsSpeaking(true);
+      setIsSpeaking(isAgent);
 
-      const typingDuration = msg.role === "agent" ? 800 : 600;
+      const typingDuration = isAgent ? 700 : 500;
 
       playbackRef.current = setTimeout(() => {
         if (!activeRef.current) return;
 
-        // Add the message bubble
+        // Show the bubble and start speaking simultaneously
         setIsTyping(false);
         setMessages((prev) => [...prev, msg]);
         scriptIndexRef.current = index + 1;
+        setIsSpeaking(isAgent);
 
-        if (msg.role === "agent") {
-          // Speak the agent message aloud, then continue when speech ends
-          speak(msg.text, gender, () => {
-            if (!activeRef.current) return;
-            setIsSpeaking(false);
-            // Small pause after speech ends before next message
-            playbackRef.current = setTimeout(() => {
-              playNextMessage(script, gender);
-            }, 500);
-          });
-        } else {
-          // Customer message — just a read-pause, no voice
+        // Speak the message (both agent and customer have voice)
+        speak(msg.text, speakGender, () => {
+          if (!activeRef.current) return;
           setIsSpeaking(false);
+          // Brief pause between messages
           playbackRef.current = setTimeout(() => {
-            playNextMessage(script, gender);
-          }, 1800);
-        }
+            playNextMessage(script, agentGender);
+          }, 400);
+        });
       }, typingDuration);
     },
     [stopTimer]
@@ -347,7 +359,6 @@ export function TalkToAgent() {
 
       trackEvent({ event: "button_click", agent });
 
-      // Brief "connecting" phase, then start playback
       playbackRef.current = setTimeout(() => {
         if (!activeRef.current) return;
         setStatus("connected");

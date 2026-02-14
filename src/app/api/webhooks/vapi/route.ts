@@ -713,7 +713,10 @@ async function processToolCall(
           return `The ${staff.department.name} department is currently closed. ${staff.name} would normally be available during business hours. Would you like me to take a message?`;
         }
 
-        return `${staff.name} is available right now.${staff.phoneNumber ? ` Their number is ${staff.phoneNumber}.` : ""} Would you like me to transfer you?`;
+        if (staff.phoneNumber) {
+          return `${staff.name} is available right now. Their number is ${staff.phoneNumber}. Would you like me to transfer you? If the transfer doesn't go through, I can notify them immediately to call you back.`;
+        }
+        return `${staff.name} is available right now but doesn't have a direct phone line for transfer. I can notify them immediately to call you back. Would you like me to do that?`;
       }
 
       if (department_name) {
@@ -899,6 +902,145 @@ async function processToolCall(
       response += ". Is there anything else I can help you with?";
 
       return response;
+    }
+
+    case "notify_staff": {
+      const {
+        staff_name,
+        department_name,
+        caller_name,
+        caller_phone,
+        reason,
+        urgency,
+      } = args;
+
+      if (!caller_name || !reason) {
+        return "I need the caller's name and the reason for the call to notify the staff member.";
+      }
+
+      // Find the staff member or department to notify
+      let notifyPhone: string | null = null;
+      let notifyEmail: string | null = null;
+      let targetName = "the team";
+      let staffMemberId: string | null = null;
+      let departmentId: string | null = null;
+
+      if (staff_name) {
+        const staff = await db.staffMember.findFirst({
+          where: {
+            organizationId,
+            name: { contains: staff_name, mode: "insensitive" },
+          },
+          include: { department: true },
+        });
+        if (staff) {
+          notifyPhone = staff.phoneNumber;
+          notifyEmail = staff.email;
+          targetName = staff.name;
+          staffMemberId = staff.id;
+          departmentId = staff.departmentId;
+        }
+      }
+
+      if (!notifyPhone && !notifyEmail && department_name) {
+        const dept = await db.department.findFirst({
+          where: {
+            organizationId,
+            name: { contains: department_name, mode: "insensitive" },
+            isActive: true,
+          },
+        });
+        if (dept) {
+          notifyPhone = dept.phoneNumber;
+          notifyEmail = dept.email;
+          targetName = dept.name + " department";
+          departmentId = dept.id;
+        }
+      }
+
+      if (!notifyPhone && !notifyEmail) {
+        return `I couldn't find contact info for ${staff_name || department_name || "that person"}. Would you like me to take a message instead?`;
+      }
+
+      // Create a priority message record
+      const message = await db.receptionistMessage.create({
+        data: {
+          organizationId,
+          agentId: agentId || null,
+          callId: null,
+          departmentId,
+          staffMemberId,
+          callerName: caller_name,
+          callerPhone: caller_phone || customerPhone || null,
+          callerEmail: null,
+          callerCompany: null,
+          body: `CALLBACK REQUESTED: ${reason}`,
+          urgency: urgency || "high",
+          status: "new",
+        },
+      });
+
+      // Send immediate SMS notification
+      if (notifyPhone) {
+        try {
+          const { sendReceptionistMessageSms } = await import("@/lib/sms");
+          await sendReceptionistMessageSms(organizationId, notifyPhone, {
+            callerName: caller_name,
+            callerPhone: caller_phone || customerPhone || undefined,
+            body: `CALLBACK NEEDED: ${caller_name}${caller_phone || customerPhone ? ` at ${caller_phone || customerPhone}` : ""} — ${reason}`,
+            urgency: urgency || "high",
+          });
+        } catch (error) {
+          toolLog.error("Failed to send staff notification SMS:", error);
+        }
+      }
+
+      // Send immediate email notification
+      if (notifyEmail) {
+        try {
+          const { sendReceptionistMessageNotification } = await import("@/lib/email");
+          await sendReceptionistMessageNotification(notifyEmail, {
+            callerName: caller_name,
+            callerPhone: caller_phone || customerPhone || undefined,
+            body: `CALLBACK REQUESTED: ${reason}`,
+            urgency: urgency || "high",
+            messageId: message.id,
+          });
+        } catch (error) {
+          toolLog.error("Failed to send staff notification email:", error);
+        }
+      }
+
+      // Audit log
+      try {
+        await db.auditLog.create({
+          data: {
+            organizationId,
+            action: "receptionist.staff_notified",
+            entityType: "ReceptionistMessage",
+            entityId: message.id,
+            details: {
+              callerName: caller_name,
+              callerPhone: caller_phone || customerPhone || null,
+              targetName,
+              reason,
+              urgency: urgency || "high",
+              notifiedViaSms: !!notifyPhone,
+              notifiedViaEmail: !!notifyEmail,
+            },
+          },
+        });
+      } catch (error) {
+        toolLog.error("Failed to create audit log:", error);
+      }
+
+      const contactMethod = notifyPhone && notifyEmail
+        ? "via text and email"
+        : notifyPhone
+          ? "via text message"
+          : "via email";
+
+      return `I've sent an urgent notification to ${targetName} ${contactMethod} with your information. ${caller_phone || customerPhone ? `They have your number (${caller_phone || customerPhone}) and should call you back shortly.` : "Could you provide your phone number so they can reach you?"} Is there anything else I can help with?`;
     }
 
     default:
