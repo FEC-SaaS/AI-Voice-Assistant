@@ -17,6 +17,7 @@ import {
   Building2,
   Save,
   Pencil,
+  Search,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-type ProvisionMethod = "service" | "import";
+type ProvisionMethod = "service" | "search" | "import";
 
 // ── Component ───────────────────────────────────────────────────
 export default function PhoneNumbersPage() {
@@ -46,6 +47,14 @@ export default function PhoneNumbersPage() {
   const [friendlyName, setFriendlyName] = useState("");
   const [callerIdName, setCallerIdName] = useState("");
 
+  // Search & Buy state
+  const [searchCountry, setSearchCountry] = useState("US");
+  const [searchType, setSearchType] = useState<"local" | "toll-free" | "mobile">("local");
+  const [searchAreaCode, setSearchAreaCode] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{ phone_number: string; friendly_name: string; locality: string; region: string }>>([]);
+  const [selectedSearchNumber, setSelectedSearchNumber] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+
   // Import state
   const [twilioAccountSid, setTwilioAccountSid] = useState("");
   const [twilioAuthToken, setTwilioAuthToken] = useState("");
@@ -59,6 +68,24 @@ export default function PhoneNumbersPage() {
   const claimServiceNumber = trpc.phoneNumbers.claimServiceNumber.useMutation({
     onSuccess: () => {
       toast.success("Phone number activated successfully!");
+      resetForm();
+      refetch();
+      refetchService();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const searchAvailable = trpc.phoneNumbers.searchAvailable.useMutation({
+    onSuccess: (data) => {
+      setSearchResults(data.numbers);
+      setHasSearched(true);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const buyNumber = trpc.phoneNumbers.buyNumber.useMutation({
+    onSuccess: () => {
+      toast.success("Phone number purchased and registered for SMS!");
       resetForm();
       refetch();
       refetchService();
@@ -129,6 +156,12 @@ export default function PhoneNumbersPage() {
     setSelectedServiceSid(null);
     setFriendlyName("");
     setCallerIdName("");
+    setSearchCountry("US");
+    setSearchType("local");
+    setSearchAreaCode("");
+    setSearchResults([]);
+    setSelectedSearchNumber(null);
+    setHasSearched(false);
     setTwilioAccountSid("");
     setTwilioAuthToken("");
     setImportPhoneNumber("");
@@ -139,6 +172,27 @@ export default function PhoneNumbersPage() {
     claimServiceNumber.mutate({
       phoneNumber: selectedServiceNumber,
       twilioSid: selectedServiceSid,
+      friendlyName: friendlyName || undefined,
+      callerIdName: callerIdName || undefined,
+    });
+  };
+
+  const handleSearch = () => {
+    setSelectedSearchNumber(null);
+    searchAvailable.mutate({
+      countryCode: searchCountry,
+      type: searchType,
+      areaCode: searchAreaCode || undefined,
+      limit: 10,
+    });
+  };
+
+  const handleBuyNumber = () => {
+    if (!selectedSearchNumber) return;
+    buyNumber.mutate({
+      phoneNumber: selectedSearchNumber,
+      countryCode: searchCountry,
+      type: searchType,
       friendlyName: friendlyName || undefined,
       callerIdName: callerIdName || undefined,
     });
@@ -226,10 +280,10 @@ export default function PhoneNumbersPage() {
       {/* ── Provision Panel ────────────────────────────────── */}
       {showPanel && (
         <div className="rounded-lg border bg-card p-6 shadow-sm">
-          {/* Method tabs — only show both options when messaging service is configured */}
+          {/* Method tabs */}
           <div className="mb-6">
             <Label className="text-base font-semibold">How would you like to get a phone number?</Label>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={() => setProvisionMethod("service")}
@@ -241,13 +295,31 @@ export default function PhoneNumbersPage() {
               >
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="h-5 w-5 text-emerald-500" />
-                  <span className="font-medium">Get Phone Number</span>
+                  <span className="font-medium">Available Numbers</span>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Pre-registered A2P numbers ready for instant activation.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setProvisionMethod("search")}
+                className={`flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors ${
+                  provisionMethod === "search"
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-border"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Search className="h-5 w-5 text-primary" />
+                  <span className="font-medium">Search & Buy</span>
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">
                     Recommended
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Pre-registered numbers with A2P SMS compliance. Ready for voice and SMS.
+                  Search for a new number by area code. Auto-registered for A2P SMS.
                 </p>
               </button>
 
@@ -389,6 +461,170 @@ export default function PhoneNumbersPage() {
                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Activating...</>
                       ) : (
                         <>Activate {selectedServiceNumber}</>
+                      )}
+                    </Button>
+                    <Button variant="outline" onClick={resetForm}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Search & Buy ───────────────────────────────── */}
+          {provisionMethod === "search" && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+                <div className="flex items-center gap-2 text-sm text-emerald-700">
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="font-medium">Auto A2P Registration</span>
+                  <span className="text-emerald-600">
+                    — Purchased numbers are automatically registered for compliant SMS delivery.
+                  </span>
+                </div>
+              </div>
+
+              {/* Search filters */}
+              <div className="grid gap-4 sm:grid-cols-4">
+                <div className="space-y-2">
+                  <Label htmlFor="searchCountry">Country</Label>
+                  <select
+                    id="searchCountry"
+                    value={searchCountry}
+                    onChange={(e) => setSearchCountry(e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="searchType">Type</Label>
+                  <select
+                    id="searchType"
+                    value={searchType}
+                    onChange={(e) => setSearchType(e.target.value as "local" | "toll-free" | "mobile")}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="local">Local</option>
+                    <option value="toll-free">Toll-Free</option>
+                    <option value="mobile">Mobile</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="searchAreaCode">Area Code (optional)</Label>
+                  <Input
+                    id="searchAreaCode"
+                    placeholder="e.g., 415"
+                    value={searchAreaCode}
+                    onChange={(e) => setSearchAreaCode(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                    maxLength={3}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    onClick={handleSearch}
+                    disabled={searchAvailable.isPending}
+                    className="w-full"
+                  >
+                    {searchAvailable.isPending ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching...</>
+                    ) : (
+                      <><Search className="mr-2 h-4 w-4" /> Search Numbers</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Search results */}
+              {searchAvailable.isPending && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/70" />
+                  <span className="ml-2 text-sm text-muted-foreground">Searching available numbers...</span>
+                </div>
+              )}
+
+              {hasSearched && !searchAvailable.isPending && searchResults.length === 0 && (
+                <div className="py-8 text-center text-muted-foreground">
+                  <Phone className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
+                  <p>No numbers found matching your criteria. Try a different area code or type.</p>
+                </div>
+              )}
+
+              {searchResults.length > 0 && (
+                <div className="space-y-3">
+                  <Label>Results ({searchResults.length})</Label>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {searchResults.map((num) => (
+                      <button
+                        key={num.phone_number}
+                        type="button"
+                        onClick={() => setSelectedSearchNumber(num.phone_number)}
+                        className={`flex items-center justify-between rounded-lg border p-3 text-left transition-colors ${
+                          selectedSearchNumber === num.phone_number
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-border"
+                        }`}
+                      >
+                        <div>
+                          <span className="font-mono font-medium">{num.phone_number}</span>
+                          {(num.locality || num.region) && (
+                            <p className="text-xs text-muted-foreground">
+                              {[num.locality, num.region].filter(Boolean).join(", ")}
+                            </p>
+                          )}
+                        </div>
+                        {selectedSearchNumber === num.phone_number && (
+                          <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Configure & Buy */}
+              {selectedSearchNumber && (
+                <div className="space-y-4 rounded-lg bg-secondary p-4">
+                  <h4 className="flex items-center gap-2 font-medium text-foreground">
+                    <Building2 className="h-4 w-4" />
+                    Business Branding & Caller ID
+                  </h4>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="buyCallerIdName">Business Caller ID Name</Label>
+                      <Input
+                        id="buyCallerIdName"
+                        placeholder="e.g., ACME INC"
+                        value={callerIdName}
+                        onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
+                        maxLength={15}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Max 15 chars. Shown on recipient&apos;s phone screen during calls.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="buyFriendlyName">Internal Label (optional)</Label>
+                      <Input
+                        id="buyFriendlyName"
+                        placeholder="e.g., Sales Line, Support"
+                        value={friendlyName}
+                        onChange={(e) => setFriendlyName(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        For your own reference only. Not visible to callers.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button onClick={handleBuyNumber} disabled={buyNumber.isPending}>
+                      {buyNumber.isPending ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Purchasing...</>
+                      ) : (
+                        <>Purchase {selectedSearchNumber}</>
                       )}
                     </Button>
                     <Button variant="outline" onClick={resetForm}>
