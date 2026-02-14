@@ -25,7 +25,7 @@ const ATLAS_SCRIPT: Message[] = [
   },
   {
     role: "agent",
-    text: "That's actually exactly what I handle. I pick up every single call, 24/7 \u2014 I can answer questions about your services, book appointments right into your calendar, and even send the caller a confirmation text.",
+    text: "That's actually exactly what I handle. I pick up every single call, 24/7 \u2014 I can answer questions about your services, book appointments right into your calendar, and even send the caller a confirmation text. All while you're focused on your patients.",
   },
   {
     role: "customer",
@@ -36,8 +36,24 @@ const ATLAS_SCRIPT: Message[] = [
     text: "It's really simple \u2014 I ask the caller for their preferred date and time, check your real-time availability, and book it on the spot. They get an instant confirmation email and text. No back-and-forth, no phone tag.",
   },
   {
+    role: "customer",
+    text: "What about pricing? Is there a contract?",
+  },
+  {
     role: "agent",
-    text: "Want to see how easy it is? You can create your own AI agent in about 2 minutes \u2014 just sign up for a free trial, no credit card needed.",
+    text: "No long-term contracts at all. We have plans starting at just forty-nine dollars a month, and you only pay for what you use. Most dental practices save way more than that just from the new patients they stop losing.",
+  },
+  {
+    role: "agent",
+    text: "Tell you what \u2014 you can try it completely free for 14 days, no credit card needed. Just sign up on our website and you'll have your own AI receptionist live in about 2 minutes. Sound good?",
+  },
+  {
+    role: "customer",
+    text: "Yeah, I'll definitely check that out. Thanks Atlas!",
+  },
+  {
+    role: "agent",
+    text: "Awesome! You're going to love it. Thanks for chatting with me, and welcome to CallTone. Have a great day!",
   },
 ];
 
@@ -64,16 +80,89 @@ const ARIA_SCRIPT: Message[] = [
   },
   {
     role: "agent",
-    text: "That's actually where I shine \u2014 I work 24/7, weekends and holidays included. After-hours callers get the same professional experience as during business hours. I can even send you a text alert for urgent calls.",
+    text: "That's actually where I shine \u2014 I work 24/7, weekends and holidays included. After-hours callers get the same professional experience as during business hours. I can even send you a text alert for urgent calls so nothing falls through the cracks.",
+  },
+  {
+    role: "customer",
+    text: "Nice. And how much does something like this cost?",
   },
   {
     role: "agent",
-    text: "The best part? Setup takes about 2 minutes. Sign up for a free trial and you'll have your own AI receptionist handling calls today. No credit card required!",
+    text: "Plans start at forty-nine dollars a month with no long-term contracts. When you think about how much a single missed service call costs your business \u2014 probably hundreds of dollars \u2014 it pays for itself pretty quickly.",
+  },
+  {
+    role: "agent",
+    text: "We also offer a completely free 14-day trial so you can see the results before committing to anything. No credit card required, and setup takes about 2 minutes.",
+  },
+  {
+    role: "customer",
+    text: "That sounds like a no-brainer. I'll give it a shot!",
+  },
+  {
+    role: "agent",
+    text: "Wonderful! I think you're really going to see a difference. Thanks so much for chatting with me today. Welcome to CallTone, and have a fantastic day!",
   },
 ];
 
-// Timing for each message: [typing delay, display duration]
-const MESSAGE_TIMING = { typingDelay: 1200, displayPause: 2200 };
+/** Speak text using the browser's built-in Speech Synthesis API (free, no network). */
+function speak(
+  text: string,
+  voiceGender: "male" | "female",
+  onEnd: () => void
+): SpeechSynthesisUtterance | null {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    onEnd();
+    return null;
+  }
+
+  // Cancel any ongoing speech first
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1.05;
+  utterance.pitch = voiceGender === "female" ? 1.15 : 0.9;
+  utterance.volume = 1;
+
+  // Try to pick a matching voice
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    // Prefer English voices, then match gender-ish heuristics
+    const englishVoices = voices.filter(
+      (v) => v.lang.startsWith("en") && !v.name.includes("Whisper")
+    );
+    const preferred = englishVoices.find((v) => {
+      const name = v.name.toLowerCase();
+      if (voiceGender === "female") {
+        return (
+          name.includes("female") ||
+          name.includes("samantha") ||
+          name.includes("karen") ||
+          name.includes("tessa") ||
+          name.includes("moira") ||
+          name.includes("fiona") ||
+          name.includes("victoria") ||
+          name.includes("zira")
+        );
+      }
+      return (
+        name.includes("male") ||
+        name.includes("daniel") ||
+        name.includes("james") ||
+        name.includes("david") ||
+        name.includes("mark") ||
+        name.includes("alex") ||
+        name.includes("tom")
+      );
+    });
+    utterance.voice = preferred || englishVoices[0] || voices[0] || null;
+  }
+
+  utterance.onend = onEnd;
+  utterance.onerror = onEnd;
+
+  window.speechSynthesis.speak(utterance);
+  return utterance;
+}
 
 function getSessionId(): string {
   if (typeof window === "undefined") return "";
@@ -117,6 +206,17 @@ export function TalkToAgent() {
   const scriptIndexRef = useRef(0);
   const playbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef(false); // tracks if playback is active
+
+  // Load voices early (some browsers need this)
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+  }, []);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -126,8 +226,12 @@ export function TalkToAgent() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      activeRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
       if (playbackRef.current) clearTimeout(playbackRef.current);
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
 
@@ -146,9 +250,13 @@ export function TalkToAgent() {
   }, []);
 
   const stopPlayback = useCallback(() => {
+    activeRef.current = false;
     if (playbackRef.current) {
       clearTimeout(playbackRef.current);
       playbackRef.current = null;
+    }
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
     setIsTyping(false);
     setIsSpeaking(false);
@@ -163,21 +271,25 @@ export function TalkToAgent() {
   };
 
   const playNextMessage = useCallback(
-    (script: Message[]) => {
+    (script: Message[], gender: "male" | "female") => {
+      if (!activeRef.current) return;
+
       const index = scriptIndexRef.current;
       if (index >= script.length) {
         // Script finished — auto-end after a short pause
         setIsSpeaking(false);
         playbackRef.current = setTimeout(() => {
+          if (!activeRef.current) return;
           const duration = Math.floor(
             (Date.now() - startTimeRef.current) / 1000
           );
+          activeRef.current = false;
           setStatus("ended");
           stopTimer();
           setIsSpeaking(false);
           trackEvent({
             event: "call_end",
-            agent: agentType || undefined,
+            agent: gender,
             duration,
           });
         }, 1500);
@@ -186,24 +298,40 @@ export function TalkToAgent() {
 
       const msg = script[index]!;
 
-      // Show typing indicator
+      // Show typing indicator briefly
       setIsTyping(true);
       if (msg.role === "agent") setIsSpeaking(true);
 
+      const typingDuration = msg.role === "agent" ? 800 : 600;
+
       playbackRef.current = setTimeout(() => {
-        // Add the message
+        if (!activeRef.current) return;
+
+        // Add the message bubble
         setIsTyping(false);
         setMessages((prev) => [...prev, msg]);
         scriptIndexRef.current = index + 1;
 
-        // Pause then play next
-        playbackRef.current = setTimeout(() => {
-          if (msg.role === "agent") setIsSpeaking(false);
-          playNextMessage(script);
-        }, MESSAGE_TIMING.displayPause);
-      }, MESSAGE_TIMING.typingDelay);
+        if (msg.role === "agent") {
+          // Speak the agent message aloud, then continue when speech ends
+          speak(msg.text, gender, () => {
+            if (!activeRef.current) return;
+            setIsSpeaking(false);
+            // Small pause after speech ends before next message
+            playbackRef.current = setTimeout(() => {
+              playNextMessage(script, gender);
+            }, 500);
+          });
+        } else {
+          // Customer message — just a read-pause, no voice
+          setIsSpeaking(false);
+          playbackRef.current = setTimeout(() => {
+            playNextMessage(script, gender);
+          }, 1800);
+        }
+      }, typingDuration);
     },
-    [agentType, stopTimer]
+    [stopTimer]
   );
 
   const handleStartCall = useCallback(
@@ -215,16 +343,18 @@ export function TalkToAgent() {
       setMessages([]);
       setElapsed(0);
       scriptIndexRef.current = 0;
+      activeRef.current = true;
 
       trackEvent({ event: "button_click", agent });
 
       // Brief "connecting" phase, then start playback
       playbackRef.current = setTimeout(() => {
+        if (!activeRef.current) return;
         setStatus("connected");
         startTimer();
         trackEvent({ event: "call_start", agent });
-        playNextMessage(script);
-      }, 500);
+        playNextMessage(script, agent);
+      }, 800);
     },
     [startTimer, playNextMessage]
   );
@@ -249,6 +379,7 @@ export function TalkToAgent() {
     setMessages([]);
     setIsTyping(false);
     scriptIndexRef.current = 0;
+    activeRef.current = false;
   }, []);
 
   // ────── Idle ──────
