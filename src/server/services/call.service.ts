@@ -122,7 +122,7 @@ export async function initiateCall(input: InitiateCallInput) {
       assistantOverrides: {
         firstMessage: outboundFirstMessage,
         firstMessageMode: "assistant-speaks-first",
-        serverUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai"}/api/webhooks/vapi`,
+        serverUrl: `${process.env.NEXT_PUBLIC_APP_URL || "https://www.calltone.ai"}/api/webhooks/vapi`,
         serverUrlSecret: process.env.VAPI_WEBHOOK_SECRET,
         model: {
           provider: agent.modelProvider || "openai",

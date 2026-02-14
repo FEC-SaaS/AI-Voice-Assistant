@@ -290,6 +290,8 @@ export interface CallConfig {
   assistantOverrides?: {
     firstMessage?: string;
     firstMessageMode?: "assistant-speaks-first" | "assistant-waits-for-user" | "assistant-speaks-first-with-model-generated-message";
+    serverUrl?: string;
+    serverUrlSecret?: string;
     model?: {
       provider?: string;
       model?: string;

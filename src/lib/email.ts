@@ -316,7 +316,7 @@ export async function sendAppointmentConfirmation(
   // Generate action URLs if appointmentId is provided
   let actionButtonsHtml = "";
   if (details.appointmentId) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.calltone.ai";
     const { confirmUrl, rescheduleUrl, cancelUrl } = generateActionUrls(
       details.appointmentId,
       email,
@@ -415,7 +415,7 @@ export async function sendAppointmentReminder(
   // Generate action URLs if appointmentId is provided
   let actionButtonsHtml = "";
   if (details.appointmentId) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.calltone.ai";
     const { confirmUrl, rescheduleUrl, cancelUrl } = generateActionUrls(
       details.appointmentId,
       email,
@@ -565,7 +565,7 @@ export async function sendReceptionistMessageNotification(
 ) {
   const primaryColor = branding?.primaryColor || "#3b82f6";
   const businessName = branding?.businessName || "CallTone";
-  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai"}/dashboard/receptionist/messages`;
+  const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://www.calltone.ai"}/dashboard/receptionist/messages`;
 
   const urgencyColors: Record<string, string> = {
     low: "#6b7280",
@@ -698,7 +698,7 @@ export async function sendAppointmentRescheduled(
   // Generate action URLs if appointmentId is provided
   let actionButtonsHtml = "";
   if (details.appointmentId) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://calltone.ai";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.calltone.ai";
     const { confirmUrl, rescheduleUrl, cancelUrl } = generateActionUrls(
       details.appointmentId,
       email,

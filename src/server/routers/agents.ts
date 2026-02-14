@@ -10,7 +10,7 @@ import { enforceAgentLimit } from "../trpc/middleware";
 
 // Get the webhook URL for Vapi tool calls
 function getVapiWebhookUrl(): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.calltone.ai";
   return `${baseUrl}/api/webhooks/vapi`;
 }
 
