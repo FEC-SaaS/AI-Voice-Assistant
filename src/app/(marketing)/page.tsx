@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AudioWave } from "@/components/marketing/audio-wave";
+import { StarField } from "@/components/marketing/star-field";
 import { TalkToAgent } from "@/components/marketing/talk-to-agent";
 
 const HEADLINES = [
@@ -91,9 +92,13 @@ export default function HomePage() {
         {/* Gradient background */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background" />
         {/* Audio wave visualization */}
-        <AudioWave />
-        {/* Radial glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/5 rounded-full blur-3xl animate-float" />
+        <AudioWave className="opacity-60 z-[1]" />
+        {/* Falling star particles */}
+        <StarField />
+        {/* Ambient glow orbs */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-indigo-500/8 rounded-full blur-3xl animate-float" />
+        <div className="absolute top-20 left-1/4 w-[400px] h-[300px] bg-cyan-400/6 rounded-full blur-3xl animate-float-alt" />
+        <div className="absolute top-10 right-1/4 w-[450px] h-[350px] bg-purple-500/6 rounded-full blur-3xl animate-float" style={{ animationDelay: "1.5s" }} />
 
         <div className="relative z-10 container mx-auto px-4 text-center">
           <h1 className="reveal is-visible mx-auto max-w-4xl text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl min-h-[1.2em]">
@@ -182,8 +187,8 @@ export default function HomePage() {
       {/* Value-Driven Features */}
       <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 via-secondary to-secondary/50" />
-        <AudioWave className="opacity-20" />
-        <div className="relative container mx-auto px-4">
+        <AudioWave className="opacity-40 z-[1]" />
+        <div className="relative z-10 container mx-auto px-4">
           <div className="text-center">
             <h2 className="reveal text-3xl font-bold text-foreground sm:text-4xl">
               Built for Results
@@ -236,9 +241,13 @@ export default function HomePage() {
       {/* Bottom CTA */}
       <section className="relative overflow-hidden py-16 sm:py-20 md:py-28">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-purple-500/10" />
-        <AudioWave className="opacity-25" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-3xl animate-float" />
-        <div className="relative container mx-auto px-4 text-center">
+        <AudioWave className="opacity-50 z-[1]" />
+        <StarField />
+        {/* Ambient glow orbs */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute top-1/3 left-1/3 w-[350px] h-[350px] bg-cyan-400/8 rounded-full blur-3xl animate-float-alt" />
+        <div className="absolute bottom-1/4 right-1/3 w-[400px] h-[400px] bg-purple-500/8 rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
+        <div className="relative z-10 container mx-auto px-4 text-center">
           <h2 className="reveal text-3xl font-bold text-foreground sm:text-4xl">
             Hear the Difference Yourself
           </h2>

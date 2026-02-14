@@ -144,3 +144,14 @@
   @apply w-full flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
 }
 
+/* Alternate float animation for multiple orbs */
+@keyframes floatAlt {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(10px, -8px); }
+  66% { transform: translate(-8px, -4px); }
+}
+
+.animate-float-alt {
+  animation: floatAlt 5s ease-in-out infinite;
+}
+
