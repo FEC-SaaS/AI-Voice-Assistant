@@ -13,6 +13,8 @@ import {
   updatePhoneNumber as updateTwilioNumber,
   listPhoneNumbers as listTwilioNumbers,
   listMessagingServiceNumbers,
+  addToMessagingService,
+  removeFromMessagingService,
   SUPPORTED_COUNTRIES,
   getCountryNumberTypes,
   getNumberPrice,
@@ -179,8 +181,7 @@ export const phoneNumbersRouter = router({
     )
     .use(enforcePhoneNumberLimit)
     .mutation(async ({ ctx, input }) => {
-      // Get organization and ensure Twilio subaccount exists
-      let org = await ctx.db.organization.findUnique({
+      const org = await ctx.db.organization.findUnique({
         where: { id: ctx.orgId },
       });
 
@@ -188,41 +189,27 @@ export const phoneNumbersRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Organization not found" });
       }
 
-      // Create Twilio subaccount if it doesn't exist
-      if (!org.twilioSubaccountSid) {
-        try {
-          log.info(`Creating subaccount for org ${org.name}`);
-          const subaccount = await createSubaccount(`CallTone - ${org.name}`);
+      // Buy the number on the parent account (not a subaccount)
+      const parentSid = process.env.TWILIO_ACCOUNT_SID;
+      const parentToken = process.env.TWILIO_AUTH_TOKEN;
 
-          org = await ctx.db.organization.update({
-            where: { id: ctx.orgId },
-            data: {
-              twilioSubaccountSid: subaccount.sid,
-              twilioAuthToken: subaccount.auth_token,
-            },
-          });
-
-          log.info(`Created subaccount ${subaccount.sid}`);
-        } catch (error) {
-          log.error("Failed to create subaccount:", error);
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to set up phone service. Please try again.",
-          });
-        }
+      if (!parentSid || !parentToken) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Phone number service is not configured. Please contact support.",
+        });
       }
 
-      // Buy the number in the subaccount
       let twilioNumber;
       try {
         twilioNumber = await buyTwilioNumber({
           phoneNumber: input.phoneNumber,
           friendlyName: input.callerIdName || input.friendlyName || `${org.name} - ${input.type}`,
-          accountSid: org.twilioSubaccountSid!,
-          authToken: org.twilioAuthToken!,
+          accountSid: parentSid,
+          authToken: parentToken,
         });
 
-        log.info(`Purchased number ${twilioNumber.phone_number}`);
+        log.info(`Purchased number ${twilioNumber.phone_number} on parent account`);
       } catch (error) {
         log.error("Failed to buy number:", error);
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -247,12 +234,24 @@ export const phoneNumbersRouter = router({
         });
       }
 
-      // Import the number to Vapi for voice AI use
+      // Auto-register with Messaging Service for A2P-compliant SMS
+      const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+      if (messagingServiceSid) {
+        try {
+          await addToMessagingService(messagingServiceSid, twilioNumber.sid);
+          log.info(`Added ${twilioNumber.phone_number} to Messaging Service ${messagingServiceSid}`);
+        } catch (error) {
+          log.warn("Failed to add number to Messaging Service:", error);
+          // Non-fatal — number is purchased, can be added manually later
+        }
+      }
+
+      // Import the number to Vapi for voice AI use (parent account credentials)
       let vapiPhone;
       try {
         vapiPhone = await importTwilioPhoneNumber({
-          twilioAccountSid: org.twilioSubaccountSid!,
-          twilioAuthToken: org.twilioAuthToken!,
+          twilioAccountSid: parentSid,
+          twilioAuthToken: parentToken,
           phoneNumber: twilioNumber.phone_number,
           name: input.friendlyName || `${org.name} - ${input.type}`,
         });
@@ -278,7 +277,7 @@ export const phoneNumbersRouter = router({
           friendlyName: input.friendlyName,
           callerIdName: input.callerIdName || null,
           type: input.type === "toll-free" ? "toll_free" : input.type,
-          provider: "twilio-managed",
+          provider: "pool", // Uses parent account credentials for SMS (avoids error 21660)
           countryCode: input.countryCode,
           monthlyCost,
         },
@@ -500,6 +499,20 @@ export const phoneNumbersRouter = router({
         }
       }
 
+      // Deregister from Messaging Service sender pool
+      if ((phoneNumber.provider === "pool" || phoneNumber.provider === "twilio-managed") && phoneNumber.twilioSid) {
+        const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+        if (messagingServiceSid) {
+          try {
+            await removeFromMessagingService(messagingServiceSid, phoneNumber.twilioSid);
+            log.info(`Removed ${phoneNumber.twilioSid} from Messaging Service`);
+          } catch (error) {
+            log.error("Failed to remove number from Messaging Service:", error);
+            // Non-fatal — continue with release
+          }
+        }
+      }
+
       // Pool numbers: return to the pool instead of deleting from Twilio
       if (phoneNumber.provider === "pool" && phoneNumber.twilioSid) {
         await ctx.db.phoneNumberPool.updateMany({
@@ -611,11 +624,19 @@ export const phoneNumbersRouter = router({
           name: phoneNumber.friendlyName || undefined,
         });
       } catch (error) {
-        log.error("Failed to sync phone number:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to sync phone number. Please try again.",
-        });
+        // If Vapi already has this number, extract the existing ID from the error
+        const errMsg = error instanceof Error ? error.message : String(error);
+        const existingMatch = errMsg.match(/Existing Phone Number ([0-9a-f-]{36})/i);
+        if (existingMatch) {
+          log.info(`Phone number already exists in Vapi: ${existingMatch[1]}, linking to DB record`);
+          vapiPhone = { id: existingMatch[1] };
+        } else {
+          log.error("Failed to sync phone number:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to sync phone number. Please try again.",
+          });
+        }
       }
 
       // Update database
@@ -1037,8 +1058,21 @@ export const phoneNumbersRouter = router({
       // List all numbers on the parent account
       const twilioNumbers = await listTwilioNumbers(parentSid, parentToken);
 
+      // Build a set of numbers already in the Messaging Service to avoid duplicates
+      const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+      let existingServiceSids = new Set<string>();
+      if (messagingServiceSid) {
+        try {
+          const serviceNumbers = await listMessagingServiceNumbers(messagingServiceSid);
+          existingServiceSids = new Set(serviceNumbers.map((sn) => sn.sid));
+        } catch (error) {
+          log.warn("Could not fetch existing Messaging Service numbers:", error);
+        }
+      }
+
       let added = 0;
       let skipped = 0;
+      let registeredToService = 0;
 
       for (const tn of twilioNumbers) {
         // Skip if already in pool
@@ -1088,9 +1122,20 @@ export const phoneNumbersRouter = router({
           },
         });
         added++;
+
+        // Auto-register with Messaging Service if not already present
+        if (messagingServiceSid && !existingServiceSids.has(tn.sid)) {
+          try {
+            await addToMessagingService(messagingServiceSid, tn.sid);
+            registeredToService++;
+          } catch (error) {
+            log.warn(`Failed to add ${tn.phone_number} to Messaging Service:`, error);
+            // Non-fatal — continue seeding
+          }
+        }
       }
 
-      log.info(`Seeded pool: ${added} added, ${skipped} skipped`);
-      return { added, skipped, total: twilioNumbers.length };
+      log.info(`Seeded pool: ${added} added, ${skipped} skipped, ${registeredToService} registered to Messaging Service`);
+      return { added, skipped, registeredToService, total: twilioNumbers.length };
     }),
 });

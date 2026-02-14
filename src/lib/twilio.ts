@@ -427,6 +427,79 @@ export async function listMessagingServiceNumbers(
   return data.phone_numbers || [];
 }
 
+/**
+ * Add a phone number to a Twilio Messaging Service sender pool.
+ * This registers the number for A2P-compliant SMS sending.
+ */
+export async function addToMessagingService(
+  messagingServiceSid: string,
+  phoneNumberSid: string,
+  accountSid?: string,
+  authToken?: string
+): Promise<MessagingServicePhoneNumber> {
+  const sid = accountSid || process.env.TWILIO_ACCOUNT_SID || "";
+  const token = authToken || process.env.TWILIO_AUTH_TOKEN || "";
+
+  if (!sid || !token) {
+    throw new Error("Twilio credentials missing");
+  }
+
+  const url = `${TWILIO_MESSAGING_API_URL}/Services/${messagingServiceSid}/PhoneNumbers`;
+  const authHeader = `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`;
+
+  console.log(`[Twilio] Adding ${phoneNumberSid} to Messaging Service ${messagingServiceSid}`);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: authHeader,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ PhoneNumberSid: phoneNumberSid }).toString(),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(`Twilio Messaging API error: ${response.status} - ${error.message || JSON.stringify(error)}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Remove a phone number from a Twilio Messaging Service sender pool.
+ * Non-fatal: the number may already have been removed.
+ */
+export async function removeFromMessagingService(
+  messagingServiceSid: string,
+  phoneNumberSid: string,
+  accountSid?: string,
+  authToken?: string
+): Promise<void> {
+  const sid = accountSid || process.env.TWILIO_ACCOUNT_SID || "";
+  const token = authToken || process.env.TWILIO_AUTH_TOKEN || "";
+
+  if (!sid || !token) {
+    throw new Error("Twilio credentials missing");
+  }
+
+  const url = `${TWILIO_MESSAGING_API_URL}/Services/${messagingServiceSid}/PhoneNumbers/${phoneNumberSid}`;
+  const authHeader = `Basic ${Buffer.from(`${sid}:${token}`).toString("base64")}`;
+
+  console.log(`[Twilio] Removing ${phoneNumberSid} from Messaging Service ${messagingServiceSid}`);
+
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: { Authorization: authHeader },
+  });
+
+  // 204 = success, 404 = already removed — both are fine
+  if (!response.ok && response.status !== 204 && response.status !== 404) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(`Twilio Messaging API error: ${response.status} - ${error.message || JSON.stringify(error)}`);
+  }
+}
+
 // ============================================
 // SMS Messaging
 // ============================================
