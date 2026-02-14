@@ -25,25 +25,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-type ProvisionMethod = "service" | "search" | "import";
+type ProvisionMethod = "search" | "import";
 
 // ── Component ───────────────────────────────────────────────────
 export default function PhoneNumbersPage() {
   const { data: phoneNumbers, isLoading, refetch } = trpc.phoneNumbers.list.useQuery();
   const { data: agents } = trpc.agents.list.useQuery();
   const { data: twilioStatus, refetch: refetchTwilioStatus } = trpc.phoneNumbers.getTwilioStatus.useQuery();
-  const { data: serviceNumbers, isLoading: serviceLoading, refetch: refetchService } = trpc.phoneNumbers.listServiceNumbers.useQuery();
 
   // Panel state
   const [showPanel, setShowPanel] = useState(false);
-  const [provisionMethod, setProvisionMethod] = useState<ProvisionMethod>("service");
+  const [provisionMethod, setProvisionMethod] = useState<ProvisionMethod>("search");
   const [showCredentialForm, setShowCredentialForm] = useState(false);
   const [credSid, setCredSid] = useState("");
   const [credToken, setCredToken] = useState("");
 
-  // Service number claim state
-  const [selectedServiceNumber, setSelectedServiceNumber] = useState<string | null>(null);
-  const [selectedServiceSid, setSelectedServiceSid] = useState<string | null>(null);
+  // Shared form state
   const [friendlyName, setFriendlyName] = useState("");
   const [callerIdName, setCallerIdName] = useState("");
 
@@ -65,16 +62,6 @@ export default function PhoneNumbersPage() {
   const [editCallerIdValue, setEditCallerIdValue] = useState("");
 
   // ── Mutations ───────────────────────────────────────────────
-  const claimServiceNumber = trpc.phoneNumbers.claimServiceNumber.useMutation({
-    onSuccess: () => {
-      toast.success("Phone number activated successfully!");
-      resetForm();
-      refetch();
-      refetchService();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
   const searchAvailable = trpc.phoneNumbers.searchAvailable.useMutation({
     onSuccess: (data) => {
       setSearchResults(data.numbers);
@@ -88,7 +75,6 @@ export default function PhoneNumbersPage() {
       toast.success("Phone number purchased and registered for SMS!");
       resetForm();
       refetch();
-      refetchService();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -114,7 +100,6 @@ export default function PhoneNumbersPage() {
     onSuccess: () => {
       toast.success("Phone number released");
       refetch();
-      refetchService();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -151,9 +136,7 @@ export default function PhoneNumbersPage() {
   // ── Handlers ────────────────────────────────────────────────
   const resetForm = () => {
     setShowPanel(false);
-    setProvisionMethod("service");
-    setSelectedServiceNumber(null);
-    setSelectedServiceSid(null);
+    setProvisionMethod("search");
     setFriendlyName("");
     setCallerIdName("");
     setSearchCountry("US");
@@ -165,16 +148,6 @@ export default function PhoneNumbersPage() {
     setTwilioAccountSid("");
     setTwilioAuthToken("");
     setImportPhoneNumber("");
-  };
-
-  const handleClaimService = () => {
-    if (!selectedServiceNumber || !selectedServiceSid) return;
-    claimServiceNumber.mutate({
-      phoneNumber: selectedServiceNumber,
-      twilioSid: selectedServiceSid,
-      friendlyName: friendlyName || undefined,
-      callerIdName: callerIdName || undefined,
-    });
   };
 
   const handleSearch = () => {
@@ -255,9 +228,6 @@ export default function PhoneNumbersPage() {
     );
   }
 
-  const availableServiceNumbers = serviceNumbers?.numbers || [];
-  const hasMessagingService = serviceNumbers?.hasService ?? false;
-
   // ── Render ──────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -283,25 +253,7 @@ export default function PhoneNumbersPage() {
           {/* Method tabs */}
           <div className="mb-6">
             <Label className="text-base font-semibold">How would you like to get a phone number?</Label>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                onClick={() => setProvisionMethod("service")}
-                className={`flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors ${
-                  provisionMethod === "service"
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-border"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-emerald-500" />
-                  <span className="font-medium">Available Numbers</span>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Pre-registered A2P numbers ready for instant activation.
-                </p>
-              </button>
-
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setProvisionMethod("search")}
@@ -342,135 +294,6 @@ export default function PhoneNumbersPage() {
               </button>
             </div>
           </div>
-
-          {/* ── Get Phone Number (Messaging Service) ────── */}
-          {provisionMethod === "service" && (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
-                <div className="flex items-center gap-2 text-sm text-emerald-700">
-                  <ShieldCheck className="h-4 w-4" />
-                  <span className="font-medium">A2P SMS Ready</span>
-                  <span className="text-emerald-600">
-                    — These numbers are pre-registered for compliant SMS delivery. No carrier blocking.
-                  </span>
-                </div>
-              </div>
-
-              {serviceLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/70" />
-                  <span className="ml-2 text-sm text-muted-foreground">Loading available numbers...</span>
-                </div>
-              ) : !hasMessagingService ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  <AlertCircle className="mx-auto h-8 w-8 text-amber-500 mb-2" />
-                  <p>Messaging service not configured. Please contact support.</p>
-                </div>
-              ) : availableServiceNumbers.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  <Phone className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-                  <p>All numbers are currently in use. Please contact support for additional numbers.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label>Available Numbers ({availableServiceNumbers.length})</Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => refetchService()}
-                      className="text-xs"
-                    >
-                      <RefreshCw className="mr-1 h-3 w-3" />
-                      Refresh
-                    </Button>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {availableServiceNumbers.map((sn) => (
-                      <button
-                        key={sn.sid}
-                        type="button"
-                        onClick={() => {
-                          setSelectedServiceNumber(sn.phoneNumber);
-                          setSelectedServiceSid(sn.sid);
-                        }}
-                        className={`flex items-center justify-between rounded-lg border p-3 text-left transition-colors ${
-                          selectedServiceNumber === sn.phoneNumber
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-border"
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-medium">{sn.phoneNumber}</span>
-                            <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
-                              A2P
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {sn.areaCode ? `Area ${sn.areaCode}` : sn.countryCode}
-                            {sn.type === "toll_free" ? " · Toll-Free" : " · Local"}
-                          </p>
-                        </div>
-                        {selectedServiceNumber === sn.phoneNumber && (
-                          <CheckCircle className="h-5 w-5 shrink-0 text-primary" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Configure & Activate */}
-              {selectedServiceNumber && (
-                <div className="space-y-4 rounded-lg bg-secondary p-4">
-                  <h4 className="flex items-center gap-2 font-medium text-foreground">
-                    <Building2 className="h-4 w-4" />
-                    Business Branding & Caller ID
-                  </h4>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="serviceCallerIdName">Business Caller ID Name</Label>
-                      <Input
-                        id="serviceCallerIdName"
-                        placeholder="e.g., ACME INC"
-                        value={callerIdName}
-                        onChange={(e) => setCallerIdName(e.target.value.toUpperCase().slice(0, 15))}
-                        maxLength={15}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Max 15 chars. Shown on recipient&apos;s phone screen during calls.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="serviceFriendlyName">Internal Label (optional)</Label>
-                      <Input
-                        id="serviceFriendlyName"
-                        placeholder="e.g., Sales Line, Support"
-                        value={friendlyName}
-                        onChange={(e) => setFriendlyName(e.target.value)}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        For your own reference only. Not visible to callers.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Button onClick={handleClaimService} disabled={claimServiceNumber.isPending}>
-                      {claimServiceNumber.isPending ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Activating...</>
-                      ) : (
-                        <>Activate {selectedServiceNumber}</>
-                      )}
-                    </Button>
-                    <Button variant="outline" onClick={resetForm}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* ── Search & Buy ───────────────────────────────── */}
           {provisionMethod === "search" && (
