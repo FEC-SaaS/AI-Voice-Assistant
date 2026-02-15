@@ -17,6 +17,7 @@ const campaignSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   description: z.string().optional(),
   agentId: z.string(),
+  type: z.enum(["cold_calling", "interview"]).default("cold_calling"),
   scheduleStart: z.date().optional(),
   scheduleEnd: z.date().optional(),
   timeZone: z.string().default("America/New_York"),
@@ -27,13 +28,28 @@ const campaignSchema = z.object({
     })
     .default({ start: "09:00", end: "17:00" }),
   maxCallsPerDay: z.number().min(1).max(1000).default(100),
+  jobTitle: z.string().optional(),
+  jobDescription: z.string().optional(),
+  jobRequirements: z
+    .object({
+      skills: z.array(z.string()).optional(),
+      experience: z.string().optional(),
+      education: z.string().optional(),
+      questions: z.array(z.string()).optional(),
+    })
+    .optional(),
 });
 
 export const campaignsRouter = router({
-  // List all campaigns
-  list: protectedProcedure.query(async ({ ctx }) => {
+  // List all campaigns (excludes interview campaigns by default)
+  list: protectedProcedure
+    .input(z.object({ type: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
     const campaigns = await ctx.db.campaign.findMany({
-      where: { organizationId: ctx.orgId },
+      where: {
+        organizationId: ctx.orgId,
+        type: input?.type || "cold_calling",
+      },
       orderBy: { createdAt: "desc" },
       include: {
         agent: {
@@ -100,11 +116,15 @@ export const campaignsRouter = router({
           agentId: input.agentId,
           name: input.name,
           description: input.description,
+          type: input.type,
           scheduleStart: input.scheduleStart,
           scheduleEnd: input.scheduleEnd,
           timeZone: input.timeZone,
           callingHours: input.callingHours,
           maxCallsPerDay: input.maxCallsPerDay,
+          jobTitle: input.jobTitle,
+          jobDescription: input.jobDescription,
+          jobRequirements: input.jobRequirements,
         },
       });
 

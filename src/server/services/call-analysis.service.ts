@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { analyzeTranscript, TranscriptAnalysis } from "@/lib/openai";
+import { analyzeTranscript, analyzeInterviewTranscript, TranscriptAnalysis, InterviewAnalysis } from "@/lib/openai";
 import { detectOptOut, handleOptOutRequest } from "./dnc.service";
 import { sendHotLeadNotification } from "@/lib/email";
 import { createLogger } from "@/lib/logger";
@@ -175,6 +175,79 @@ export async function analyzeCall(callId: string): Promise<CallAnalysisResult> {
   } catch (error) {
     log.error(`Error analyzing call ${callId}:`, error);
 
+    return {
+      callId,
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+/**
+ * Analyze an interview call transcript against job requirements
+ */
+export async function analyzeInterview(callId: string): Promise<{
+  callId: string;
+  success: boolean;
+  analysis?: InterviewAnalysis;
+  error?: string;
+}> {
+  try {
+    const call = await db.call.findUnique({
+      where: { id: callId },
+      include: {
+        campaign: {
+          select: { jobRequirements: true, jobTitle: true },
+        },
+      },
+    });
+
+    if (!call) {
+      return { callId, success: false, error: "Call not found" };
+    }
+
+    if (!call.transcript) {
+      return { callId, success: false, error: "No transcript available" };
+    }
+
+    const jobRequirements = (call.campaign?.jobRequirements as {
+      skills?: string[];
+      experience?: string;
+      education?: string;
+      questions?: string[];
+    }) || {};
+
+    const analysis = await analyzeInterviewTranscript(call.transcript, jobRequirements);
+
+    // Update call with interview analysis
+    await db.call.update({
+      where: { id: callId },
+      data: {
+        interviewScore: analysis.overallScore,
+        interviewAnalysis: JSON.parse(JSON.stringify(analysis)),
+        sentiment: analysis.recommendation === "strong_yes" || analysis.recommendation === "yes"
+          ? "positive"
+          : analysis.recommendation === "maybe"
+            ? "neutral"
+            : "negative",
+        summary: analysis.summary,
+        leadScore: analysis.overallScore,
+      },
+    });
+
+    // Update contact status
+    if (call.contactId) {
+      await db.contact.update({
+        where: { id: call.contactId },
+        data: { status: "completed" },
+      }).catch(() => {});
+    }
+
+    log.info(`Interview analysis complete for call ${callId}: score=${analysis.overallScore}, recommendation=${analysis.recommendation}`);
+
+    return { callId, success: true, analysis };
+  } catch (error) {
+    log.error(`Error analyzing interview ${callId}:`, error);
     return {
       callId,
       success: false,

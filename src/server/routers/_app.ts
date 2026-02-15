@@ -16,6 +16,7 @@ import { intelligenceRouter } from "./intelligence";
 import { complianceRouter } from "./compliance";
 import { receptionistRouter } from "./receptionist";
 import { cnamRouter } from "./cnam";
+import { interviewsRouter } from "./interviews";
 
 export const appRouter = router({
   agents: agentsRouter,
@@ -35,6 +36,7 @@ export const appRouter = router({
   compliance: complianceRouter,
   receptionist: receptionistRouter,
   cnam: cnamRouter,
+  interviews: interviewsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -73,6 +73,102 @@ Return your analysis as a JSON object with these exact fields:
   return JSON.parse(content) as TranscriptAnalysis;
 }
 
+// Interview analysis types
+export interface InterviewAnalysis {
+  overallScore: number;
+  skillScores: Record<string, number>;
+  strengths: string[];
+  weaknesses: string[];
+  cultureFit: string;
+  communicationScore: number;
+  experienceMatch: string;
+  recommendation: "strong_yes" | "yes" | "maybe" | "no";
+  summary: string;
+  redFlags: string[];
+  standoutMoments: string[];
+}
+
+// Analyze interview transcript
+export async function analyzeInterviewTranscript(
+  transcript: string,
+  jobRequirements: { skills?: string[]; experience?: string; education?: string; questions?: string[] }
+): Promise<InterviewAnalysis> {
+  const skills = jobRequirements.skills || [];
+  const skillsList = skills.length > 0 ? skills.join(", ") : "general professional skills";
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert recruitment analyst. Analyze this interview transcript and evaluate the candidate against the job requirements.
+
+Required skills to evaluate: ${skillsList}
+Experience requirement: ${jobRequirements.experience || "Not specified"}
+Education requirement: ${jobRequirements.education || "Not specified"}
+
+Return your analysis as a JSON object with these exact fields:
+- overallScore: number (0-100, overall candidate score)
+- skillScores: object (key = skill name, value = score 0-100 for each required skill)
+- strengths: string[] (3-5 candidate strengths demonstrated in the interview)
+- weaknesses: string[] (2-4 areas of concern or gaps)
+- cultureFit: string (brief assessment of culture fit based on communication style and values)
+- communicationScore: number (0-100, how well they communicated)
+- experienceMatch: string (brief assessment of how well their experience matches)
+- recommendation: "strong_yes" | "yes" | "maybe" | "no" (hiring recommendation)
+- summary: string (2-3 sentence executive summary of the candidate)
+- redFlags: string[] (any concerning signals, empty array if none)
+- standoutMoments: string[] (particularly impressive answers or moments)`,
+      },
+      { role: "user", content: transcript },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.3,
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error("No response from OpenAI");
+  }
+
+  return JSON.parse(content) as InterviewAnalysis;
+}
+
+// Generate suggested interview questions from job description
+export async function generateInterviewQuestions(
+  jobTitle: string,
+  jobDescription: string
+): Promise<{ skills: string[]; questions: string[] }> {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are a recruitment expert. Given a job title and description, extract the key required skills and generate relevant interview questions.
+
+Return a JSON object with:
+- skills: string[] (5-8 key technical/professional skills required for this role)
+- questions: string[] (5-7 targeted interview questions to evaluate candidates for this specific role)
+
+Make questions behavioral and specific to the role, not generic. Include a mix of technical and situational questions.`,
+      },
+      {
+        role: "user",
+        content: `Job Title: ${jobTitle}\n\nJob Description:\n${jobDescription}`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.5,
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error("No response from OpenAI");
+  }
+
+  return JSON.parse(content) as { skills: string[]; questions: string[] };
+}
+
 // Generate call summary
 export async function generateSummary(transcript: string): Promise<string> {
   const response = await openai.chat.completions.create({

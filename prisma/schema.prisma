@@ -126,29 +126,34 @@ model PhoneNumber {
 }
 
 model Campaign {
-  id             String       @id @default(cuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agentId        String
-  agent          Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  name           String
-  description    String?
-  status         String       @default("draft") // draft, scheduled, running, paused, completed
-  scheduleStart  DateTime?
-  scheduleEnd    DateTime?
-  timeZone       String       @default("America/New_York")
-  callingHours   Json         @default("{\"start\": \"09:00\", \"end\": \"17:00\"}")
-  maxCallsPerDay Int          @default(100)
-  settings       Json         @default("{}")
-  stats          Json         @default("{}")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agentId         String
+  agent           Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?
+  type            String       @default("cold_calling") // cold_calling, interview
+  status          String       @default("draft") // draft, scheduled, running, paused, completed
+  scheduleStart   DateTime?
+  scheduleEnd     DateTime?
+  timeZone        String       @default("America/New_York")
+  callingHours    Json         @default("{\"start\": \"09:00\", \"end\": \"17:00\"}")
+  maxCallsPerDay  Int          @default(100)
+  jobTitle        String?
+  jobDescription  String?      @db.Text
+  jobRequirements Json?        // { skills: [], experience: "", education: "", questions: [] }
+  settings        Json         @default("{}")
+  stats           Json         @default("{}")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   contacts Contact[]
   calls    Call[]
 
   @@index([organizationId])
   @@index([status])
+  @@index([type])
 }
 
 model Contact {
@@ -163,6 +168,8 @@ model Contact {
   email          String?
   company        String?
   customData     Json      @default("{}")
+  resumeUrl      String?
+  appliedRole    String?
   status         String    @default("pending") // pending, called, completed, failed, dnc
   notificationPreference String @default("both") // email, sms, both, none
   lastCalledAt   DateTime?
@@ -202,10 +209,12 @@ model Call {
   summary         String?      @db.Text
   sentiment       String?      // positive, neutral, negative
   leadScore       Int?
-  analysis        Json         @default("{}")
-  costCents       Int          @default(0)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  analysis           Json         @default("{}")
+  interviewScore     Int?
+  interviewAnalysis  Json?
+  costCents          Int          @default(0)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   appointments    Appointment[]
 

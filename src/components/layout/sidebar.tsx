@@ -24,6 +24,7 @@ import {
   Shield,
   PhoneForwarded,
   Wand2,
+  UserSearch,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ const navItems: NavItem[] = [
   { type: "link", title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { type: "link", title: "Agents", href: "/dashboard/agents", icon: Bot },
   { type: "link", title: "Campaigns", href: "/dashboard/campaigns", icon: Megaphone },
+  { type: "link", title: "Interviews", href: "/dashboard/interviews", icon: UserSearch },
   { type: "link", title: "Contacts", href: "/dashboard/contacts", icon: Users },
   {
     type: "group",

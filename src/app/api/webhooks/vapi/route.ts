@@ -16,6 +16,11 @@ const getAnalyzeCall = async () => {
   return analyzeCall;
 };
 
+const getAnalyzeInterview = async () => {
+  const { analyzeInterview } = await import("@/server/services/call-analysis.service");
+  return analyzeInterview;
+};
+
 const getEmailService = async () => {
   const { sendAppointmentConfirmation } = await import("@/lib/email");
   return { sendAppointmentConfirmation };
@@ -1692,13 +1697,30 @@ export async function POST(req: NextRequest) {
 
         // Trigger async call analysis if we have a transcript
         if (transcriptText && updatedCall?.id) {
-          // Fire and forget - analyze in background
+          // Check if this call belongs to an interview campaign
           const callId = updatedCall.id;
-          getAnalyzeCall().then((analyzeCall) => {
-            analyzeCall(callId).catch((error) => {
-              log.error("Call analysis failed:", error);
+          const campaignForAnalysis = campaignId
+            ? await db.campaign.findUnique({
+                where: { id: campaignId },
+                select: { type: true },
+              })
+            : null;
+
+          if (campaignForAnalysis?.type === "interview") {
+            // Use interview-specific analysis
+            getAnalyzeInterview().then((analyzeInterview) => {
+              analyzeInterview(callId).catch((error) => {
+                log.error("Interview analysis failed:", error);
+              });
             });
-          });
+          } else {
+            // Standard call analysis
+            getAnalyzeCall().then((analyzeCall) => {
+              analyzeCall(callId).catch((error) => {
+                log.error("Call analysis failed:", error);
+              });
+            });
+          }
         }
 
         break;

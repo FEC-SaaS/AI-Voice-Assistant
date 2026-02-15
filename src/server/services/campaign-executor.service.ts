@@ -4,6 +4,7 @@ import { checkDNC, checkCallingHours, checkConsent, requiresTwoPartyConsent, nor
 import { getRemainingMinutes } from "@/constants/plans";
 import { createLogger } from "@/lib/logger";
 import { logAudit } from "./audit.service";
+import { getInterviewCallPrompt, getInterviewFirstMessage } from "@/lib/vapi-tools";
 
 const log = createLogger("Campaign Executor");
 
@@ -177,6 +178,10 @@ async function processContact(
     agentId: string;
     organizationId: string;
     callingHours: { start: string; end: string };
+    type?: string;
+    jobTitle?: string | null;
+    jobDescription?: string | null;
+    jobRequirements?: unknown;
   },
   agent: {
     id: string;
@@ -275,6 +280,35 @@ async function processContact(
       },
     });
 
+    // Build assistant overrides for interview campaigns
+    const contactName = `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
+    let assistantOverrides: Record<string, unknown> | undefined;
+
+    if (campaign.type === "interview" && campaign.jobTitle && campaign.jobDescription) {
+      const jobReqs = (campaign.jobRequirements || {}) as {
+        skills?: string[];
+        experience?: string;
+        education?: string;
+        questions?: string[];
+      };
+      const interviewPrompt = getInterviewCallPrompt(
+        campaign.jobTitle,
+        campaign.jobDescription,
+        jobReqs,
+        contactName || "Candidate"
+      );
+      const firstMessage = getInterviewFirstMessage(
+        contactName || "there",
+        campaign.jobTitle
+      );
+      assistantOverrides = {
+        firstMessage,
+        model: {
+          messages: [{ role: "system", content: interviewPrompt }],
+        },
+      };
+    }
+
     // Create the call via Vapi
     const vapiCall = await createCall({
       assistantId,
@@ -284,8 +318,9 @@ async function processContact(
         campaignId: campaign.id,
         contactId: contact.id,
         organizationId: campaign.organizationId,
-        contactName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
+        contactName,
       },
+      ...(assistantOverrides ? { assistantOverrides } : {}),
     });
 
     // Create call record in database
@@ -380,6 +415,14 @@ export async function executeCampaign(
     }
 
     const callingHours = campaign.callingHours as { start: string; end: string };
+    const campaignData = {
+      ...campaign,
+      callingHours,
+      type: (campaign as unknown as { type?: string }).type || "cold_calling",
+      jobTitle: (campaign as unknown as { jobTitle?: string | null }).jobTitle,
+      jobDescription: (campaign as unknown as { jobDescription?: string | null }).jobDescription,
+      jobRequirements: (campaign as unknown as { jobRequirements?: unknown }).jobRequirements,
+    };
 
     // Get pending contacts in batches to avoid memory exhaustion
     const BATCH_SIZE = 100;
@@ -417,7 +460,7 @@ export async function executeCampaign(
 
       const callResult = await processContact(
         contact,
-        { ...campaign, callingHours },
+        campaignData,
         campaign.agent
       );
 
