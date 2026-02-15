@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { generateInterviewQuestions } from "@/lib/openai";
+import { enforceCampaignLimit } from "../trpc/middleware";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("Interviews");
@@ -101,6 +102,7 @@ export const interviewsRouter = router({
         maxCallsPerDay: z.number().min(1).max(1000).default(50),
       })
     )
+    .use(enforceCampaignLimit)
     .mutation(async ({ ctx, input }) => {
       // Verify agent
       const agent = await ctx.db.agent.findFirst({

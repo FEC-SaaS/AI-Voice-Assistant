@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { withApiKey, apiError, apiSuccess, checkRateLimit } from "@/lib/api-middleware";
 import { db } from "@/lib/db";
+import { canAddAgent, getPlan } from "@/constants/plans";
 
 /**
  * Get organization ID from either API key or Clerk session
@@ -108,6 +109,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Enforce agent limit
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+      include: { _count: { select: { agents: true } } },
+    });
+    if (!org) return apiError("Organization not found", 404);
+
+    if (!canAddAgent(org._count.agents, org.planId)) {
+      const plan = getPlan(org.planId);
+      return apiError(
+        `You've reached the limit of ${plan.agents} agents on your ${plan.name} plan. Upgrade to add more agents.`,
+        403
+      );
+    }
+
     const body = await request.json();
 
     // Validate required fields
