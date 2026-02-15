@@ -344,7 +344,7 @@ export default function NewInterviewPage() {
               </span>
             ))}
             {formData.skills.length === 0 && (
-              <p className="text-sm text-muted-foreground">No skills added yet. Use "Generate Questions" or add manually.</p>
+              <p className="text-sm text-muted-foreground">No skills added yet. Use &ldquo;Generate Questions&rdquo; or add manually.</p>
             )}
           </div>
           <div className="flex gap-2">

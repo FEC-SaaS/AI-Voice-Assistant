@@ -12,7 +12,6 @@ import {
   MoreHorizontal,
   Users,
   Phone,
-  Clock,
   Bot,
   Trash2,
   Settings,

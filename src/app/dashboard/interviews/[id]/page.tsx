@@ -394,20 +394,32 @@ export default function InterviewDetailPage() {
                   </button>
 
                   {/* Expanded Detail */}
-                  {isExpanded && call && analysis && (
+                  {isExpanded && call && analysis && (() => {
+                    const a = analysis as {
+                      summary?: string;
+                      skillScores?: Record<string, number>;
+                      strengths?: string[];
+                      weaknesses?: string[];
+                      redFlags?: string[];
+                      standoutMoments?: string[];
+                      communicationScore?: number;
+                      cultureFit?: string;
+                      experienceMatch?: string;
+                    };
+                    return (
                     <div className="px-4 pb-4 space-y-4 border-t bg-secondary/30">
                       {/* Summary */}
                       <div className="pt-4">
                         <h4 className="text-sm font-semibold mb-1">Summary</h4>
-                        <p className="text-sm text-muted-foreground">{String(analysis.summary ?? "")}</p>
+                        <p className="text-sm text-muted-foreground">{a.summary ?? ""}</p>
                       </div>
 
                       {/* Skill Scores */}
-                      {analysis.skillScores && (
+                      {a.skillScores && (
                         <div>
                           <h4 className="text-sm font-semibold mb-2">Skill Scores</h4>
                           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                            {Object.entries(analysis.skillScores as Record<string, number>).map(([skill, skillScore]) => (
+                            {Object.entries(a.skillScores).map(([skill, skillScore]) => (
                               <div key={skill} className="flex items-center justify-between rounded-lg bg-card p-2 px-3">
                                 <span className="text-sm truncate">{skill}</span>
                                 <span className={`text-sm font-bold ${getScoreColor(skillScore)}`}>{skillScore}</span>
@@ -424,7 +436,7 @@ export default function InterviewDetailPage() {
                             <CheckCircle2 className="h-4 w-4 text-green-400" />Strengths
                           </h4>
                           <ul className="space-y-1">
-                            {(analysis.strengths as string[])?.map((s, i) => (
+                            {a.strengths?.map((s, i) => (
                               <li key={i} className="text-sm text-muted-foreground flex items-start gap-1">
                                 <span className="text-green-400 mt-0.5">+</span> {s}
                               </li>
@@ -436,7 +448,7 @@ export default function InterviewDetailPage() {
                             <AlertTriangle className="h-4 w-4 text-yellow-400" />Weaknesses
                           </h4>
                           <ul className="space-y-1">
-                            {(analysis.weaknesses as string[])?.map((w, i) => (
+                            {a.weaknesses?.map((w, i) => (
                               <li key={i} className="text-sm text-muted-foreground flex items-start gap-1">
                                 <span className="text-yellow-400 mt-0.5">-</span> {w}
                               </li>
@@ -446,13 +458,13 @@ export default function InterviewDetailPage() {
                       </div>
 
                       {/* Red Flags */}
-                      {(analysis.redFlags as string[])?.length > 0 && (
+                      {(a.redFlags?.length ?? 0) > 0 && (
                         <div>
                           <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
                             <XCircle className="h-4 w-4 text-red-400" />Red Flags
                           </h4>
                           <ul className="space-y-1">
-                            {(analysis.redFlags as string[]).map((flag, i) => (
+                            {a.redFlags!.map((flag, i) => (
                               <li key={i} className="text-sm text-red-400 flex items-start gap-1">
                                 <span className="mt-0.5">!</span> {flag}
                               </li>
@@ -462,13 +474,13 @@ export default function InterviewDetailPage() {
                       )}
 
                       {/* Standout Moments */}
-                      {(analysis.standoutMoments as string[])?.length > 0 && (
+                      {(a.standoutMoments?.length ?? 0) > 0 && (
                         <div>
                           <h4 className="text-sm font-semibold mb-2 flex items-center gap-1">
                             <Star className="h-4 w-4 text-amber-400" />Standout Moments
                           </h4>
                           <ul className="space-y-1">
-                            {(analysis.standoutMoments as string[]).map((m, i) => (
+                            {a.standoutMoments!.map((m, i) => (
                               <li key={i} className="text-sm text-muted-foreground flex items-start gap-1">
                                 <span className="text-amber-400 mt-0.5">*</span> {m}
                               </li>
@@ -481,17 +493,17 @@ export default function InterviewDetailPage() {
                       <div className="grid gap-3 sm:grid-cols-3 text-sm">
                         <div className="rounded-lg bg-card p-3">
                           <span className="text-muted-foreground">Communication</span>
-                          <p className={`font-bold ${getScoreColor(analysis.communicationScore as number)}`}>
-                            {analysis.communicationScore as number}/100
+                          <p className={`font-bold ${getScoreColor(a.communicationScore ?? 0)}`}>
+                            {a.communicationScore ?? 0}/100
                           </p>
                         </div>
                         <div className="rounded-lg bg-card p-3">
                           <span className="text-muted-foreground">Culture Fit</span>
-                          <p className="font-medium text-foreground">{analysis.cultureFit as string}</p>
+                          <p className="font-medium text-foreground">{a.cultureFit ?? "—"}</p>
                         </div>
                         <div className="rounded-lg bg-card p-3">
                           <span className="text-muted-foreground">Experience Match</span>
-                          <p className="font-medium text-foreground">{analysis.experienceMatch as string}</p>
+                          <p className="font-medium text-foreground">{a.experienceMatch ?? "—"}</p>
                         </div>
                       </div>
 
@@ -521,7 +533,8 @@ export default function InterviewDetailPage() {
                         </p>
                       )}
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               );
             })}
