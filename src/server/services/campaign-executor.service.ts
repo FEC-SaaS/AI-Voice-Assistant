@@ -4,7 +4,7 @@ import { checkDNC, checkCallingHours, checkConsent, requiresTwoPartyConsent, nor
 import { getRemainingMinutes } from "@/constants/plans";
 import { createLogger } from "@/lib/logger";
 import { logAudit } from "./audit.service";
-import { getInterviewCallPrompt, getInterviewFirstMessage } from "@/lib/vapi-tools";
+import { getInterviewCallPrompt, getInterviewFirstMessage, getOutboundCallPrompt, getOutboundFirstMessage } from "@/lib/vapi-tools";
 
 const log = createLogger("Campaign Executor");
 
@@ -187,8 +187,13 @@ async function processContact(
     id: string;
     vapiAssistantId: string | null;
     name: string;
+    systemPrompt: string;
+    modelProvider: string;
+    model: string;
     phoneNumbers: Array<{ vapiPhoneId: string | null }>;
-  }
+    organization: { name: string };
+  },
+  knowledgeContent: string
 ): Promise<CallResult> {
   const phoneNumber = normalizePhoneNumber(contact.phoneNumber);
   const areaCode = phoneNumber.replace(/^\+1/, "").substring(0, 3);
@@ -280,11 +285,14 @@ async function processContact(
       },
     });
 
-    // Build assistant overrides for interview campaigns
+    // Build assistant overrides for outbound calls
     const contactName = `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
-    let assistantOverrides: Record<string, unknown> | undefined;
+    const businessName = agent.organization.name;
+    const agentName = agent.name;
+    let assistantOverrides: Record<string, unknown>;
 
     if (campaign.type === "interview" && campaign.jobTitle && campaign.jobDescription) {
+      // Interview campaign overrides
       const jobReqs = (campaign.jobRequirements || {}) as {
         skills?: string[];
         experience?: string;
@@ -297,14 +305,30 @@ async function processContact(
         jobReqs,
         contactName || "Candidate"
       );
-      const firstMessage = getInterviewFirstMessage(
-        contactName || "there",
-        campaign.jobTitle
-      );
       assistantOverrides = {
-        firstMessage,
+        firstMessage: getInterviewFirstMessage(contactName || "there", campaign.jobTitle),
+        firstMessageMode: "assistant-speaks-first",
         model: {
+          provider: agent.modelProvider || "openai",
+          model: agent.model || "gpt-4o",
           messages: [{ role: "system", content: interviewPrompt }],
+        },
+      };
+    } else {
+      // Cold calling campaign overrides — same as test call
+      const outboundPrompt = getOutboundCallPrompt(agentName, businessName, knowledgeContent);
+      assistantOverrides = {
+        firstMessage: getOutboundFirstMessage(agentName, businessName, contactName || undefined),
+        firstMessageMode: "assistant-speaks-first",
+        model: {
+          provider: agent.modelProvider || "openai",
+          model: agent.model || "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `${agent.systemPrompt}${outboundPrompt}`,
+            },
+          ],
         },
       };
     }
@@ -319,8 +343,9 @@ async function processContact(
         contactId: contact.id,
         organizationId: campaign.organizationId,
         contactName,
+        direction: "outbound",
       },
-      ...(assistantOverrides ? { assistantOverrides } : {}),
+      assistantOverrides,
     });
 
     // Create call record in database
@@ -388,7 +413,7 @@ export async function executeCampaign(
   };
 
   try {
-    // Get campaign with agent and phone numbers
+    // Get campaign with agent, phone numbers, and organization
     const campaign = await db.campaign.findFirst({
       where: {
         id: campaignId,
@@ -400,6 +425,9 @@ export async function executeCampaign(
             phoneNumbers: {
               where: { isActive: true },
               take: 1,
+            },
+            organization: {
+              select: { name: true },
             },
           },
         },
@@ -414,14 +442,26 @@ export async function executeCampaign(
       throw new Error("Agent is not connected to voice system");
     }
 
+    // Fetch knowledge base content for outbound prompt
+    const knowledgeDocs = await db.knowledgeDocument.findMany({
+      where: {
+        agentId: campaign.agent.id,
+        organizationId,
+        isActive: true,
+      },
+    });
+
+    let knowledgeContent = "";
+    if (knowledgeDocs.length > 0) {
+      knowledgeContent = "\n\n--- KNOWLEDGE BASE ---\n" +
+        knowledgeDocs.map(d => `=== ${d.name} ===\n${d.content || ""}`).join("\n\n") +
+        "\n--- END KNOWLEDGE BASE ---";
+    }
+
     const callingHours = campaign.callingHours as { start: string; end: string };
     const campaignData = {
       ...campaign,
       callingHours,
-      type: (campaign as unknown as { type?: string }).type || "cold_calling",
-      jobTitle: (campaign as unknown as { jobTitle?: string | null }).jobTitle,
-      jobDescription: (campaign as unknown as { jobDescription?: string | null }).jobDescription,
-      jobRequirements: (campaign as unknown as { jobRequirements?: unknown }).jobRequirements,
     };
 
     // Get pending contacts in batches to avoid memory exhaustion
@@ -461,7 +501,8 @@ export async function executeCampaign(
       const callResult = await processContact(
         contact,
         campaignData,
-        campaign.agent
+        campaign.agent,
+        knowledgeContent
       );
 
       result.results.push(callResult);
