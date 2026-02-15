@@ -285,16 +285,19 @@ export function TalkToAgent() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef(false);
   // Use a single cancel token number that increments on each new call/end.
   // playback loop checks this to know if it should stop.
   const generationRef = useRef(0);
   const scenarioRef = useRef(1);
 
-  // Auto-scroll chat to bottom
+  // Auto-scroll chat container to bottom (without moving the page)
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = chatContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages, isTyping]);
 
   // Cleanup on unmount
@@ -532,7 +535,7 @@ export function TalkToAgent() {
         </div>
 
         {/* Chat bubbles */}
-        <div className="w-full max-h-64 overflow-y-auto rounded-xl bg-secondary/30 border border-border p-3 space-y-3">
+        <div ref={chatContainerRef} className="w-full max-h-64 overflow-y-auto rounded-xl bg-secondary/30 border border-border p-3 space-y-3">
           {messages.map((msg, i) => (
             <div
               key={i}
@@ -568,7 +571,6 @@ export function TalkToAgent() {
               </div>
             </div>
           )}
-          <div ref={chatEndRef} />
         </div>
 
         {/* End call button */}

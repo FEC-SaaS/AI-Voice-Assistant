@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { X, Mail, MessageSquare, CheckCircle, ArrowLeft } from "lucide-react";
+import { X, Mail, CheckCircle, ArrowLeft } from "lucide-react";
 
 interface MessageDetailProps {
   messageId: string;
@@ -16,7 +16,7 @@ interface MessageDetailProps {
 export function MessageDetail({ messageId, onClose, onUpdate }: MessageDetailProps) {
   const { data: msg, isLoading } = trpc.receptionist["messages.get"].useQuery({ id: messageId });
   const [forwardTo, setForwardTo] = useState("");
-  const [forwardVia, setForwardVia] = useState<"email" | "sms">("email");
+  const [forwardVia] = useState<"email" | "sms">("email");
   const [showForward, setShowForward] = useState(false);
 
   const updateStatus = trpc.receptionist["messages.updateStatus"].useMutation({
@@ -108,18 +108,10 @@ export function MessageDetail({ messageId, onClose, onUpdate }: MessageDetailPro
           {showForward && (
             <div className="border-t pt-4 space-y-3">
               <div className="flex gap-2">
-                <Button size="sm" variant={forwardVia === "email" ? "default" : "outline"} onClick={() => setForwardVia("email")}>
-                  <Mail className="mr-1 h-3 w-3" /> Email
-                </Button>
-                <Button size="sm" variant={forwardVia === "sms" ? "default" : "outline"} onClick={() => setForwardVia("sms")}>
-                  <MessageSquare className="mr-1 h-3 w-3" /> SMS
-                </Button>
-              </div>
-              <div className="flex gap-2">
                 <Input
                   value={forwardTo}
                   onChange={(e) => setForwardTo(e.target.value)}
-                  placeholder={forwardVia === "email" ? "email@example.com" : "+1234567890"}
+                  placeholder="email@example.com"
                   className="flex-1"
                 />
                 <Button
