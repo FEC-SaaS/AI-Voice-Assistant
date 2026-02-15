@@ -184,12 +184,16 @@ export const usersRouter = router({
         // Get the Clerk client
         const clerk = await clerkClient();
 
+        // Build redirect URL using the app's actual URL (not hardcoded domain)
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
         // Create an organization invitation via Clerk
         const invitation = await clerk.organizations.createOrganizationInvitation({
           organizationId: org.clerkOrgId,
           emailAddress: input.email,
           role: "org:member", // Clerk role, we'll map our role separately
           inviterUserId: ctx.userId,
+          redirectUrl: `${appUrl}/dashboard`,
         });
 
         // Store the pending invitation with our custom role in database
@@ -339,11 +343,13 @@ export const usersRouter = router({
           }
 
           // Create a fresh Clerk invitation
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
           const newClerkInvitation = await clerk.organizations.createOrganizationInvitation({
             organizationId: org.clerkOrgId,
             emailAddress: invitation.email,
             role: "org:member",
             inviterUserId: ctx.userId,
+            redirectUrl: `${appUrl}/dashboard`,
           });
 
           // Update our DB record with new Clerk ID and extended expiration

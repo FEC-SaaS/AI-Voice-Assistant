@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Plug,
   ExternalLink,
@@ -109,6 +109,15 @@ const WEBHOOK_EVENTS = [
   { event: "analysis.complete", description: "When call analysis finishes" },
 ];
 
+function generateSecret(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "whsec_";
+  for (let i = 0; i < 24; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 function IntegrationCard({ integration }: { integration: Integration }) {
   const statusConfig = {
     available: { label: "Available", color: "bg-green-500/10 text-green-400", icon: Check },
@@ -159,14 +168,22 @@ export default function IntegrationsPage() {
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showWebhookConfig, setShowWebhookConfig] = useState(false);
-
-  // Generate a sample webhook secret
-  const webhookSecret = "whsec_" + Math.random().toString(36).substring(2, 15);
+  const [webhookSecret, setWebhookSecret] = useState(() => generateSecret());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
   };
+
+  const handleRefreshSecret = useCallback(async () => {
+    setIsRefreshing(true);
+    // Brief delay for visual feedback
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    setWebhookSecret(generateSecret());
+    setIsRefreshing(false);
+    toast.success("Webhook secret refreshed");
+  }, []);
 
   const handleSaveWebhook = async () => {
     if (!webhookUrl) {
@@ -244,8 +261,13 @@ export default function IntegrationsPage() {
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon">
-                  <RefreshCw className="h-4 w-4" />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleRefreshSecret}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
