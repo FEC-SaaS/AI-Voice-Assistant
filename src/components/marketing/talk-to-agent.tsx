@@ -165,20 +165,67 @@ const ARIA_SCENARIOS: Scenario[] = [
   },
 ];
 
-// ── Audio playback helper ──
+// ── Web Audio API playback engine ──
+// AudioContext is permanently unlocked once resumed inside a user click handler.
+// All subsequent audio plays through it without needing further user gestures.
+
+let audioCtx: AudioContext | null = null;
+let currentSource: AudioBufferSourceNode | null = null;
+
+/** Call this inside a click handler to unlock audio for the entire session. */
+function unlockAudioContext(): AudioContext {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+  }
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+/** Stop any currently playing audio source. */
+function stopCurrentAudio() {
+  if (currentSource) {
+    try { currentSource.stop(); } catch { /* already stopped */ }
+    currentSource.disconnect();
+    currentSource = null;
+  }
+}
+
+/** Fetch + decode + play an MP3 file through the AudioContext. Returns a promise that resolves when playback finishes. */
+async function playAudioFile(url: string): Promise<void> {
+  const ctx = audioCtx;
+  if (!ctx) throw new Error("AudioContext not initialized");
+
+  // Make sure context is running
+  if (ctx.state === "suspended") await ctx.resume();
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+
+  const arrayBuffer = await response.arrayBuffer();
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+  return new Promise<void>((resolve) => {
+    stopCurrentAudio();
+
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    currentSource = source;
+
+    source.onended = () => {
+      if (currentSource === source) currentSource = null;
+      resolve();
+    };
+
+    source.start(0);
+  });
+}
 
 function getAudioPath(agent: "atlas" | "aria", scenario: number, index: number, role: "agent" | "customer"): string {
   const idx = index.toString().padStart(2, "0");
   return `/audio/demo/${agent}_${scenario}_${idx}_${role}.mp3`;
-}
-
-function playAudio(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const audio = new Audio(src);
-    audio.onended = () => resolve();
-    audio.onerror = () => reject(new Error(`Failed to load audio: ${src}`));
-    audio.play().catch(reject);
-  });
 }
 
 function getSessionId(): string {
@@ -214,19 +261,15 @@ const agentName = (t: "male" | "female" | null) =>
 function AnimatedRing({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative inline-flex items-center justify-center">
-      {/* Outer animated color ring */}
       <div className="absolute -inset-1.5 rounded-full overflow-hidden">
         <div className="absolute inset-0 animate-color-ring-spin">
           <div className="absolute inset-0 bg-[conic-gradient(from_0deg,#818CF8,#06B6D4,#10B981,#F59E0B,#EF4444,#EC4899,#A855F6,#818CF8)]" />
         </div>
       </div>
-      {/* Inner mask to create ring effect */}
       <div className="absolute -inset-0.5 rounded-full bg-background" />
-      {/* Glow layer */}
       <div className="absolute -inset-3 rounded-full opacity-30 blur-md animate-color-ring-spin">
         <div className="absolute inset-0 bg-[conic-gradient(from_0deg,#818CF8,#06B6D4,#10B981,#F59E0B,#EF4444,#EC4899,#A855F6,#818CF8)]" />
       </div>
-      {/* Button content */}
       <div className="relative z-10">{children}</div>
     </div>
   );
@@ -242,13 +285,11 @@ export function TalkToAgent() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
-  const scriptIndexRef = useRef(0);
-  const playbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef(false);
-  // Persistent Audio element — created once on user click to satisfy autoplay policy.
-  // We reuse it by swapping .src for each line, so the browser keeps the gesture grant.
-  const audioElRef = useRef<HTMLAudioElement | null>(null);
+  // Use a single cancel token number that increments on each new call/end.
+  // playback loop checks this to know if it should stop.
+  const generationRef = useRef(0);
   const scenarioRef = useRef(1);
 
   // Auto-scroll chat to bottom
@@ -260,13 +301,9 @@ export function TalkToAgent() {
   useEffect(() => {
     return () => {
       activeRef.current = false;
+      generationRef.current += 1;
       if (timerRef.current) clearInterval(timerRef.current);
-      if (playbackRef.current) clearTimeout(playbackRef.current);
-      if (audioElRef.current) {
-        audioElRef.current.pause();
-        audioElRef.current.src = "";
-        audioElRef.current = null;
-      }
+      stopCurrentAudio();
     };
   }, []);
 
@@ -284,120 +321,79 @@ export function TalkToAgent() {
     }
   }, []);
 
-  const stopPlayback = useCallback(() => {
-    activeRef.current = false;
-    if (playbackRef.current) {
-      clearTimeout(playbackRef.current);
-      playbackRef.current = null;
-    }
-    if (audioElRef.current) {
-      audioElRef.current.pause();
-    }
-    setIsTyping(false);
-    setIsSpeaking(false);
-  }, []);
-
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, "0");
     const s = (seconds % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
   };
 
-  const playNextMessage = useCallback(
-    (script: Message[], agentGender: "male" | "female") => {
-      if (!activeRef.current) return;
+  // The entire conversation loop runs as a single async function.
+  // No setTimeout chains, no event listener juggling. Simple sequential flow.
+  const runConversation = useCallback(
+    async (script: Message[], agentGender: "male" | "female", gen: number) => {
+      const agentKey = agentGender === "male" ? "atlas" : "aria";
+      const scenario = scenarioRef.current;
 
-      const index = scriptIndexRef.current;
-      if (index >= script.length) {
-        setIsSpeaking(false);
-        playbackRef.current = setTimeout(() => {
-          if (!activeRef.current) return;
-          const duration = Math.floor(
-            (Date.now() - startTimeRef.current) / 1000
-          );
-          activeRef.current = false;
-          setStatus("ended");
-          stopTimer();
-          setIsSpeaking(false);
-          trackEvent({ event: "call_end", agent: agentGender, duration });
-        }, 1500);
-        return;
-      }
+      for (let i = 0; i < script.length; i++) {
+        // Check if this conversation was cancelled
+        if (generationRef.current !== gen) return;
 
-      const msg = script[index]!;
-      const isAgent = msg.role === "agent";
+        const msg = script[i]!;
+        const isAgent = msg.role === "agent";
 
-      // Show typing indicator
-      setIsTyping(true);
-      setIsSpeaking(isAgent);
-
-      const typingDuration = isAgent ? 700 : 500;
-
-      playbackRef.current = setTimeout(() => {
-        if (!activeRef.current) return;
-
-        // Show the bubble and start playing audio simultaneously
-        setIsTyping(false);
-        setMessages((prev) => [...prev, msg]);
-        scriptIndexRef.current = index + 1;
+        // Show typing indicator
+        setIsTyping(true);
         setIsSpeaking(isAgent);
 
-        // Play the pre-recorded audio file using the persistent Audio element
-        const agentKey = agentGender === "male" ? "atlas" : "aria";
-        const audioSrc = getAudioPath(agentKey, scenarioRef.current, index, msg.role);
-        const audio = audioElRef.current;
+        // Wait for typing animation
+        await new Promise((r) => setTimeout(r, isAgent ? 700 : 500));
+        if (generationRef.current !== gen) return;
 
-        if (!audio) {
-          // Fallback if audio element is missing
-          setIsSpeaking(false);
-          playbackRef.current = setTimeout(() => {
-            playNextMessage(script, agentGender);
-          }, Math.min(msg.text.length * 40, 5000));
-          return;
+        // Show the chat bubble
+        setIsTyping(false);
+        setMessages((prev) => [...prev, msg]);
+        setIsSpeaking(isAgent);
+
+        // Play the pre-recorded audio
+        const audioUrl = getAudioPath(agentKey, scenario, i, msg.role);
+        try {
+          await playAudioFile(audioUrl);
+        } catch {
+          // Audio failed — wait a text-based duration as fallback
+          await new Promise((r) => setTimeout(r, Math.min(msg.text.length * 40, 5000)));
         }
 
-        const onEnded = () => {
-          audio.removeEventListener("ended", onEnded);
-          audio.removeEventListener("error", onError);
-          if (!activeRef.current) return;
-          setIsSpeaking(false);
-          // Brief pause between messages
-          playbackRef.current = setTimeout(() => {
-            playNextMessage(script, agentGender);
-          }, 400);
-        };
+        if (generationRef.current !== gen) return;
+        setIsSpeaking(false);
 
-        const onError = () => {
-          audio.removeEventListener("ended", onEnded);
-          audio.removeEventListener("error", onError);
-          if (!activeRef.current) return;
-          setIsSpeaking(false);
-          const fallbackDelay = Math.min(msg.text.length * 40, 5000);
-          playbackRef.current = setTimeout(() => {
-            playNextMessage(script, agentGender);
-          }, fallbackDelay);
-        };
+        // Brief pause between messages
+        await new Promise((r) => setTimeout(r, 400));
+      }
 
-        audio.addEventListener("ended", onEnded);
-        audio.addEventListener("error", onError);
-        audio.src = audioSrc;
-        audio.play().catch(() => {
-          audio.removeEventListener("ended", onEnded);
-          audio.removeEventListener("error", onError);
-          if (!activeRef.current) return;
-          setIsSpeaking(false);
-          const fallbackDelay = Math.min(msg.text.length * 40, 5000);
-          playbackRef.current = setTimeout(() => {
-            playNextMessage(script, agentGender);
-          }, fallbackDelay);
-        });
-      }, typingDuration);
+      // Conversation complete
+      if (generationRef.current !== gen) return;
+
+      await new Promise((r) => setTimeout(r, 1500));
+      if (generationRef.current !== gen) return;
+
+      const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      activeRef.current = false;
+      setStatus("ended");
+      setIsSpeaking(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      trackEvent({ event: "call_end", agent: agentGender, duration });
     },
-    [stopTimer]
+    []
   );
 
   const handleStartCall = useCallback(
     (agent: "male" | "female") => {
+      // IMPORTANT: Unlock AudioContext inside the click handler (user gesture)
+      unlockAudioContext();
+
       // Pick a random scenario (1-4)
       const scenario = Math.floor(Math.random() * 4) + 1;
       scenarioRef.current = scenario;
@@ -405,49 +401,39 @@ export function TalkToAgent() {
       const scenarios = agent === "male" ? ATLAS_SCENARIOS : ARIA_SCENARIOS;
       const script = scenarios[scenario - 1]!.lines;
 
+      // Cancel any previous conversation
+      generationRef.current += 1;
+      const gen = generationRef.current;
+
+      stopCurrentAudio();
+
       setAgentType(agent);
       setStatus("connecting");
       setMessages([]);
       setElapsed(0);
-      scriptIndexRef.current = 0;
       activeRef.current = true;
 
       trackEvent({ event: "button_click", agent });
 
-      // Create the Audio element NOW (inside the click handler) so browsers
-      // grant autoplay permission.  We play a tiny silent blip to "unlock"
-      // the element, then reuse it for every conversation line.
-      if (!audioElRef.current) {
-        audioElRef.current = new Audio();
-      }
-      const audio = audioElRef.current;
-      // Unlock: play a silent data-URI mp3 (minimal valid mp3 frame)
-      audio.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+MYxAAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
-      audio.play().then(() => {
-        audio.pause();
-      }).catch(() => {
-        // Ignore — we tried our best to unlock
-      });
-
-      // Preload first real audio file
-      const agentKey = agent === "male" ? "atlas" : "aria";
-      const firstAudioSrc = getAudioPath(agentKey, scenario, 0, script[0]!.role);
-      const preloader = new Audio(firstAudioSrc);
-      preloader.preload = "auto";
-
-      playbackRef.current = setTimeout(() => {
-        if (!activeRef.current) return;
+      // Brief connecting delay, then start
+      setTimeout(() => {
+        if (generationRef.current !== gen) return;
         setStatus("connected");
         startTimer();
         trackEvent({ event: "call_start", agent });
-        playNextMessage(script, agent);
+        runConversation(script, agent, gen);
       }, 800);
     },
-    [startTimer, playNextMessage]
+    [startTimer, runConversation]
   );
 
   const handleEndCall = useCallback(() => {
-    stopPlayback();
+    generationRef.current += 1; // Cancel the running conversation loop
+    stopCurrentAudio();
+    activeRef.current = false;
+    setIsTyping(false);
+    setIsSpeaking(false);
+
     const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
     setStatus("ended");
     stopTimer();
@@ -456,16 +442,17 @@ export function TalkToAgent() {
       agent: agentType || undefined,
       duration,
     });
-  }, [agentType, stopPlayback, stopTimer]);
+  }, [agentType, stopTimer]);
 
   const handleReset = useCallback(() => {
+    generationRef.current += 1;
+    stopCurrentAudio();
     setStatus("idle");
     setAgentType(null);
     setElapsed(0);
     setIsSpeaking(false);
     setMessages([]);
     setIsTyping(false);
-    scriptIndexRef.current = 0;
     activeRef.current = false;
   }, []);
 
