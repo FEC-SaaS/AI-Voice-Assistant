@@ -84,9 +84,7 @@ export function getPostCallFollowUpSmsTemplate(
 /**
  * Normalize a phone number to E.164 format.
  * Strips spaces, dashes, parentheses and other formatting characters.
- * If the number already starts with +, it keeps the country code.
- * If it starts with 0 (common local format), we cannot guess the country code,
- * so we return it as-is with a + prefix removed of the leading 0.
+ * Handles common US number formats (10-digit without country code).
  * Returns null if the result is clearly invalid (too short / too long).
  */
 function normalizePhoneNumber(phone: string): string | null {
@@ -109,7 +107,17 @@ function normalizePhoneNumber(phone: string): string | null {
     return `+${digits.slice(2)}`;
   }
 
-  // Otherwise just prefix with + (assume the digits include country code)
+  // 10-digit US/CA number without country code — prepend +1
+  if (digits.length === 10 && !digits.startsWith("0") && !digits.startsWith("1")) {
+    return `+1${digits}`;
+  }
+
+  // 11-digit starting with 1 — already has US/CA country code
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+${digits}`;
+  }
+
+  // Otherwise prefix with + (assume digits include country code)
   return `+${digits}`;
 }
 

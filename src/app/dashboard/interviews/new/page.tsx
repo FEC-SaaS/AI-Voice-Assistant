@@ -78,7 +78,11 @@ export default function NewInterviewPage() {
         skills: Array.from(new Set([...prev.skills, ...result.skills])),
         questions: Array.from(new Set([...prev.questions, ...result.questions])),
       }));
-      toast.success("AI-generated questions and skills added!");
+      toast.success(`Added ${result.skills.length} skills and ${result.questions.length} questions — review them below!`);
+      // Scroll to skills section so user can see the results
+      setTimeout(() => {
+        document.getElementById("skills-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     },
     onError: (err) => toast.error(err.message),
   });
@@ -329,7 +333,7 @@ export default function NewInterviewPage() {
         </div>
 
         {/* Skills */}
-        <div className="rounded-lg border bg-card p-6">
+        <div id="skills-section" className="rounded-lg border bg-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">Required Skills</h2>
           <div className="flex flex-wrap gap-2 mb-3">
             {formData.skills.map((skill) => (

@@ -459,19 +459,7 @@ export function TalkToAgent() {
   // ────── Idle ──────
   if (status === "idle") {
     return (
-      <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center items-center">
-        <AnimatedRing>
-          <button
-            onClick={() => handleStartCall("male")}
-            className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-full bg-blue-600 px-6 py-3.5 text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:bg-cyan-500 hover:shadow-xl hover:shadow-cyan-500/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
-          >
-            <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg">
-              <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
-              Talk to Atlas
-            </span>
-            <span className="text-xs font-medium text-white/70">[Male]</span>
-          </button>
-        </AnimatedRing>
+      <div className="flex justify-center items-center">
         <AnimatedRing>
           <button
             onClick={() => handleStartCall("female")}
@@ -481,7 +469,6 @@ export function TalkToAgent() {
               <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
               Talk to Aria
             </span>
-            <span className="text-xs font-medium text-white/70">[Female]</span>
           </button>
         </AnimatedRing>
       </div>

@@ -13,7 +13,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { StarField } from "@/components/marketing/star-field";
-import { VerticalWaves } from "@/components/marketing/vertical-waves";
 import { FallingBars } from "@/components/marketing/falling-bars";
 import { TalkToAgent } from "@/components/marketing/talk-to-agent";
 
@@ -86,9 +85,6 @@ export default function HomePage() {
 
   return (
     <div ref={revealRef} className="relative">
-      {/* Vertical side waves - in foreground across entire page */}
-      <VerticalWaves className="z-[3] opacity-70 fixed inset-0" />
-
       {/* Hero */}
       <section className="relative overflow-hidden py-24 sm:py-32">
         {/* Gradient background */}

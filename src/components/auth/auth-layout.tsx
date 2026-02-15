@@ -2,7 +2,6 @@
 
 import { StarrySky } from "./starry-sky";
 import { RotatingValueMessages } from "./rotating-value-messages";
-import { VerticalWaves } from "@/components/marketing/vertical-waves";
 import { StarField } from "@/components/marketing/star-field";
 import { FallingBars } from "@/components/marketing/falling-bars";
 
@@ -11,9 +10,6 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
     <div className="relative min-h-screen flex overflow-hidden">
       {/* Background layers */}
       <StarrySky />
-
-      {/* Vertical waves on sides (foreground) */}
-      <VerticalWaves className="z-[2] opacity-50" />
 
       {/* Falling star particles */}
       <StarField />

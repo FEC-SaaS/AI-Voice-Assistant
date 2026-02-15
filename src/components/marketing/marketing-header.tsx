@@ -26,7 +26,7 @@ export function MarketingHeader() {
 
         {/* Mobile: OPEN DASHBOARD centered between logo and menu icon */}
         <Link href="/sign-in" className="md:hidden">
-          <button className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white transition-all duration-300 hover:bg-amber-500 active:scale-[0.98]">
+          <button className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-amber-500 active:scale-[0.98]">
             OPEN DASHBOARD
           </button>
         </Link>
@@ -51,7 +51,7 @@ export function MarketingHeader() {
         {/* Desktop: only OPEN DASHBOARD (SIGN UP is in hero center) */}
         <div className="hidden md:flex items-center">
           <Link href="/sign-in">
-            <button className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-amber-500 hover:shadow-lg hover:shadow-amber-500/25 hover:-translate-y-0.5 active:scale-[0.98]">
+            <button className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-8 py-3 text-base font-semibold text-white transition-all duration-300 hover:bg-amber-500 hover:shadow-lg hover:shadow-amber-500/25 hover:-translate-y-0.5 active:scale-[0.98]">
               OPEN DASHBOARD
             </button>
           </Link>
