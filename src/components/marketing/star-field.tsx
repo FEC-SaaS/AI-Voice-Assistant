@@ -32,7 +32,7 @@ function createParticle(width: number, height: number, randomY = false): Particl
     size: 1 + Math.random() * 2,
     speed: 0.3 + Math.random() * 0.7,
     opacity: 0.3 + Math.random() * 0.5,
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    color: COLORS[Math.floor(Math.random() * COLORS.length)] ?? "#818CF8",
     swayOffset: Math.random() * Math.PI * 2,
     swaySpeed: 0.005 + Math.random() * 0.01,
     swayAmount: 15 + Math.random() * 25,

@@ -827,7 +827,7 @@ export default function AppointmentsPage() {
                               disabled={resendConfirmation.isPending}
                             >
                               <Send className="mr-2 h-4 w-4" />
-                              Resend Confirmation
+                              Resend Email
                             </DropdownMenuItem>
                           )}
 
@@ -1240,7 +1240,7 @@ export default function AppointmentsPage() {
                       />
                       {editAppointment.attendeeEmail !== editFormData.attendeeEmail && editFormData.attendeeEmail && (
                         <p className="text-xs text-blue-400">
-                          Email changed. Save changes, then use &quot;Resend Confirmation&quot; to send to the new email.
+                          Email changed. Save changes, then use &quot;Resend Email&quot; to send to the new email.
                         </p>
                       )}
                     </div>

@@ -11,13 +11,25 @@ interface Star {
   color: string;
 }
 
-const STAR_COLORS = ["#FFFFFF", "#F8F8FF", "#FFFAF0", "#E8E8F0", "#D4D4E8"];
+const STAR_COLORS = [
+  "#FFFFFF",
+  "#F8F8FF",
+  "#FFFAF0",
+  "#818CF8", // indigo
+  "#06B6D4", // cyan
+  "#A855F6", // purple
+  "#EC4899", // pink
+  "#10B981", // emerald
+  "#F59E0B", // amber
+  "#E8E8F0",
+  "#D4D4E8",
+];
 
 function createStars(count: number): Star[] {
   return Array.from({ length: count }, () => ({
     x: Math.random(),
     y: Math.random(),
-    size: 0.5 + Math.random() * 2,
+    size: 0.5 + Math.random() * 2.5,
     speed: 0.3 + Math.random() * 1.2,
     offset: Math.random() * Math.PI * 2,
     color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)] as string,
@@ -42,7 +54,7 @@ export function StarrySky() {
     ).matches;
 
     const isMobile = window.innerWidth < 768;
-    const stars = createStars(isMobile ? 100 : 200);
+    const stars = createStars(isMobile ? 120 : 250);
 
     const resizeCanvas = () => {
       const dpr = window.devicePixelRatio || 1;

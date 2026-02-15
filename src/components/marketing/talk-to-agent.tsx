@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Phone, PhoneOff, Loader2 } from "lucide-react";
+import { Phone, PhoneOff, Loader2, Mic } from "lucide-react";
 
 type Status = "idle" | "connecting" | "connected" | "ended";
 
@@ -210,6 +210,28 @@ async function trackEvent(data: {
 const agentName = (t: "male" | "female" | null) =>
   t === "male" ? "Atlas" : "Aria";
 
+// ── Colorful animated bars ring (Vapi-style) ──
+function AnimatedRing({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      {/* Outer animated color ring */}
+      <div className="absolute -inset-1.5 rounded-full overflow-hidden">
+        <div className="absolute inset-0 animate-color-ring-spin">
+          <div className="absolute inset-0 bg-[conic-gradient(from_0deg,#818CF8,#06B6D4,#10B981,#F59E0B,#EF4444,#EC4899,#A855F6,#818CF8)]" />
+        </div>
+      </div>
+      {/* Inner mask to create ring effect */}
+      <div className="absolute -inset-0.5 rounded-full bg-background" />
+      {/* Glow layer */}
+      <div className="absolute -inset-3 rounded-full opacity-30 blur-md animate-color-ring-spin">
+        <div className="absolute inset-0 bg-[conic-gradient(from_0deg,#818CF8,#06B6D4,#10B981,#F59E0B,#EF4444,#EC4899,#A855F6,#818CF8)]" />
+      </div>
+      {/* Button content */}
+      <div className="relative z-10">{children}</div>
+    </div>
+  );
+}
+
 export function TalkToAgent() {
   const [status, setStatus] = useState<Status>("idle");
   const [agentType, setAgentType] = useState<"male" | "female" | null>(null);
@@ -396,27 +418,31 @@ export function TalkToAgent() {
   // ────── Idle ──────
   if (status === "idle") {
     return (
-      <div className="flex flex-row gap-3 sm:gap-4 justify-center">
-        <button
-          onClick={() => handleStartCall("male")}
-          className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-2xl bg-blue-600 px-5 py-3 text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
-        >
-          <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg">
-            <Phone className="h-4 w-4 sm:h-6 sm:w-6" />
-            Talk to Atlas
-          </span>
-          <span className="text-xs font-medium text-white/70">[Male]</span>
-        </button>
-        <button
-          onClick={() => handleStartCall("female")}
-          className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-2xl bg-purple-600 px-5 py-3 text-white shadow-lg shadow-purple-600/25 transition-all duration-300 hover:bg-purple-700 hover:shadow-xl hover:shadow-purple-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
-        >
-          <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg">
-            <Phone className="h-4 w-4 sm:h-6 sm:w-6" />
-            Talk to Aria
-          </span>
-          <span className="text-xs font-medium text-white/70">[Female]</span>
-        </button>
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-5 justify-center items-center">
+        <AnimatedRing>
+          <button
+            onClick={() => handleStartCall("male")}
+            className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-full bg-blue-600 px-6 py-3.5 text-white shadow-lg shadow-blue-600/25 transition-all duration-300 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
+          >
+            <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg">
+              <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
+              Talk to Atlas
+            </span>
+            <span className="text-xs font-medium text-white/70">[Male]</span>
+          </button>
+        </AnimatedRing>
+        <AnimatedRing>
+          <button
+            onClick={() => handleStartCall("female")}
+            className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-full bg-purple-600 px-6 py-3.5 text-white shadow-lg shadow-purple-600/25 transition-all duration-300 hover:bg-purple-700 hover:shadow-xl hover:shadow-purple-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
+          >
+            <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg">
+              <Mic className="h-4 w-4 sm:h-5 sm:w-5" />
+              Talk to Aria
+            </span>
+            <span className="text-xs font-medium text-white/70">[Female]</span>
+          </button>
+        </AnimatedRing>
       </div>
     );
   }
@@ -435,7 +461,7 @@ export function TalkToAgent() {
         </p>
         <button
           onClick={handleEndCall}
-          className="inline-flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-10 py-4 text-base font-semibold text-white shadow-lg shadow-red-600/25 transition-all duration-300 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-12 sm:py-5"
+          className="inline-flex items-center justify-center gap-3 rounded-full bg-red-600 px-10 py-4 text-base font-semibold text-white shadow-lg shadow-red-600/25 transition-all duration-300 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-12 sm:py-5"
         >
           <PhoneOff className="h-5 w-5 sm:h-6 sm:w-6" />
           Click to End Call
@@ -520,7 +546,7 @@ export function TalkToAgent() {
         {/* End call button */}
         <button
           onClick={handleEndCall}
-          className="inline-flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-10 py-4 text-base font-semibold text-white shadow-lg shadow-red-600/25 transition-all duration-300 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-12 sm:py-5"
+          className="inline-flex items-center justify-center gap-3 rounded-full bg-red-600 px-10 py-4 text-base font-semibold text-white shadow-lg shadow-red-600/25 transition-all duration-300 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/30 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-12 sm:py-5"
         >
           <PhoneOff className="h-5 w-5 sm:h-6 sm:w-6" />
           Click to End Call
@@ -543,9 +569,9 @@ export function TalkToAgent() {
         )}
         <button
           onClick={handleReset}
-          className="inline-flex items-center justify-center gap-3 rounded-2xl border-2 border-border px-8 py-4 text-base font-semibold text-foreground transition-all duration-300 hover:border-primary/30 hover:bg-primary/5 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-10 sm:py-5"
+          className="inline-flex items-center justify-center gap-3 rounded-full border-2 border-border px-8 py-4 text-base font-semibold text-foreground transition-all duration-300 hover:border-primary/30 hover:bg-primary/5 hover:-translate-y-0.5 active:scale-[0.98] sm:text-lg sm:px-10 sm:py-5"
         >
-          <Phone className="h-5 w-5 sm:h-6 sm:w-6" />
+          <Mic className="h-5 w-5 sm:h-6 sm:w-6" />
           Talk Again
         </button>
       </div>

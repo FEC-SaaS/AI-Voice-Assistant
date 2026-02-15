@@ -12,8 +12,8 @@ import {
   BookOpen,
   Brain,
   Mic,
+  ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { AudioWave } from "@/components/marketing/audio-wave";
 import { StarField } from "@/components/marketing/star-field";
 import { TalkToAgent } from "@/components/marketing/talk-to-agent";
@@ -109,18 +109,24 @@ export default function HomePage() {
             appointments, and handles customer inquiries — 24/7, with
             natural conversation.
           </p>
-          <div className="reveal is-visible reveal-delay-2 mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4 sm:px-0">
+
+          {/* Oval CTA Buttons - centered */}
+          <div className="reveal is-visible reveal-delay-2 mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0">
+            <Link href="/sign-up">
+              <button className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold text-white shadow-lg shadow-primary/25 transition-all duration-300 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-[0.98]">
+                SIGN UP
+                <ChevronRight className="ml-1 h-5 w-5" />
+              </button>
+            </Link>
             <Link href="/docs">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto px-8 border-border/50 hover:border-primary/30 hover:-translate-y-0.5 transition-all duration-300"
-              >
-                <BookOpen className="mr-2 h-4 w-4" />
-                Read Docs
-              </Button>
+              <button className="inline-flex items-center justify-center rounded-full border-2 border-border/50 bg-secondary/50 px-8 py-3.5 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold text-foreground transition-all duration-300 hover:border-primary/30 hover:bg-secondary hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]">
+                <BookOpen className="mr-2 h-5 w-5" />
+                READ THE DOCS
+              </button>
             </Link>
           </div>
+
+          {/* Talk to Agent with animated ring */}
           <div className="reveal is-visible reveal-delay-3 mt-10">
             <TalkToAgent />
           </div>

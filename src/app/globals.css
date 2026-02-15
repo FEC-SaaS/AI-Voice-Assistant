@@ -155,3 +155,48 @@
   animation: floatAlt 5s ease-in-out infinite;
 }
 
+/* Colorful spinning ring for Talk to Agent buttons (Vapi-style) */
+@keyframes colorRingSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-color-ring-spin {
+  animation: colorRingSpin 3s linear infinite;
+}
+
+/* Colorful floating orbs for auth pages */
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -20px) scale(1.1); }
+  50% { transform: translate(-10px, -40px) scale(0.95); }
+  75% { transform: translate(-30px, -10px) scale(1.05); }
+}
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(-20px, 30px) scale(1.05); }
+  50% { transform: translate(20px, 10px) scale(0.9); }
+  75% { transform: translate(10px, -20px) scale(1.1); }
+}
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(25px, 15px) scale(1.08); }
+  66% { transform: translate(-15px, -25px) scale(0.92); }
+}
+
+.animate-orb-1 { animation: orbFloat1 8s ease-in-out infinite; }
+.animate-orb-2 { animation: orbFloat2 10s ease-in-out infinite; }
+.animate-orb-3 { animation: orbFloat3 12s ease-in-out infinite; }
+
+/* Gradient line animation for auth pages */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+}
+
