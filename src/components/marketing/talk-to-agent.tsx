@@ -246,7 +246,9 @@ export function TalkToAgent() {
   const playbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Persistent Audio element — created once on user click to satisfy autoplay policy.
+  // We reuse it by swapping .src for each line, so the browser keeps the gesture grant.
+  const audioElRef = useRef<HTMLAudioElement | null>(null);
   const scenarioRef = useRef(1);
 
   // Auto-scroll chat to bottom
@@ -260,9 +262,10 @@ export function TalkToAgent() {
       activeRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
       if (playbackRef.current) clearTimeout(playbackRef.current);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      if (audioElRef.current) {
+        audioElRef.current.pause();
+        audioElRef.current.src = "";
+        audioElRef.current = null;
       }
     };
   }, []);
@@ -287,9 +290,8 @@ export function TalkToAgent() {
       clearTimeout(playbackRef.current);
       playbackRef.current = null;
     }
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+    if (audioElRef.current) {
+      audioElRef.current.pause();
     }
     setIsTyping(false);
     setIsSpeaking(false);
@@ -340,16 +342,24 @@ export function TalkToAgent() {
         scriptIndexRef.current = index + 1;
         setIsSpeaking(isAgent);
 
-        // Play the pre-recorded audio file
+        // Play the pre-recorded audio file using the persistent Audio element
         const agentKey = agentGender === "male" ? "atlas" : "aria";
         const audioSrc = getAudioPath(agentKey, scenarioRef.current, index, msg.role);
+        const audio = audioElRef.current;
 
-        const audio = new Audio(audioSrc);
-        audioRef.current = audio;
+        if (!audio) {
+          // Fallback if audio element is missing
+          setIsSpeaking(false);
+          playbackRef.current = setTimeout(() => {
+            playNextMessage(script, agentGender);
+          }, Math.min(msg.text.length * 40, 5000));
+          return;
+        }
 
-        audio.onended = () => {
+        const onEnded = () => {
+          audio.removeEventListener("ended", onEnded);
+          audio.removeEventListener("error", onError);
           if (!activeRef.current) return;
-          audioRef.current = null;
           setIsSpeaking(false);
           // Brief pause between messages
           playbackRef.current = setTimeout(() => {
@@ -357,10 +367,10 @@ export function TalkToAgent() {
           }, 400);
         };
 
-        audio.onerror = () => {
-          // If audio fails, continue after a text-length-based delay
+        const onError = () => {
+          audio.removeEventListener("ended", onEnded);
+          audio.removeEventListener("error", onError);
           if (!activeRef.current) return;
-          audioRef.current = null;
           setIsSpeaking(false);
           const fallbackDelay = Math.min(msg.text.length * 40, 5000);
           playbackRef.current = setTimeout(() => {
@@ -368,10 +378,13 @@ export function TalkToAgent() {
           }, fallbackDelay);
         };
 
+        audio.addEventListener("ended", onEnded);
+        audio.addEventListener("error", onError);
+        audio.src = audioSrc;
         audio.play().catch(() => {
-          // Autoplay blocked or file missing — use fallback timing
+          audio.removeEventListener("ended", onEnded);
+          audio.removeEventListener("error", onError);
           if (!activeRef.current) return;
-          audioRef.current = null;
           setIsSpeaking(false);
           const fallbackDelay = Math.min(msg.text.length * 40, 5000);
           playbackRef.current = setTimeout(() => {
@@ -401,11 +414,26 @@ export function TalkToAgent() {
 
       trackEvent({ event: "button_click", agent });
 
-      // Preload first audio file for faster start
+      // Create the Audio element NOW (inside the click handler) so browsers
+      // grant autoplay permission.  We play a tiny silent blip to "unlock"
+      // the element, then reuse it for every conversation line.
+      if (!audioElRef.current) {
+        audioElRef.current = new Audio();
+      }
+      const audio = audioElRef.current;
+      // Unlock: play a silent data-URI mp3 (minimal valid mp3 frame)
+      audio.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+MYxAAAAAANIAAAAAExBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxDsAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+      audio.play().then(() => {
+        audio.pause();
+      }).catch(() => {
+        // Ignore — we tried our best to unlock
+      });
+
+      // Preload first real audio file
       const agentKey = agent === "male" ? "atlas" : "aria";
       const firstAudioSrc = getAudioPath(agentKey, scenario, 0, script[0]!.role);
-      const preload = new Audio(firstAudioSrc);
-      preload.preload = "auto";
+      const preloader = new Audio(firstAudioSrc);
+      preloader.preload = "auto";
 
       playbackRef.current = setTimeout(() => {
         if (!activeRef.current) return;
