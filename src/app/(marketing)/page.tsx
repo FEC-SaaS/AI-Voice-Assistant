@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import {
   Phone,
-  BarChart3,
-  Zap,
   Users,
   Calendar,
   Clock,
@@ -14,8 +12,9 @@ import {
   Mic,
   ChevronRight,
 } from "lucide-react";
-import { AudioWave } from "@/components/marketing/audio-wave";
 import { StarField } from "@/components/marketing/star-field";
+import { VerticalWaves } from "@/components/marketing/vertical-waves";
+import { FallingBars } from "@/components/marketing/falling-bars";
 import { TalkToAgent } from "@/components/marketing/talk-to-agent";
 
 const HEADLINES = [
@@ -86,13 +85,16 @@ export default function HomePage() {
   const revealRef = useScrollReveal();
 
   return (
-    <div ref={revealRef}>
+    <div ref={revealRef} className="relative">
+      {/* Vertical side waves - in foreground across entire page */}
+      <VerticalWaves className="z-[3] opacity-70 fixed inset-0" />
+
       {/* Hero */}
       <section className="relative overflow-hidden py-24 sm:py-32">
         {/* Gradient background */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-background to-background" />
-        {/* Audio wave visualization */}
-        <AudioWave className="opacity-60 z-[1]" />
+        {/* Falling color bars (Vapi-style) */}
+        <FallingBars className="z-[1] opacity-50" />
         {/* Falling star particles */}
         <StarField />
         {/* Ambient glow orbs */}
@@ -110,16 +112,16 @@ export default function HomePage() {
             natural conversation.
           </p>
 
-          {/* Oval CTA Buttons - centered */}
+          {/* Oval CTA Buttons - centered with hover color change */}
           <div className="reveal is-visible reveal-delay-2 mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0">
             <Link href="/sign-up">
-              <button className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold text-white shadow-lg shadow-primary/25 transition-all duration-300 hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 active:scale-[0.98]">
+              <button className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold text-white shadow-lg shadow-primary/25 transition-all duration-300 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:scale-[0.98]">
                 SIGN UP
                 <ChevronRight className="ml-1 h-5 w-5" />
               </button>
             </Link>
             <Link href="/docs">
-              <button className="inline-flex items-center justify-center rounded-full border-2 border-border/50 bg-secondary/50 px-8 py-3.5 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold text-foreground transition-all duration-300 hover:border-primary/30 hover:bg-secondary hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]">
+              <button className="inline-flex items-center justify-center rounded-full border-2 border-border/50 bg-secondary/50 px-8 py-3.5 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold text-foreground transition-all duration-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/25 hover:-translate-y-0.5 active:scale-[0.98]">
                 <BookOpen className="mr-2 h-5 w-5" />
                 READ THE DOCS
               </button>
@@ -134,7 +136,7 @@ export default function HomePage() {
       </section>
 
       {/* Social Proof Stats */}
-      <section className="border-y border-border/50 bg-card/50">
+      <section className="relative border-y border-border/50 bg-card/50">
         <div className="container mx-auto px-4">
           <div className="reveal grid grid-cols-2 md:grid-cols-4 divide-x divide-border/50">
             {[
@@ -157,7 +159,7 @@ export default function HomePage() {
       </section>
 
       {/* How it Works */}
-      <section className="py-16 sm:py-20 md:py-28">
+      <section className="relative py-16 sm:py-20 md:py-28">
         <div className="container mx-auto px-4">
           <div className="text-center">
             <h2 className="reveal text-3xl font-bold text-foreground sm:text-4xl">
@@ -193,7 +195,7 @@ export default function HomePage() {
       {/* Value-Driven Features */}
       <section className="relative py-16 sm:py-20 md:py-28 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-secondary/50 via-secondary to-secondary/50" />
-        <AudioWave className="opacity-40 z-[1]" />
+        <FallingBars className="z-[1] opacity-30" />
         <div className="relative z-10 container mx-auto px-4">
           <div className="text-center">
             <h2 className="reveal text-3xl font-bold text-foreground sm:text-4xl">
@@ -247,7 +249,7 @@ export default function HomePage() {
       {/* Bottom CTA */}
       <section className="relative overflow-hidden py-16 sm:py-20 md:py-28">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-purple-500/10" />
-        <AudioWave className="opacity-50 z-[1]" />
+        <FallingBars className="z-[1] opacity-40" />
         <StarField />
         {/* Ambient glow orbs */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl animate-float" />

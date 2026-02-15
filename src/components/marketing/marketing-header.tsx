@@ -24,13 +24,20 @@ export function MarketingHeader() {
           <span className="text-xl font-bold gradient-text">CallTone</span>
         </Link>
 
+        {/* Mobile: OPEN DASHBOARD centered between logo and menu icon */}
+        <Link href="/sign-in" className="md:hidden">
+          <button className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white transition-all duration-300 hover:bg-amber-500 active:scale-[0.98]">
+            OPEN DASHBOARD
+          </button>
+        </Link>
+
         {/* Desktop nav */}
         <nav className="hidden gap-6 md:flex">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`text-sm ${
+              className={`text-sm transition-colors duration-200 ${
                 pathname === link.href
                   ? "font-medium text-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -41,16 +48,11 @@ export function MarketingHeader() {
           ))}
         </nav>
 
-        {/* Desktop auth buttons */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* Desktop: only OPEN DASHBOARD (SIGN UP is in hero center) */}
+        <div className="hidden md:flex items-center">
           <Link href="/sign-in">
-            <button className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-600/25 hover:-translate-y-0.5 active:scale-[0.98]">
+            <button className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-amber-500 hover:shadow-lg hover:shadow-amber-500/25 hover:-translate-y-0.5 active:scale-[0.98]">
               OPEN DASHBOARD
-            </button>
-          </Link>
-          <Link href="/sign-up">
-            <button className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5 active:scale-[0.98]">
-              SIGN UP
             </button>
           </Link>
         </div>
@@ -69,7 +71,7 @@ export function MarketingHeader() {
         </button>
       </div>
 
-      {/* Mobile menu dropdown */}
+      {/* Mobile menu dropdown - nav links only */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-border/50 bg-card/95 backdrop-blur-md animate-fade-in">
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-1">
@@ -87,18 +89,6 @@ export function MarketingHeader() {
                 {link.label}
               </Link>
             ))}
-            <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-border/50">
-              <Link href="/sign-in" onClick={() => setMobileMenuOpen(false)}>
-                <button className="w-full inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-emerald-700">
-                  OPEN DASHBOARD
-                </button>
-              </Link>
-              <Link href="/sign-up" onClick={() => setMobileMenuOpen(false)}>
-                <button className="w-full inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-primary/90">
-                  SIGN UP
-                </button>
-              </Link>
-            </div>
           </nav>
         </div>
       )}

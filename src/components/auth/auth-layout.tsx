@@ -2,14 +2,24 @@
 
 import { StarrySky } from "./starry-sky";
 import { RotatingValueMessages } from "./rotating-value-messages";
-import { AudioWave } from "@/components/marketing/audio-wave";
+import { VerticalWaves } from "@/components/marketing/vertical-waves";
+import { StarField } from "@/components/marketing/star-field";
+import { FallingBars } from "@/components/marketing/falling-bars";
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen flex">
+    <div className="relative min-h-screen flex overflow-hidden">
       {/* Background layers */}
       <StarrySky />
-      <AudioWave className="opacity-15" />
+
+      {/* Vertical waves on sides (foreground) */}
+      <VerticalWaves className="z-[2] opacity-50" />
+
+      {/* Falling star particles */}
+      <StarField />
+
+      {/* Falling color bars */}
+      <FallingBars className="z-[1] opacity-30" />
 
       {/* Colorful floating orbs */}
       <div className="absolute top-[10%] left-[10%] w-[300px] h-[300px] bg-indigo-500/10 rounded-full blur-3xl animate-orb-1 pointer-events-none" />
@@ -20,8 +30,8 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       <div className="absolute top-[5%] right-[30%] w-[220px] h-[220px] bg-amber-400/6 rounded-full blur-3xl animate-orb-3 pointer-events-none" style={{ animationDelay: "1s" }} />
 
       {/* Gradient animated line accents */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-cyan-400 via-emerald-400 via-amber-400 via-pink-500 to-purple-500 animate-gradient-shift pointer-events-none" />
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 via-amber-400 via-emerald-400 via-cyan-400 to-indigo-500 animate-gradient-shift pointer-events-none" />
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-cyan-400 via-emerald-400 via-amber-400 via-pink-500 to-purple-500 animate-gradient-shift pointer-events-none z-20" />
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 via-amber-400 via-emerald-400 via-cyan-400 to-indigo-500 animate-gradient-shift pointer-events-none z-20" />
 
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90 pointer-events-none" />
@@ -37,7 +47,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             <p className="text-base sm:text-lg text-muted-foreground text-center">
               Voice Agents for Modern Business
             </p>
-            {/* Show on all screen sizes now (was hidden on mobile before) */}
+            {/* Show on all screen sizes */}
             <div className="mt-4">
               <RotatingValueMessages />
             </div>
