@@ -111,7 +111,7 @@ export default function HomePage() {
           {/* Oval CTA Buttons - centered with hover color change */}
           <div className="reveal is-visible reveal-delay-2 mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4 sm:px-0">
             <Link href="/sign-up">
-              <button className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold text-white shadow-lg shadow-primary/25 transition-all duration-300 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:scale-[0.98]">
+              <button className="inline-flex items-center justify-center rounded-full bg-primary px-8 py-3.5 sm:px-10 sm:py-4 text-base sm:text-lg font-semibold text-white shadow-lg shadow-primary/25 transition-all duration-300 hover:bg-emerald-500 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:scale-[0.98] min-w-[200px]">
                 SIGN UP
                 <ChevronRight className="ml-1 h-5 w-5" />
               </button>
