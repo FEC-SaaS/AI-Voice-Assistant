@@ -136,10 +136,10 @@ export default function HomePage() {
         <div className="container mx-auto px-4">
           <div className="reveal grid grid-cols-2 md:grid-cols-4 divide-x divide-border/50">
             {[
-              { stat: "1M+", label: "Calls Handled" },
-              { stat: "50K+", label: "Appointments Booked" },
+              { stat: "80k+", label: "Calls Handled" },
+              { stat: "8,750+", label: "Appointments Booked" },
               { stat: "24/7", label: "Availability" },
-              { stat: "95%", label: "Satisfaction" },
+              { stat: "94%", label: "Satisfaction" },
             ].map((item) => (
               <div key={item.label} className="py-8 text-center">
                 <p className="text-2xl sm:text-3xl font-bold text-foreground">
