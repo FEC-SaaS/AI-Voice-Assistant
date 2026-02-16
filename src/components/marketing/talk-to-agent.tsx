@@ -466,11 +466,9 @@ export function TalkToAgent() {
         <AnimatedRing>
           <button
             onClick={() => handleStartCall("female")}
-            // className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-full bg-purple-600 px-6 py-3.5 text-white shadow-lg shadow-purple-600/25 transition-all duration-300 hover:bg-pink-500 hover:shadow-xl hover:shadow-pink-500/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
-            className="group relative inline-flex items-center justify-center rounded-full bg-purple-600 px-10 py-4 text-white shadow-lg shadow-purple-600/25 transition-all duration-300 hover:bg-pink-500 hover:shadow-xl hover:shadow-pink-500/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-12 sm:py-5 w-[240px] sm:w-[280px]"
+            className="group relative inline-flex flex-col items-center justify-center gap-1 rounded-full bg-purple-600 px-6 py-3.5 text-white shadow-lg shadow-purple-600/25 transition-all duration-300 hover:bg-pink-500 hover:shadow-xl hover:shadow-pink-500/30 hover:-translate-y-0.5 active:scale-[0.98] sm:px-10 sm:py-5"
           >
-            {/* <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg"> */}
-            <span className="text-base font-semibold sm:text-lg">
+            <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg">
               <Mic className="h-5 w-5 mr-2" />
               Talk to Aria
             </span>
