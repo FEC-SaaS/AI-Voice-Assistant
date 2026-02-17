@@ -154,11 +154,12 @@ export const integrationsRouter = router({
       }
 
       const existingConfig = (integration.config || {}) as Record<string, unknown>;
+      const mergedConfig = { ...existingConfig, ...input.config };
 
       const updated = await db.integration.update({
         where: { id: integration.id },
         data: {
-          config: { ...existingConfig, ...input.config },
+          config: JSON.parse(JSON.stringify(mergedConfig)),
         },
       });
 

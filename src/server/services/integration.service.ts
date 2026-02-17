@@ -331,7 +331,7 @@ export async function saveIntegrationConnection(
       refreshToken: data.refreshToken || null,
       tokenExpiresAt,
       webhookUrl: data.webhookUrl || null,
-      config: data.config || {},
+      config: data.config ? JSON.parse(JSON.stringify(data.config)) : {},
       lastSyncedAt: new Date(),
     },
     update: {
@@ -340,7 +340,7 @@ export async function saveIntegrationConnection(
       refreshToken: data.refreshToken || undefined,
       tokenExpiresAt: tokenExpiresAt || undefined,
       webhookUrl: data.webhookUrl || undefined,
-      config: data.config || undefined,
+      config: data.config ? JSON.parse(JSON.stringify(data.config)) : undefined,
       errorMessage: null,
       lastSyncedAt: new Date(),
     },
@@ -533,7 +533,7 @@ export async function deliverWebhook(
     data: {
       webhookEndpointId: endpointId,
       event,
-      payload,
+      payload: JSON.parse(JSON.stringify(payload)),
       statusCode,
       response: responseText,
       success,
