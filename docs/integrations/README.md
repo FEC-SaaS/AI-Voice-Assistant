@@ -46,8 +46,6 @@ When you connect an integration, CalltTone automatically adds the relevant capab
 | **Business** | All integrations |
 | Enterprise | All integrations + custom connectors |
 
-> **Developer Mode**: Set `BYPASS_PLAN_CHECK=true` in your `.env` file to test integrations during development regardless of plan tier.
-
 ---
 
 ## GoHighLevel (GHL)
@@ -74,13 +72,6 @@ When you connect an integration, CalltTone automatically adds the relevant capab
 5. Select the location you want to connect
 6. Grant the requested permissions (Contacts, Calendars)
 7. You'll be redirected back to CalltTone with a success message
-
-### Environment Variables Required
-
-```env
-GHL_CLIENT_ID=your_ghl_app_client_id
-GHL_CLIENT_SECRET=your_ghl_app_client_secret
-```
 
 ### How It Works During Calls
 
@@ -119,13 +110,6 @@ After connecting, you can set your default `calendarId` in the integration confi
 5. Grant access to Google Calendar
 6. You'll be redirected back with a success message
 
-### Environment Variables Required
-
-```env
-GOOGLE_CLIENT_ID=your_google_oauth_client_id
-GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
-```
-
 ### Notes
 
 - Works with your primary calendar by default
@@ -147,14 +131,6 @@ GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
 2. Find **Google Sheets** under Automation
 3. Click **Connect**
 4. Grant access to Google Sheets (if you already connected Google Calendar, permissions may already be granted)
-
-### Environment Variables Required
-
-Same as Google Calendar:
-```env
-GOOGLE_CLIENT_ID=your_google_oauth_client_id
-GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
-```
 
 ---
 
@@ -216,13 +192,6 @@ When your voice agent determines it should trigger an automation (based on conve
 4. Select the Slack workspace and channel for notifications
 5. Authorize CalltTone
 
-### Environment Variables Required
-
-```env
-SLACK_CLIENT_ID=your_slack_app_client_id
-SLACK_CLIENT_SECRET=your_slack_app_client_secret
-```
-
 ---
 
 ## Zapier
@@ -280,13 +249,6 @@ You can use both simultaneously for different purposes.
 4. Authorize CalltTone in HubSpot
 5. Grant permissions for Contacts and Deals
 
-### Environment Variables Required
-
-```env
-HUBSPOT_CLIENT_ID=your_hubspot_app_client_id
-HUBSPOT_CLIENT_SECRET=your_hubspot_app_client_secret
-```
-
 ---
 
 ## Salesforce
@@ -313,14 +275,6 @@ HUBSPOT_CLIENT_SECRET=your_hubspot_app_client_secret
 2. Find **Salesforce** under CRM
 3. Click **Connect**
 4. Log in to Salesforce and authorize CalltTone
-
-### Environment Variables Required
-
-```env
-SALESFORCE_CLIENT_ID=your_salesforce_connected_app_client_id
-SALESFORCE_CLIENT_SECRET=your_salesforce_connected_app_client_secret
-SALESFORCE_LOGIN_URL=https://login.salesforce.com
-```
 
 ---
 
@@ -455,6 +409,31 @@ All API requests require an API key in the `Authorization` header:
 Authorization: Bearer vxf_your_api_key_here
 ```
 
+### How to Create an API Key
+
+1. Navigate to **Dashboard > Settings > API Keys**
+2. Click **Generate New Key**
+3. Give your key a descriptive name (e.g., "My Custom Integration" or "Zapier Integration")
+4. Click **Generate**
+5. **Copy your key immediately** — you won't be able to see it again
+6. Store it securely in your application or tool (never commit to version control)
+
+### Using Your API Key
+
+Once you have your key, include it in every API request:
+
+```bash
+curl -H "Authorization: Bearer vxf_your_api_key_here" \
+  https://api.calltone.com/api/v1/agents
+```
+
+### Best Practices
+
+- **Keep it secret**: Treat your API key like a password. Never share it or expose it in public code.
+- **Rotate regularly**: Generate new keys periodically and delete old ones to maintain security.
+- **Use descriptive names**: Name keys by their purpose (e.g., "Zapier", "Custom Dashboard") to track usage.
+- **Revoke immediately**: If a key is compromised, delete it from **Dashboard > Settings > API Keys**
+
 Manage API keys at **Dashboard > Settings > API Keys**.
 
 ---
@@ -463,7 +442,6 @@ Manage API keys at **Dashboard > Settings > API Keys**.
 
 | Issue | Solution |
 |-------|----------|
-| OAuth redirect fails | Verify your redirect URI matches: `https://your-domain.com/api/integrations/callback` |
 | Integration shows "Error" | Click Disconnect, then Connect again to re-authorize |
 | Webhook deliveries failing | Check the delivery logs — verify your endpoint is publicly accessible and returns 2xx |
 | Tools not appearing in calls | After connecting an integration, re-sync your agents (Agents > Edit > Save) |
