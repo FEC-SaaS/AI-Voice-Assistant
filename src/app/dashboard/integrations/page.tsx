@@ -86,8 +86,9 @@ function IntegrationCard({
     status: string;
     connected: boolean;
     planAllowed: boolean;
-    lastSyncedAt: string | null;
+    lastSyncedAt: Date | string | null;
     errorMessage: string | null;
+    config: unknown;
     hasWebhookUrl: boolean;
     docsUrl?: string;
   };
