@@ -501,7 +501,7 @@ export default function IntegrationsPage() {
       </div>
 
       {/* Plan gating banner */}
-      {integrations.length > 0 && !integrations[0].planAllowed && (
+      {integrations.length > 0 && !integrations[0]?.planAllowed && (
         <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-4 flex items-center gap-3">
           <Lock className="h-5 w-5 text-yellow-500" />
           <div>
