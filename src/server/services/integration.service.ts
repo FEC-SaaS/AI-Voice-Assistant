@@ -117,6 +117,7 @@ const INTEGRATION_PLANS = ["professional", "business", "enterprise"];
 // ============================================
 
 export function canUseIntegrations(planId: string): boolean {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return true;
   return INTEGRATION_PLANS.includes(planId);
 }
 
