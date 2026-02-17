@@ -470,7 +470,7 @@ export function TalkToAgent() {
           >
             <span className="flex items-center gap-2 sm:gap-3 text-sm font-semibold sm:text-lg">
               <Mic className="h-5 w-5 mr-2" />
-              Talk to Aria
+              Hear Aria work
             </span>
           </button>
         </AnimatedRing>

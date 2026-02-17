@@ -1414,7 +1414,7 @@ export async function POST(req: NextRequest) {
     const agent = call.assistantId
       ? await db.agent.findFirst({
           where: { vapiAssistantId: call.assistantId },
-          select: { id: true, organizationId: true },
+          select: { id: true, organizationId: true, name: true },
         })
       : null;
 
@@ -1540,6 +1540,25 @@ export async function POST(req: NextRequest) {
             data: { status: "called", lastCalledAt: new Date() },
           }).catch(() => {
             // Contact might not exist
+          });
+        }
+
+        // Deliver to user-configured webhooks + Slack notifications
+        if (organizationId) {
+          import("@/server/services/integration.service").then(({ deliverWebhookToOrg, sendSlackNotification }) => {
+            const eventPayload = {
+              event: "call.started",
+              callId: call.id,
+              direction: callDirection,
+              fromNumber: call.customer?.number || call.metadata?.fromNumber,
+              toNumber: call.metadata?.fromNumber || call.customer?.number,
+              agentName: agent?.name,
+              startedAt: new Date().toISOString(),
+            };
+            deliverWebhookToOrg(organizationId, "call.started", eventPayload).catch(() => {});
+            sendSlackNotification(organizationId, {
+              text: `📞 Call ${callDirection === "inbound" ? "received" : "started"} ${agent ? `with ${agent.name}` : ""}`,
+            }).catch(() => {});
           });
         }
 
@@ -1721,6 +1740,42 @@ export async function POST(req: NextRequest) {
               });
             });
           }
+        }
+
+        // Deliver to user-configured webhooks + Slack notifications
+        if (organizationId) {
+          import("@/server/services/integration.service").then(({ deliverWebhookToOrg, sendSlackNotification }) => {
+            const eventPayload = {
+              event: "call.ended",
+              callId: call.id,
+              direction: callDirection,
+              status: finalStatus,
+              durationSeconds,
+              fromNumber: call.customer?.number || call.metadata?.fromNumber,
+              toNumber: call.metadata?.fromNumber || call.customer?.number,
+              agentName: agent?.name,
+              summary: summary || undefined,
+              endedAt: new Date().toISOString(),
+            };
+            deliverWebhookToOrg(organizationId, "call.ended", eventPayload).catch(() => {});
+
+            // Slack notification with richer info
+            const durationStr = durationSeconds > 0 ? ` (${Math.round(durationSeconds / 60)}m ${durationSeconds % 60}s)` : "";
+            sendSlackNotification(organizationId, {
+              text: `📞 Call ended${durationStr} — ${finalStatus}${summary ? `\n> ${summary.substring(0, 200)}` : ""}`,
+            }).catch(() => {});
+          });
+        }
+
+        // Deliver transcript.ready webhook if we have transcript
+        if (organizationId && transcriptText) {
+          import("@/server/services/integration.service").then(({ deliverWebhookToOrg }) => {
+            deliverWebhookToOrg(organizationId, "transcript.ready", {
+              event: "transcript.ready",
+              callId: call.id,
+              transcript: transcriptText.substring(0, 10000),
+            }).catch(() => {});
+          });
         }
 
         break;

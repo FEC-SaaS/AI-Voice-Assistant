@@ -6,6 +6,7 @@ import { createLogger } from "@/lib/logger";
 const log = createLogger("Agents");
 import { createAssistant, updateAssistant, deleteAssistant, createCall, getAssistant } from "@/lib/vapi";
 import { getAgentTools, getAppointmentSystemPromptAddition, getReceptionistSystemPromptAddition, getOutboundCallPrompt, getOutboundFirstMessage, type ReceptionistConfig } from "@/lib/vapi-tools";
+import { getVapiIntegrationTools } from "../services/integration.service";
 import { enforceAgentLimit } from "../trpc/middleware";
 
 // Get the webhook URL for Vapi tool calls
@@ -219,8 +220,11 @@ export const agentsRouter = router({
         fullSystemPrompt += receptionistPrompt;
       }
 
+      // Get integration tools (GHL, Google Calendar, Make, MCP, etc.)
+      const integrationTools = await getVapiIntegrationTools(ctx.orgId);
+
       // Get tools for this agent
-      const tools = getAgentTools(input.enableAppointments, input.enableReceptionist, transferDestinations);
+      const tools = getAgentTools(input.enableAppointments, input.enableReceptionist, transferDestinations, integrationTools);
 
       // Add agent identity instruction so the AI always uses the configured name
       fullSystemPrompt += `\n\nYOUR IDENTITY:\nYour name is ${input.name}. ALWAYS use this name when introducing yourself or when asked your name. NEVER use any other name.`;
@@ -356,8 +360,11 @@ export const agentsRouter = router({
         fullSystemPrompt += receptionistPrompt;
       }
 
+      // Get integration tools
+      const integrationTools = await getVapiIntegrationTools(ctx.orgId);
+
       // Get tools for this agent
-      const tools = getAgentTools(enableAppointments, enableReceptionist, transferDestinations);
+      const tools = getAgentTools(enableAppointments, enableReceptionist, transferDestinations, integrationTools);
 
       // Add agent identity instruction so the AI always uses the configured name
       const agentNameForPrompt = input.data.name || existingAgent.name;
@@ -640,8 +647,11 @@ export const agentsRouter = router({
         fullSystemPrompt += receptionistPrompt;
       }
 
+      // Get integration tools
+      const integrationTools = await getVapiIntegrationTools(ctx.orgId);
+
       // Get tools
-      const tools = getAgentTools(enableAppointments, enableReceptionist, transferDestinations);
+      const tools = getAgentTools(enableAppointments, enableReceptionist, transferDestinations, integrationTools);
 
       // Add agent identity instruction
       fullSystemPrompt += `\n\nYOUR IDENTITY:\nYour name is ${agent.name}. ALWAYS use this name when introducing yourself or when asked your name. NEVER use any other name.`;
@@ -709,8 +719,11 @@ export const agentsRouter = router({
         fullSystemPrompt += receptionistPrompt;
       }
 
+      // Get integration tools
+      const integrationTools = await getVapiIntegrationTools(ctx.orgId);
+
       // Get tools
-      const tools = getAgentTools(enableAppointments, enableReceptionist, transferDestinations);
+      const tools = getAgentTools(enableAppointments, enableReceptionist, transferDestinations, integrationTools);
 
       // Add agent identity instruction
       fullSystemPrompt += `\n\nYOUR IDENTITY:\nYour name is ${agent.name}. ALWAYS use this name when introducing yourself or when asked your name. NEVER use any other name.`;

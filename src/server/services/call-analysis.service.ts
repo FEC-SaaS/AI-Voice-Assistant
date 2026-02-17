@@ -166,6 +166,40 @@ export async function analyzeCall(callId: string): Promise<CallAnalysisResult> {
       }
     }
 
+    // Log call to CRM integrations (HubSpot, Salesforce)
+    if (call.organizationId) {
+      import("./integration.service").then(({ hubspotLogCallActivity, salesforceLogTask }) => {
+        hubspotLogCallActivity(call.organizationId, {
+          direction: call.direction,
+          fromNumber: call.fromNumber || undefined,
+          toNumber: call.toNumber || undefined,
+          durationSeconds: call.durationSeconds || undefined,
+          summary: analysis.summary,
+          status: call.status || undefined,
+        }).catch(() => {});
+        salesforceLogTask(call.organizationId, {
+          subject: `AI Voice Call — ${analysis.sentiment || "neutral"}`,
+          description: analysis.summary,
+          status: "Completed",
+        }).catch(() => {});
+      });
+    }
+
+    // Deliver analysis.complete webhook to user-configured endpoints
+    if (call.organizationId) {
+      import("./integration.service").then(({ deliverWebhookToOrg }) => {
+        deliverWebhookToOrg(call.organizationId, "analysis.complete", {
+          event: "analysis.complete",
+          callId,
+          sentiment: analysis.sentiment,
+          summary: analysis.summary,
+          leadScore: analysis.leadScore,
+          keyPoints: analysis.keyPoints,
+          actionItems: analysis.actionItems,
+        }).catch(() => {});
+      });
+    }
+
     return {
       callId,
       success: true,

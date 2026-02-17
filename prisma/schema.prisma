@@ -46,6 +46,8 @@ model Organization {
   receptionistMessages ReceptionistMessage[]
   cnamProfile          CnamProfile?
   poolNumbers          PhoneNumberPool[]
+  integrations         Integration[]
+  webhookEndpoints     WebhookEndpoint[]
 
   @@index([slug])
   @@index([clerkOrgId])
@@ -578,5 +580,66 @@ model PhoneNumberPool {
   @@index([status])
   @@index([countryCode, type])
   @@index([organizationId])
+}
+
+// ===========================================
+// Integration Models
+// ===========================================
+
+model Integration {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type            String       // ghl, google_calendar, google_sheets, make, slack, zapier, hubspot, salesforce, mcp, webhook
+  status          String       @default("disconnected") // connected, disconnected, error
+  accessToken     String?      @db.Text // Encrypted OAuth access token
+  refreshToken    String?      @db.Text // Encrypted OAuth refresh token
+  tokenExpiresAt  DateTime?
+  webhookUrl      String?      // For Make/Zapier/MCP server URL
+  webhookSecret   String?      // For signing outbound webhooks
+  config          Json         @default("{}") // Provider-specific config (calendar IDs, channel IDs, etc.)
+  lastSyncedAt    DateTime?
+  errorMessage    String?      // Last error message if status is 'error'
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([organizationId, type])
+  @@index([organizationId])
+  @@index([type])
+  @@index([status])
+}
+
+model WebhookEndpoint {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  url             String
+  secret          String       // HMAC secret for signing payloads
+  events          String[]     // e.g. ["call.started", "call.ended", "transcript.ready"]
+  isActive        Boolean      @default(true)
+  description     String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  logs            WebhookLog[]
+
+  @@index([organizationId])
+}
+
+model WebhookLog {
+  id                String          @id @default(cuid())
+  webhookEndpointId String
+  webhookEndpoint   WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
+  event             String
+  payload           Json
+  statusCode        Int?
+  response          String?         @db.Text
+  success           Boolean         @default(false)
+  attempts          Int             @default(1)
+  createdAt         DateTime        @default(now())
+
+  @@index([webhookEndpointId])
+  @@index([event])
+  @@index([createdAt])
 }
 
