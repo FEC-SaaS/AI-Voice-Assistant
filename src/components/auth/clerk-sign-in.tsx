@@ -33,8 +33,11 @@ export function ClerkSignIn() {
         elements: {
           rootBox: "mx-auto",
           card: "shadow-lg bg-card border-border",
-          socialButtons: "hidden",
-          dividerRow: "hidden",
+          socialButtonsBlockButton:
+            "border border-border bg-secondary hover:bg-secondary/80 text-foreground",
+          socialButtonsBlockButtonText: "text-foreground font-medium",
+          dividerLine: "bg-border",
+          dividerText: "text-muted-foreground",
         },
       }}
     />
