@@ -25,6 +25,7 @@ sunrise-realty-knowledge-base.txt
 nul
 scripts/fix-user-role.ts
 SMOKE_TEST_PLAN.md
+TESTING.md
 
 # Environment variables
 .env

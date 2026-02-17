@@ -38,7 +38,7 @@ export const INTEGRATION_CATALOG: IntegrationInfo[] = [
     icon: "ghl",
     category: "crm",
     authType: "oauth",
-    docsUrl: "https://docs.vapi.ai/tools/go-high-level",
+    docsUrl: "/dashboard/integrations/docs?section=ghl",
   },
   {
     id: "google_calendar",
@@ -47,7 +47,7 @@ export const INTEGRATION_CATALOG: IntegrationInfo[] = [
     icon: "google_calendar",
     category: "calendar",
     authType: "oauth",
-    docsUrl: "https://docs.vapi.ai/tools/google-calendar",
+    docsUrl: "/dashboard/integrations/docs?section=google_calendar",
   },
   {
     id: "google_sheets",
@@ -56,6 +56,7 @@ export const INTEGRATION_CATALOG: IntegrationInfo[] = [
     icon: "google_sheets",
     category: "automation",
     authType: "oauth",
+    docsUrl: "/dashboard/integrations/docs?section=google_sheets",
   },
   {
     id: "make",
@@ -64,7 +65,7 @@ export const INTEGRATION_CATALOG: IntegrationInfo[] = [
     icon: "make",
     category: "automation",
     authType: "webhook_url",
-    docsUrl: "https://docs.vapi.ai/tools/make",
+    docsUrl: "/dashboard/integrations/docs?section=make",
   },
   {
     id: "slack",
@@ -73,6 +74,7 @@ export const INTEGRATION_CATALOG: IntegrationInfo[] = [
     icon: "slack",
     category: "communication",
     authType: "oauth",
+    docsUrl: "/dashboard/integrations/docs?section=slack",
   },
   {
     id: "zapier",
@@ -81,6 +83,7 @@ export const INTEGRATION_CATALOG: IntegrationInfo[] = [
     icon: "zapier",
     category: "automation",
     authType: "webhook_url",
+    docsUrl: "/dashboard/integrations/docs?section=zapier",
   },
   {
     id: "hubspot",
@@ -89,6 +92,7 @@ export const INTEGRATION_CATALOG: IntegrationInfo[] = [
     icon: "hubspot",
     category: "crm",
     authType: "oauth",
+    docsUrl: "/dashboard/integrations/docs?section=hubspot",
   },
   {
     id: "salesforce",
@@ -97,6 +101,7 @@ export const INTEGRATION_CATALOG: IntegrationInfo[] = [
     icon: "salesforce",
     category: "crm",
     authType: "oauth",
+    docsUrl: "/dashboard/integrations/docs?section=salesforce",
   },
   {
     id: "mcp",
@@ -105,7 +110,7 @@ export const INTEGRATION_CATALOG: IntegrationInfo[] = [
     icon: "mcp",
     category: "automation",
     authType: "webhook_url",
-    docsUrl: "https://docs.vapi.ai/tools/mcp",
+    docsUrl: "/dashboard/integrations/docs?section=mcp",
   },
 ];
 

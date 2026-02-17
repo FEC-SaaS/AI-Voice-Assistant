@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   Plug,
   ExternalLink,
@@ -137,14 +138,25 @@ function IntegrationCard({
           </div>
         </div>
         {integration.docsUrl && (
-          <a
-            href={integration.docsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </a>
+          integration.docsUrl.startsWith("/") ? (
+            <Link
+              href={integration.docsUrl}
+              className="text-muted-foreground hover:text-foreground"
+              title="View docs"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          ) : (
+            <a
+              href={integration.docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground"
+              title="View docs"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          )
         )}
       </div>
       <p className="mt-3 text-sm text-muted-foreground">{integration.description}</p>
