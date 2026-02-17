@@ -793,7 +793,8 @@ export function getInterviewFirstMessage(
 export function getAgentTools(
   enableAppointments: boolean,
   enableReceptionist: boolean = false,
-  transferDestinations: TransferDestination[] = []
+  transferDestinations: TransferDestination[] = [],
+  integrationTools: unknown[] = []
 ): VapiTool[] {
   const tools: VapiTool[] = [];
 
@@ -803,6 +804,11 @@ export function getAgentTools(
 
   if (enableReceptionist) {
     tools.push(...getReceptionistTools(transferDestinations));
+  }
+
+  // Add integration-provided tools (GHL, Google Calendar, Make, MCP, etc.)
+  if (integrationTools.length > 0) {
+    tools.push(...(integrationTools as VapiTool[]));
   }
 
   return tools;
