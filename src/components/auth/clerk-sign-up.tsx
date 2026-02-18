@@ -1,17 +1,13 @@
 "use client";
 
-import { useSignUp, useClerk, useUser, useOrganizationList } from "@clerk/nextjs";
+import { SignUp, useClerk, useUser, useOrganizationList } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const ACCOUNT_NAME_KEY = "calltone_pending_account_name";
 
-type Phase = "form" | "verifying";
-
 export function ClerkSignUp() {
-  const { isLoaded, signUp, setActive } = useSignUp();
   const clerk = useClerk();
   const { isSignedIn, user } = useUser();
   const { userMemberships } = useOrganizationList({
@@ -19,18 +15,10 @@ export function ClerkSignUp() {
   });
   const router = useRouter();
 
-  const [phase, setPhase] = useState<Phase>("form");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [accountName, setAccountName] = useState("");
-  const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [creatingOrg, setCreatingOrg] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<string | null>(null);
 
   // Prevent double-creation
   const orgCreationAttempted = useRef(false);
@@ -71,7 +59,7 @@ export function ClerkSignUp() {
     })();
   }, [hasNoOrg, clerk, router]);
 
-  if (!isLoaded) {
+  if (!clerk.loaded) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
@@ -96,8 +84,8 @@ export function ClerkSignUp() {
   }
 
   // ─────────────────────────────────────────────────
-  // User is signed in, no org, and no stored name
-  // → Show Account Name form (OAuth returns land here)
+  // Step 2: User is signed in but has no org
+  // → Show Account Name form to create their organization
   // ─────────────────────────────────────────────────
   if (hasNoOrg) {
     return (
@@ -170,311 +158,37 @@ export function ClerkSignUp() {
     );
   }
 
-  // ── Email/password signup ───────────────────────
-  const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!signUp) return;
-    setError("");
-    setLoading(true);
-    try {
-      await signUp.create({
-        firstName,
-        lastName,
-        emailAddress: email,
-        password,
-      });
-
-      // Store account name BEFORE verification — survives Clerk redirects
-      sessionStorage.setItem(ACCOUNT_NAME_KEY, accountName.trim());
-
-      // Send email verification code
-      await signUp.prepareEmailAddressVerification({
-        strategy: "email_code",
-      });
-      setPhase("verifying");
-    } catch (err: unknown) {
-      setError(extractMsg(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── Verify email ────────────────────────────────
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!signUp) return;
-    setError("");
-    setLoading(true);
-    try {
-      const result = await signUp.attemptEmailAddressVerification({ code });
-
-      if (result.status === "complete" && result.createdSessionId) {
-        // Activate session — Clerk may redirect, but sessionStorage persists.
-        // The useEffect above will pick up the stored account name and
-        // auto-create the org when the component re-renders.
-        await setActive({ session: result.createdSessionId });
-
-        // If we're still on the page (no redirect), try creating org directly
-        try {
-          await new Promise((r) => setTimeout(r, 500));
-          const storedName = sessionStorage.getItem(ACCOUNT_NAME_KEY);
-          if (storedName && clerk.loaded) {
-            const org = await clerk.createOrganization({ name: storedName });
-            await clerk.setActive({ organization: org.id });
-            sessionStorage.removeItem(ACCOUNT_NAME_KEY);
-            router.push("/dashboard");
-          }
-        } catch {
-          // If this fails, the useEffect will handle it after redirect
-        }
-      } else {
-        setError("Verification incomplete. Please try again.");
-      }
-    } catch (err: unknown) {
-      setError(extractMsg(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── OAuth sign-up (Google, Microsoft) ───────────
-  const handleOAuthSignUp = async (strategy: "oauth_google" | "oauth_microsoft") => {
-    if (!signUp) return;
-    setError("");
-    setOauthLoading(strategy);
-
-    // Store account name before OAuth redirect (if provided)
-    if (accountName.trim()) {
-      sessionStorage.setItem(ACCOUNT_NAME_KEY, accountName.trim());
-    }
-
-    try {
-      await signUp.authenticateWithRedirect({
-        strategy,
-        redirectUrl: "/sign-up/sso-callback",
-        redirectUrlComplete: "/sign-up",
-      });
-    } catch (err: unknown) {
-      setError(extractMsg(err));
-      setOauthLoading(null);
-    }
-  };
-
-  // ── Phase: Email verification ───────────────────
-  if (phase === "verifying") {
-    return (
-      <Card>
-        <h1 className="text-2xl font-bold text-foreground text-center">
-          Verify Your Email
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground text-center">
-          We sent a code to <strong>{email}</strong>
-        </p>
-
-        <form onSubmit={handleVerify} className="mt-6 space-y-4">
-          <FieldGroup label="Verification Code">
-            <input
-              type="text"
-              inputMode="numeric"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              placeholder="Enter 6-digit code"
-              maxLength={6}
-              required
-              className="input-field text-center tracking-[0.3em] text-lg"
-            />
-          </FieldGroup>
-
-          {error && <ErrorMsg msg={error} />}
-
-          <button
-            type="submit"
-            disabled={loading || code.length < 6}
-            className="btn-primary"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Verify & Continue
-          </button>
-
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await signUp?.prepareEmailAddressVerification({
-                  strategy: "email_code",
-                });
-                setError("");
-              } catch (err: unknown) {
-                setError(extractMsg(err));
-              }
-            }}
-            className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Didn&apos;t receive a code? Resend
-          </button>
-        </form>
-      </Card>
-    );
-  }
-
-  // ── Phase: Main signup form ─────────────────────
+  // ─────────────────────────────────────────────────
+  // Step 1: Clerk's SignUp component
+  // Handles email/password + Google + Microsoft + SSO
+  // Clerk manages all OAuth redirects internally
+  // ─────────────────────────────────────────────────
   return (
-    <Card>
-      <h1 className="text-2xl font-bold text-foreground text-center">
-        Create Your Account
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground text-center">
-        Get started with CallTone
-      </p>
-
-      {/* Social Sign-Up Buttons */}
-      <div className="mt-6 space-y-3">
-        <button
-          type="button"
-          onClick={() => handleOAuthSignUp("oauth_google")}
-          disabled={!!oauthLoading || loading}
-          className="w-full flex items-center justify-center gap-3 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
-        >
-          {oauthLoading === "oauth_google" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <svg className="h-4 w-4" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-          )}
-          Continue with Google
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleOAuthSignUp("oauth_microsoft")}
-          disabled={!!oauthLoading || loading}
-          className="w-full flex items-center justify-center gap-3 rounded-lg border border-border bg-secondary px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
-        >
-          {oauthLoading === "oauth_microsoft" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <svg className="h-4 w-4" viewBox="0 0 24 24">
-              <path d="M11.4 24H0V12.6h11.4V24z" fill="#F25022"/>
-              <path d="M24 24H12.6V12.6H24V24z" fill="#00A4EF"/>
-              <path d="M11.4 11.4H0V0h11.4v11.4z" fill="#7FBA00"/>
-              <path d="M24 11.4H12.6V0H24v11.4z" fill="#FFB900"/>
-            </svg>
-          )}
-          Continue with Microsoft
-        </button>
-      </div>
-
-      {/* Divider */}
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs">
-          <span className="bg-card px-3 text-muted-foreground">or continue with email</span>
-        </div>
-      </div>
-
-      {/* Email/Password Form */}
-      <form onSubmit={handleEmailSignUp} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <FieldGroup label="First Name">
-            <input
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="John"
-              required
-              className="input-field"
-            />
-          </FieldGroup>
-          <FieldGroup label="Last Name">
-            <input
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="Doe"
-              required
-              className="input-field"
-            />
-          </FieldGroup>
-        </div>
-
-        <FieldGroup label="Email Address">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="john@example.com"
-            required
-            className="input-field"
-          />
-        </FieldGroup>
-
-        <FieldGroup label="Password">
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min. 8 characters"
-              required
-              minLength={8}
-              className="input-field pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-        </FieldGroup>
-
-        <FieldGroup label="Account Name">
-          <input
-            type="text"
-            value={accountName}
-            onChange={(e) => setAccountName(e.target.value)}
-            placeholder="e.g. Acme Corp"
-            required
-            className="input-field"
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Your business or team name
-          </p>
-        </FieldGroup>
-
-        {error && <ErrorMsg msg={error} />}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn-primary"
-        >
-          {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-          Create Account
-        </button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
-        <Link
-          href="/sign-in"
-          className="font-medium text-primary hover:text-primary/80 transition-colors"
-        >
-          Sign in
-        </Link>
-      </p>
-    </Card>
+    <SignUp
+      path="/sign-up"
+      routing="path"
+      signInUrl="/sign-in"
+      forceRedirectUrl="/sign-up"
+      appearance={{
+        variables: {
+          colorBackground: "hsl(var(--card))",
+          colorText: "hsl(var(--foreground))",
+          colorTextSecondary: "hsl(var(--muted-foreground))",
+          colorPrimary: "hsl(var(--primary))",
+          colorInputBackground: "hsl(var(--secondary))",
+          colorInputText: "hsl(var(--foreground))",
+        },
+        elements: {
+          rootBox: "mx-auto",
+          card: "shadow-lg bg-card border-border",
+          socialButtonsBlockButton:
+            "border border-border bg-secondary hover:bg-secondary/80 text-foreground",
+          socialButtonsBlockButtonText: "text-foreground font-medium",
+          dividerLine: "bg-border",
+          dividerText: "text-muted-foreground",
+        },
+      }}
+    />
   );
 }
 
