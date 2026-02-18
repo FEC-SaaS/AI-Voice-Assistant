@@ -85,13 +85,20 @@ export async function POST(req: Request) {
     }
 
     // Create organization in database with clerkOrgId set
-    await db.organization.create({
-      data: {
+    // Use upsert to handle race conditions with auto-provisioning
+    await db.organization.upsert({
+      where: { clerkOrgId: id },
+      create: {
         id,
-        clerkOrgId: id, // Store the Clerk org ID for lookups
+        clerkOrgId: id,
         name,
         slug: slug || slugify(name),
         stripeCustomerId,
+      },
+      update: {
+        name,
+        slug: slug || undefined,
+        stripeCustomerId: stripeCustomerId || undefined,
       },
     });
 
@@ -151,14 +158,21 @@ export async function POST(req: Request) {
         mappedRole: userRole,
       });
 
-      await db.user.create({
-        data: {
+      // Use upsert to handle race conditions with auto-provisioning
+      await db.user.upsert({
+        where: { clerkId: public_user_data.user_id },
+        create: {
           clerkId: public_user_data.user_id,
           email: public_user_data.identifier || "",
           name: `${public_user_data.first_name || ""} ${public_user_data.last_name || ""}`.trim() || null,
           imageUrl: public_user_data.image_url,
           role: userRole,
           organizationId: organization.id,
+        },
+        update: {
+          email: public_user_data.identifier || undefined,
+          name: `${public_user_data.first_name || ""} ${public_user_data.last_name || ""}`.trim() || undefined,
+          imageUrl: public_user_data.image_url || undefined,
         },
       });
     }

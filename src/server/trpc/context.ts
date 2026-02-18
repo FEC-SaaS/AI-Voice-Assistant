@@ -34,14 +34,35 @@ async function autoProvisionUser(clerkUserId: string, clerkOrgId: string | null)
 
       if (!org) {
         // Org doesn't exist — fetch from Clerk and create it
+        // This handles cases where the Clerk webhook failed to deliver
         try {
           const clerkOrg = await clerk.organizations.getOrganization({ organizationId: clerkOrgId });
-          org = await db.organization.create({
-            data: {
+
+          // Create Stripe customer (best effort)
+          let stripeCustomerId: string | undefined;
+          try {
+            const { createStripeCustomer } = await import("@/lib/stripe");
+            const customer = await createStripeCustomer(
+              `${clerkOrg.slug || slugify(clerkOrg.name)}@org.calltone.ai`,
+              clerkOrg.name,
+              { clerkOrgId }
+            );
+            stripeCustomerId = customer.id;
+          } catch (stripeErr) {
+            log.warn("Stripe customer creation failed during auto-provision (non-fatal):", stripeErr);
+          }
+
+          // Use upsert to handle race conditions (webhook might arrive at the same time)
+          org = await db.organization.upsert({
+            where: { clerkOrgId },
+            create: {
               clerkOrgId,
               name: clerkOrg.name,
               slug: clerkOrg.slug || slugify(clerkOrg.name),
+              stripeCustomerId,
             },
+            update: {},
+            select: { id: true },
           });
           log.info(`Auto-provisioned organization: ${clerkOrg.name} (${org.id})`);
         } catch (orgError) {
@@ -64,14 +85,26 @@ async function autoProvisionUser(clerkUserId: string, clerkOrgId: string | null)
     const existingUserCount = await db.user.count({ where: { organizationId: orgId } });
     const role = existingUserCount === 0 ? "owner" : "member";
 
-    const user = await db.user.create({
-      data: {
+    // Use upsert to handle race conditions (webhook might arrive at the same time)
+    const userEmail = clerkUser.emailAddresses[0]?.emailAddress || "";
+    const userName = `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || null;
+
+    const user = await db.user.upsert({
+      where: {
         clerkId: clerkUserId,
-        email: clerkUser.emailAddresses[0]?.emailAddress || "",
-        name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || null,
+      },
+      create: {
+        clerkId: clerkUserId,
+        email: userEmail,
+        name: userName,
         imageUrl: clerkUser.imageUrl,
         role,
         organizationId: orgId,
+      },
+      update: {
+        email: userEmail,
+        name: userName,
+        imageUrl: clerkUser.imageUrl,
       },
     });
 
