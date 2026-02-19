@@ -148,6 +148,39 @@ export const usersRouter = router({
       return org;
     }),
 
+  // Update current user profile (name only — image is managed by Clerk)
+  updateProfile: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(100),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const clerk = await clerkClient();
+
+      // Update in our database
+      await ctx.db.user.updateMany({
+        where: {
+          clerkId: ctx.userId,
+          organizationId: ctx.orgId,
+        },
+        data: { name: input.name },
+      });
+
+      // Sync name to Clerk so UserButton reflects the change
+      try {
+        const nameParts = input.name.trim().split(" ");
+        const firstName = nameParts[0] ?? "";
+        const lastName = nameParts.slice(1).join(" ") || undefined;
+        await clerk.users.updateUser(ctx.userId, { firstName, lastName });
+      } catch (err) {
+        log.error("Failed to sync name to Clerk:", err);
+        // Non-fatal — DB is the source of truth for our app
+      }
+
+      return { success: true };
+    }),
+
   // Complete onboarding
   completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
     const org = await ctx.db.organization.update({

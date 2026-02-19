@@ -401,6 +401,61 @@ export const organizationRouter = router({
     };
   }),
 
+  // Get notification preferences
+  getNotificationSettings: protectedProcedure.query(async ({ ctx }) => {
+    const org = await ctx.db.organization.findUnique({
+      where: { id: ctx.orgId },
+      select: { settings: true },
+    });
+
+    const s = (org?.settings as Record<string, unknown>) ?? {};
+
+    return {
+      notifyCallCompleted:   (s.notifyCallCompleted   as boolean) ?? true,
+      notifyDailyDigest:     (s.notifyDailyDigest     as boolean) ?? true,
+      notifyCampaignCompleted:(s.notifyCampaignCompleted as boolean) ?? true,
+      notifyWeeklyReport:    (s.notifyWeeklyReport    as boolean) ?? false,
+      notifyAgentErrors:     (s.notifyAgentErrors     as boolean) ?? true,
+      notifyBillingAlerts:   (s.notifyBillingAlerts   as boolean) ?? true,
+    };
+  }),
+
+  // Update notification preferences (any member can update their org prefs)
+  updateNotificationSettings: protectedProcedure
+    .input(
+      z.object({
+        notifyCallCompleted:    z.boolean().optional(),
+        notifyDailyDigest:      z.boolean().optional(),
+        notifyCampaignCompleted:z.boolean().optional(),
+        notifyWeeklyReport:     z.boolean().optional(),
+        notifyAgentErrors:      z.boolean().optional(),
+        notifyBillingAlerts:    z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const org = await ctx.db.organization.findUnique({
+        where: { id: ctx.orgId },
+        select: { settings: true },
+      });
+
+      const current = (org?.settings as Record<string, unknown>) ?? {};
+      const updated = { ...current };
+
+      if (input.notifyCallCompleted    !== undefined) updated.notifyCallCompleted    = input.notifyCallCompleted;
+      if (input.notifyDailyDigest      !== undefined) updated.notifyDailyDigest      = input.notifyDailyDigest;
+      if (input.notifyCampaignCompleted!== undefined) updated.notifyCampaignCompleted= input.notifyCampaignCompleted;
+      if (input.notifyWeeklyReport     !== undefined) updated.notifyWeeklyReport     = input.notifyWeeklyReport;
+      if (input.notifyAgentErrors      !== undefined) updated.notifyAgentErrors      = input.notifyAgentErrors;
+      if (input.notifyBillingAlerts    !== undefined) updated.notifyBillingAlerts    = input.notifyBillingAlerts;
+
+      await ctx.db.organization.update({
+        where: { id: ctx.orgId },
+        data: { settings: updated as object },
+      });
+
+      return { success: true };
+    }),
+
   // Remove custom domain
   removeCustomDomain: adminProcedure.mutation(async ({ ctx }) => {
     const org = await ctx.db.organization.findUnique({

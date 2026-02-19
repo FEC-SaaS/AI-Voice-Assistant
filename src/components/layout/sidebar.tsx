@@ -27,6 +27,7 @@ import {
   UserSearch,
   type LucideIcon,
 } from "lucide-react";
+import { OrganizationSwitcher } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 import { useBranding } from "@/components/providers/branding-provider";
@@ -265,6 +266,20 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
 
       {/* Bottom Navigation */}
       <div className="border-t border-border/50 p-3">
+        {/* Org switcher — visible only on mobile (header hides it on sm+) */}
+        {!collapsed && (
+          <div className="mb-2 lg:hidden">
+            <OrganizationSwitcher
+              appearance={{
+                elements: {
+                  rootBox: "w-full",
+                  organizationSwitcherTrigger:
+                    "flex w-full items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm hover:bg-secondary transition-colors",
+                },
+              }}
+            />
+          </div>
+        )}
         {bottomNavItems.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
