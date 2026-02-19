@@ -25,6 +25,10 @@ model Organization {
   // Twilio subaccount for isolated phone number management
   twilioSubaccountSid  String?
   twilioAuthToken      String?  // Encrypted in production
+  // Super-admin fields (nullable, no backfill required)
+  referralSource       String?
+  suspendedAt          DateTime?
+  trialExpiresAt       DateTime?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -645,3 +649,38 @@ model WebhookLog {
   @@index([createdAt])
 }
 
+// ===========================================
+// Super-Admin Models
+// ===========================================
+
+model AdminActivityLog {
+  id           String   @id @default(cuid())
+  adminClerkId String
+  action       String
+  targetType   String?
+  targetId     String?
+  details      Json     @default("{}")
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  @@index([adminClerkId])
+  @@index([createdAt])
+  @@index([targetType, targetId])
+}
+
+model Feedback {
+  id             String   @id @default(cuid())
+  organizationId String?
+  userClerkId    String?
+  type           String   // "nps"|"feature_request"|"bug_report"|"general"
+  score          Int?
+  message        String?  @db.Text
+  category       String?
+  status         String   @default("new")
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now())
+
+  @@index([type])
+  @@index([organizationId])
+  @@index([createdAt])
+}
