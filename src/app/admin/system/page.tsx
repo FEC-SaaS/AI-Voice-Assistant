@@ -13,8 +13,26 @@ import {
   CheckCircle2,
   XCircle,
   Database,
+  Globe,
+  TrendingUp,
+  Users,
+  PhoneCall,
+  BarChart3,
 } from "lucide-react";
 import { format } from "date-fns";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+
+// ─── Shared layout components ──────────────────────────────────────────────
 
 function DarkCard({
   title,
@@ -41,7 +59,10 @@ function DarkCard({
           {icon && (
             <div
               className="flex h-7 w-7 items-center justify-center rounded-lg"
-              style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.2)" }}
+              style={{
+                background: "rgba(99,102,241,0.12)",
+                border: "1px solid rgba(99,102,241,0.2)",
+              }}
             >
               <span className="text-indigo-400 [&>svg]:h-3.5 [&>svg]:w-3.5">{icon}</span>
             </div>
@@ -58,35 +79,61 @@ function DarkCard({
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(241,245,249,0.3)" }}>
+    <h2
+      className="text-xs font-bold uppercase tracking-widest"
+      style={{ color: "rgba(241,245,249,0.3)" }}
+    >
       {children}
     </h2>
   );
 }
 
+const tooltipStyle = {
+  contentStyle: {
+    background: "#0c0c1e",
+    border: "1px solid rgba(99,102,241,0.2)",
+    borderRadius: "10px",
+    color: "#f1f5f9",
+    fontSize: "12px",
+  },
+  cursor: { fill: "rgba(99,102,241,0.06)" },
+};
+
+// ─── Usage card ────────────────────────────────────────────────────────────
+
 function UsageCard({
   name,
   icon,
   configured,
-  ok,
+  connected,
+  accountName,
   balance,
-  unit,
+  unit = "$",
   threshold,
+  extra,
   isLoading,
 }: {
   name: string;
   icon: React.ReactNode;
   configured: boolean;
-  ok: boolean;
+  connected: boolean;
+  accountName?: string | null;
   balance: string | number | null;
-  unit: string;
+  unit?: string;
   threshold: string | number;
+  extra?: React.ReactNode;
   isLoading: boolean;
 }) {
   const balanceNum = typeof balance === "string" ? parseFloat(balance) : balance;
   const thresholdNum = typeof threshold === "string" ? parseFloat(threshold) : threshold;
   const isLow = balanceNum !== null && balanceNum < thresholdNum;
-  const accentColor = !configured ? "#475569" : ok && !isLow ? "#10b981" : isLow ? "#f59e0b" : "#ef4444";
+  const accentColor = !configured
+    ? "#475569"
+    : connected && !isLow
+    ? "#10b981"
+    : isLow
+    ? "#f59e0b"
+    : "#ef4444";
 
   return (
     <div
@@ -112,12 +159,19 @@ function UsageCard({
                 {icon}
               </span>
             </div>
-            <span className="text-sm font-semibold" style={{ color: "#f1f5f9" }}>
-              {name}
-            </span>
+            <div>
+              <span className="text-sm font-semibold" style={{ color: "#f1f5f9" }}>
+                {name}
+              </span>
+              {accountName && (
+                <div className="text-[10px]" style={{ color: "rgba(241,245,249,0.35)" }}>
+                  {accountName}
+                </div>
+              )}
+            </div>
           </div>
           {configured ? (
-            ok ? (
+            connected ? (
               <CheckCircle2 className="h-4 w-4 text-emerald-400" />
             ) : (
               <XCircle className="h-4 w-4 text-red-400" />
@@ -155,12 +209,9 @@ function UsageCard({
                 backgroundClip: "text",
               }}
             >
-              {unit === "$" ? `$${balanceNum?.toFixed(2)}` : balance}
-              {unit !== "$" && (
-                <span className="ml-1 text-base font-normal" style={{ color: "rgba(241,245,249,0.4)" }}>
-                  {unit}
-                </span>
-              )}
+              {unit === "$"
+                ? `$${balanceNum?.toFixed(2)}`
+                : `${balance} ${unit}`}
             </div>
             {isLow && (
               <div
@@ -179,13 +230,39 @@ function UsageCard({
           </div>
         ) : (
           <p className="text-sm" style={{ color: "rgba(241,245,249,0.4)" }}>
-            Could not fetch balance.
+            {connected
+              ? "Balance not exposed by API — check dashboard"
+              : "Could not connect to API"}
           </p>
         )}
+
+        {extra && <div className="mt-3">{extra}</div>}
       </div>
     </div>
   );
 }
+
+// ─── Mini stat pill ────────────────────────────────────────────────────────
+
+function MiniStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div
+      className="flex items-center justify-between rounded-xl px-3 py-2"
+      style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.1)" }}
+    >
+      <span className="text-xs" style={{ color: "rgba(241,245,249,0.5)" }}>
+        {label}
+      </span>
+      <span className="text-sm font-semibold" style={{ color: "#f1f5f9" }}>
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </span>
+    </div>
+  );
+}
+
+const COUNTRY_COLORS = ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#06b6d4", "#8b5cf6"];
+
+// ─── Page ─────────────────────────────────────────────────────────────────
 
 export default function AdminSystemPage() {
   const {
@@ -198,6 +275,8 @@ export default function AdminSystemPage() {
   const { data: dbStats, isLoading: dbLoading } = trpc.admin.system.getDBStats.useQuery();
   const { data: usageStats, isLoading: usageLoading } =
     trpc.admin.system.getUsageStats.useQuery();
+  const { data: phoneStats } = trpc.admin.system.getPhoneStats.useQuery();
+  const { data: demographics } = trpc.admin.system.getOrgDemographics.useQuery();
 
   type TableRow = { table: string; rows: number };
   const tableColumns: Column<TableRow>[] = [
@@ -244,7 +323,7 @@ export default function AdminSystemPage() {
           System & Infrastructure
         </h1>
         <p className="mt-1 text-sm" style={{ color: "rgba(241,245,249,0.3)" }}>
-          Third-party service health, usage billing, and database stats.
+          Service health, usage billing, phone numbers, and org demographics.
         </p>
       </div>
 
@@ -274,7 +353,6 @@ export default function AdminSystemPage() {
             Refresh
           </Button>
         </div>
-
         <DarkCard icon={<Server />} title="External Services">
           <SystemHealth services={health?.services ?? []} isLoading={healthLoading} />
           {health?.checkedAt && (
@@ -299,7 +377,8 @@ export default function AdminSystemPage() {
             name="Vapi AI Credits"
             icon={<Zap />}
             configured={usageStats?.vapi.configured ?? false}
-            ok={usageStats?.vapi.ok ?? false}
+            connected={usageStats?.vapi.connected ?? false}
+            accountName={usageStats?.vapi.accountName}
             balance={usageStats?.vapi.balance ?? null}
             unit="$"
             threshold={usageStats?.vapi.lowBalanceThreshold ?? 10}
@@ -309,14 +388,160 @@ export default function AdminSystemPage() {
             name="Twilio Balance"
             icon={<Phone />}
             configured={usageStats?.twilio.configured ?? false}
-            ok={usageStats?.twilio.ok ?? false}
+            connected={usageStats?.twilio.connected ?? false}
             balance={usageStats?.twilio.balance ?? null}
             unit="$"
             threshold={usageStats?.twilio.lowBalanceThreshold ?? "10.00"}
             isLoading={usageLoading}
+            extra={
+              phoneStats ? (
+                <div className="space-y-1.5">
+                  <MiniStat
+                    label="Provisioned (Twilio API)"
+                    value={phoneStats.twilioProvisioned ?? "—"}
+                  />
+                  <MiniStat label="In DB (active)" value={phoneStats.db.active} />
+                  <MiniStat label="Caller ID registered" value={phoneStats.db.callerIdRegistered} />
+                </div>
+              ) : null
+            }
           />
         </div>
       </div>
+
+      {/* Phone Number Details */}
+      {phoneStats && (
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <div
+              className="h-1 w-4 rounded-full"
+              style={{ background: "linear-gradient(90deg, #6366f1, #818cf8)" }}
+            />
+            <SectionTitle>Phone Number Details</SectionTitle>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DarkCard icon={<PhoneCall />} title="By Type">
+              <div className="space-y-2">
+                {phoneStats.db.byType.length === 0 ? (
+                  <p className="text-sm" style={{ color: "rgba(241,245,249,0.3)" }}>
+                    No phone numbers yet.
+                  </p>
+                ) : (
+                  phoneStats.db.byType.map((t) => (
+                    <MiniStat key={t.type} label={t.type} value={t.count} />
+                  ))
+                )}
+              </div>
+            </DarkCard>
+
+            <DarkCard icon={<Globe />} title="By Country">
+              {phoneStats.db.byCountry.length === 0 ? (
+                <p className="text-sm" style={{ color: "rgba(241,245,249,0.3)" }}>
+                  No data yet.
+                </p>
+              ) : (
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie
+                      data={phoneStats.db.byCountry}
+                      dataKey="count"
+                      nameKey="country"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={70}
+                      paddingAngle={3}
+                      label={({ country, percent }) =>
+                        `${country} ${(percent * 100).toFixed(0)}%`
+                      }
+                      labelLine={{ stroke: "rgba(241,245,249,0.2)" }}
+                    >
+                      {phoneStats.db.byCountry.map((_, i) => (
+                        <Cell
+                          key={i}
+                          fill={COUNTRY_COLORS[i % COUNTRY_COLORS.length]}
+                          stroke="transparent"
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        background: "#0c0c1e",
+                        border: "1px solid rgba(99,102,241,0.2)",
+                        borderRadius: "10px",
+                        color: "#f1f5f9",
+                        fontSize: "12px",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </DarkCard>
+          </div>
+        </div>
+      )}
+
+      {/* Org Demographics */}
+      {demographics && (
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <div
+              className="h-1 w-4 rounded-full"
+              style={{ background: "linear-gradient(90deg, #ec4899, #f472b6)" }}
+            />
+            <SectionTitle>Org Demographics</SectionTitle>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* User stats */}
+            <DarkCard icon={<Users />} title="Registered Users">
+              <div className="space-y-2">
+                <MiniStat label="Total users" value={demographics.users.total} />
+                <MiniStat label="New (last 30d)" value={demographics.users.newLast30} />
+                <MiniStat label="Avg users / org" value={demographics.users.avgPerOrg} />
+              </div>
+            </DarkCard>
+
+            {/* Referral sources */}
+            <DarkCard icon={<TrendingUp />} title="Referral / Acquisition Source">
+              {demographics.byReferral.length === 0 ? (
+                <p className="text-sm" style={{ color: "rgba(241,245,249,0.3)" }}>
+                  No referral data yet — add <code className="text-indigo-400">referralSource</code> to signup form.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {demographics.byReferral.slice(0, 6).map((r) => (
+                    <MiniStat key={r.source} label={r.source} value={r.count} />
+                  ))}
+                </div>
+              )}
+            </DarkCard>
+
+            {/* Signup trend by month */}
+            <DarkCard icon={<BarChart3 />} title="Signups by Month">
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart
+                  data={demographics.signupsByMonth}
+                  margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 9, fill: "rgba(241,245,249,0.3)" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 9, fill: "rgba(241,245,249,0.3)" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip {...tooltipStyle} />
+                  <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </DarkCard>
+          </div>
+        </div>
+      )}
 
       {/* DB Row Counts */}
       <div>

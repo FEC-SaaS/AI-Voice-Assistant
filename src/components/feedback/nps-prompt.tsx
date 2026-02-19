@@ -44,7 +44,7 @@ export function NPSPrompt({ open, onClose }: NPSPromptProps) {
         <DialogHeader>
           <DialogTitle>How likely are you to recommend us?</DialogTitle>
           <DialogDescription>
-            On a scale of 0–10, how likely are you to recommend VoxForge to a colleague?
+            On a scale of 0–10, how likely are you to recommend Calltone to a colleague?
           </DialogDescription>
         </DialogHeader>
 

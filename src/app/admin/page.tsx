@@ -5,8 +5,6 @@ import { StatCard } from "@/components/admin/stat-card";
 import { SystemHealth } from "@/components/admin/system-health";
 import { PlanBadge } from "@/components/admin/plan-badge";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,

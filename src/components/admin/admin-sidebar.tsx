@@ -74,7 +74,7 @@ export function AdminSidebar() {
           </div>
           <div>
             <div className="text-sm font-bold" style={{ color: "#f1f5f9" }}>
-              VoxForge
+              Calltone
             </div>
             <div
               className="text-[10px] font-semibold uppercase tracking-widest"
@@ -152,7 +152,7 @@ export function AdminSidebar() {
         style={{ borderTop: "1px solid rgba(99,102,241,0.06)" }}
       >
         <div className="text-[10px]" style={{ color: "rgba(241,245,249,0.15)" }}>
-          VoxForge Admin v1.0
+          Calltone Admin v1.0
         </div>
       </div>
     </aside>

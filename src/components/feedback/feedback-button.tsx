@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { MessageSquarePlus, TrendingUp, Bug, Lightbulb, X } from "lucide-react";
+import { MessageSquarePlus, TrendingUp, Bug, Lightbulb } from "lucide-react";
 
 type FeedbackType = "nps" | "feature_request" | "bug_report" | "general";
 
@@ -78,7 +78,7 @@ export function FeedbackButton() {
           <DialogHeader>
             <DialogTitle>Send Feedback</DialogTitle>
             <DialogDescription>
-              Help us improve VoxForge — your feedback goes directly to the team.
+              Help us improve Calltone — your feedback goes directly to the team.
             </DialogDescription>
           </DialogHeader>
 
@@ -115,7 +115,7 @@ export function FeedbackButton() {
                 {tab === "nps" && (
                   <>
                     <p className="text-sm text-muted-foreground">
-                      How likely are you to recommend VoxForge to a colleague? (0–10)
+                      How likely are you to recommend Calltone to a colleague? (0–10)
                     </p>
                     <div className="flex gap-1">
                       {Array.from({ length: 11 }, (_, i) => (
@@ -142,7 +142,7 @@ export function FeedbackButton() {
 
                 {tab === "feature_request" && (
                   <p className="text-sm text-muted-foreground">
-                    What feature would make VoxForge more valuable for you?
+                    What feature would make Calltone more valuable for you?
                   </p>
                 )}
                 {tab === "bug_report" && (

@@ -93,42 +93,47 @@ export const systemRouter = router({
     const twilioSid = process.env.TWILIO_ACCOUNT_SID ?? "";
     const twilioToken = process.env.TWILIO_AUTH_TOKEN ?? "";
 
-    // Vapi account balance
-    let vapiBalance: number | null = null;
+    // ── Vapi account ─────────────────────────────────────────────────────────
+    type VapiAccount = {
+      id?: string;
+      name?: string;
+      balance?: number;
+      billingLimit?: number;
+    };
+    let vapiAccount: VapiAccount | null = null;
     let vapiOk = false;
     if (vapiKey) {
       try {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), 8000);
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 8000);
         const res = await fetch("https://api.vapi.ai/account", {
-          signal: controller.signal,
+          signal: ctrl.signal,
           headers: { Authorization: `Bearer ${vapiKey}` },
         });
-        clearTimeout(id);
+        clearTimeout(t);
         if (res.ok) {
-          const json = (await res.json()) as { balance?: number };
-          vapiBalance = json.balance ?? null;
+          vapiAccount = (await res.json()) as VapiAccount;
           vapiOk = true;
         }
       } catch {
-        // Network error — leave null
+        // network error
       }
     }
 
-    // Twilio account balance
+    // ── Twilio account balance ────────────────────────────────────────────────
     let twilioBalance: string | null = null;
     let twilioCurrency = "USD";
     let twilioOk = false;
     if (twilioSid && twilioToken) {
       try {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), 8000);
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 8000);
         const authB64 = Buffer.from(`${twilioSid}:${twilioToken}`).toString("base64");
         const res = await fetch(
           `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Balance.json`,
-          { signal: controller.signal, headers: { Authorization: `Basic ${authB64}` } }
+          { signal: ctrl.signal, headers: { Authorization: `Basic ${authB64}` } }
         );
-        clearTimeout(id);
+        clearTimeout(t);
         if (res.ok) {
           const json = (await res.json()) as { balance?: string; currency?: string };
           twilioBalance = json.balance ?? null;
@@ -136,23 +141,151 @@ export const systemRouter = router({
           twilioOk = true;
         }
       } catch {
-        // Network error — leave null
+        // network error
       }
     }
+
+    // balance field may be nested under billingLimit if not directly exposed
+    const vapiBalance =
+      vapiAccount?.balance ?? vapiAccount?.billingLimit ?? null;
 
     return {
       vapi: {
         configured: !!vapiKey,
+        connected: vapiOk,
+        accountName: vapiAccount?.name ?? null,
         balance: vapiBalance,
-        ok: vapiOk,
         lowBalanceThreshold: 10,
       },
       twilio: {
         configured: !!(twilioSid && twilioToken),
+        connected: twilioOk,
         balance: twilioBalance,
         currency: twilioCurrency,
-        ok: twilioOk,
         lowBalanceThreshold: "10.00",
+      },
+    };
+  }),
+
+  getPhoneStats: superAdminProcedure.query(async ({ ctx }) => {
+    const twilioSid = process.env.TWILIO_ACCOUNT_SID ?? "";
+    const twilioToken = process.env.TWILIO_AUTH_TOKEN ?? "";
+
+    // ── DB counts ────────────────────────────────────────────────────────────
+    const [
+      totalNumbers,
+      activeNumbers,
+      withCallerIdRegistered,
+      byType,
+      byCountry,
+    ] = await Promise.all([
+      ctx.db.phoneNumber.count().catch(() => 0),
+      ctx.db.phoneNumber.count({ where: { isActive: true } }).catch(() => 0),
+      ctx.db.phoneNumber
+        .count({ where: { cnamStatus: "registered" } })
+        .catch(() => 0),
+      ctx.db.phoneNumber
+        .groupBy({ by: ["type"], _count: { id: true } })
+        .catch(() => [] as { type: string; _count: { id: number } }[]),
+      ctx.db.phoneNumber
+        .groupBy({ by: ["countryCode"], _count: { id: true }, orderBy: { _count: { id: "desc" } }, take: 10 })
+        .catch(() => [] as { countryCode: string | null; _count: { id: number } }[]),
+    ]);
+
+    // ── Twilio API: actual provisioned count ──────────────────────────────────
+    let twilioProvisioned: number | null = null;
+    if (twilioSid && twilioToken) {
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 8000);
+        const authB64 = Buffer.from(`${twilioSid}:${twilioToken}`).toString("base64");
+        const res = await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/IncomingPhoneNumbers.json?PageSize=1`,
+          { signal: ctrl.signal, headers: { Authorization: `Basic ${authB64}` } }
+        );
+        clearTimeout(t);
+        if (res.ok) {
+          const json = (await res.json()) as {
+            meta?: { total?: number };
+            end?: number;
+          };
+          twilioProvisioned = json.meta?.total ?? null;
+        }
+      } catch {
+        // network error
+      }
+    }
+
+    return {
+      db: {
+        total: totalNumbers,
+        active: activeNumbers,
+        callerIdRegistered: withCallerIdRegistered,
+        byType: (byType as { type: string; _count: { id: number } }[]).map((r) => ({
+          type: r.type,
+          count: r._count.id,
+        })),
+        byCountry: (byCountry as { countryCode: string | null; _count: { id: number } }[]).map(
+          (r) => ({ country: r.countryCode ?? "Unknown", count: r._count.id })
+        ),
+      },
+      twilioProvisioned,
+    };
+  }),
+
+  getOrgDemographics: superAdminProcedure.query(async ({ ctx }) => {
+    // ── Referral sources ──────────────────────────────────────────────────────
+    const byReferral = await ctx.db.organization
+      .groupBy({
+        by: ["referralSource"],
+        _count: { id: true },
+        orderBy: { _count: { id: "desc" } },
+      })
+      .catch(() => [] as { referralSource: string | null; _count: { id: number } }[]);
+
+    // ── Plan distribution ─────────────────────────────────────────────────────
+    const byPlan = await ctx.db.organization.groupBy({
+      by: ["planId"],
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+    });
+
+    // ── Signups by month (last 6 months) ──────────────────────────────────────
+    const now = new Date();
+    const signupsByMonth: { month: string; count: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      const count = await ctx.db.organization.count({
+        where: { createdAt: { gte: start, lt: end } },
+      });
+      signupsByMonth.push({
+        month: start.toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+        count,
+      });
+    }
+
+    // ── User stats ────────────────────────────────────────────────────────────
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [totalUsers, newUsersLast30, totalOrgs] = await Promise.all([
+      ctx.db.user.count(),
+      ctx.db.user.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+      ctx.db.organization.count(),
+    ]);
+
+    return {
+      byReferral: (
+        byReferral as { referralSource: string | null; _count: { id: number } }[]
+      ).map((r) => ({
+        source: r.referralSource ?? "Direct / Unknown",
+        count: r._count.id,
+      })),
+      byPlan: byPlan.map((r) => ({ planId: r.planId, count: r._count.id })),
+      signupsByMonth,
+      users: {
+        total: totalUsers,
+        newLast30: newUsersLast30,
+        avgPerOrg: totalOrgs > 0 ? Math.round((totalUsers / totalOrgs) * 10) / 10 : 0,
       },
     };
   }),
