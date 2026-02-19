@@ -29,7 +29,9 @@ TESTING.md
 docs/CODEBASE_GUIDE.html
 docs/TEST_PROCEDURES.md
 docs/TEST_PROCEDURES_AGENTS.md
+docs/analytics-testing-guide.md
 calltone-codebase-guide.pdf
+
 
 # Environment variables
 .env

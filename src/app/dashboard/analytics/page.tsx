@@ -25,6 +25,11 @@ import { HourlyChart } from "@/components/analytics/hourly-chart";
 import { ExportButton } from "@/components/analytics/export-button";
 import { PDFExportButton } from "@/components/analytics/pdf-export-button";
 import { ReportBuilder } from "@/components/analytics/report-builder";
+import { DayOfWeekChart } from "@/components/analytics/day-of-week-chart";
+import { LeadScoreChart } from "@/components/analytics/lead-score-chart";
+import { CampaignROIChart } from "@/components/analytics/campaign-roi-chart";
+import { TranscriptSearch } from "@/components/analytics/transcript-search";
+import { ComparisonPanel } from "@/components/analytics/comparison-panel";
 
 const DATE_RANGES = [
   { value: "7", label: "Last 7 days" },
@@ -37,7 +42,7 @@ export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState("30");
   const days = parseInt(dateRange);
 
-  // Calculate date range - memoized to prevent infinite query re-fetching
+  // Memoize date range to prevent infinite query re-fetching
   const { startDate, endDate } = useMemo(() => {
     const end = new Date();
     end.setHours(23, 59, 59, 999);
@@ -47,37 +52,42 @@ export default function AnalyticsPage() {
     return { startDate: start, endDate: end };
   }, [days]);
 
-  // Fetch analytics data
-  const { data: overview, isLoading: loadingOverview } = trpc.analytics.getOverview.useQuery({
-    startDate,
-    endDate,
-  });
+  // ── Queries ─────────────────────────────────────────────────────────
+  const { data: overview, isLoading: loadingOverview } =
+    trpc.analytics.getOverview.useQuery({ startDate, endDate });
 
-  const { data: callsByDay, isLoading: loadingCallsByDay } = trpc.analytics.getCallsByDay.useQuery({
-    days,
-  });
+  const { data: callsByDay, isLoading: loadingCallsByDay } =
+    trpc.analytics.getCallsByDay.useQuery({ days });
 
-  const { data: sentiment, isLoading: loadingSentiment } = trpc.analytics.getSentimentBreakdown.useQuery({
-    startDate,
-    endDate,
-  });
+  const { data: sentiment, isLoading: loadingSentiment } =
+    trpc.analytics.getSentimentBreakdown.useQuery({ startDate, endDate });
 
-  const { data: agentPerformance, isLoading: loadingAgents } = trpc.analytics.getAgentPerformance.useQuery();
+  const { data: agentPerformance, isLoading: loadingAgents } =
+    trpc.analytics.getAgentPerformance.useQuery({ startDate, endDate });
 
-  const { data: trendData, isLoading: loadingTrends } = trpc.analytics.getCallTrends.useQuery({
-    days,
-  });
+  const { data: trendData, isLoading: loadingTrends } =
+    trpc.analytics.getCallTrends.useQuery({ days });
 
-  const { data: hourlyData, isLoading: loadingHourly } = trpc.analytics.getHourlyDistribution.useQuery({
-    days,
-  });
+  const { data: hourlyData, isLoading: loadingHourly } =
+    trpc.analytics.getHourlyDistribution.useQuery({ days });
 
-  // Calculate max calls for chart scaling
-  const maxCalls = callsByDay?.reduce((max, day) => Math.max(max, day.count), 0) || 1;
+  // ── New queries ──────────────────────────────────────────────────────
+  const { data: dowData, isLoading: loadingDow } =
+    trpc.analytics.getDayOfWeekDistribution.useQuery({ days });
+
+  const { data: leadScoreData, isLoading: loadingLeadScore } =
+    trpc.analytics.getLeadScoreDistribution.useQuery({ startDate, endDate });
+
+  const { data: campaignROI, isLoading: loadingROI } =
+    trpc.analytics.getCampaignROI.useQuery({ startDate, endDate });
+
+  // Bar chart scaling
+  const maxCalls =
+    callsByDay?.reduce((max, day) => Math.max(max, day.count), 0) || 1;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* ── Header ────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
@@ -103,7 +113,7 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* ── KPI cards ─────────────────────────────────────────────── */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -117,7 +127,8 @@ export default function AnalyticsPage() {
               <>
                 <div className="text-2xl font-bold">{overview?.calls.total || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  {overview?.calls.completed || 0} completed ({overview?.calls.successRate || 0}% success)
+                  {overview?.calls.completed || 0} completed ({overview?.calls.successRate || 0}%
+                  success)
                 </p>
               </>
             )}
@@ -182,9 +193,9 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Charts Row 1: Calls Over Time + Sentiment */}
+      {/* ── Row 1: Calls Over Time + Sentiment ───────────────────── */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Calls Over Time Chart */}
+        {/* Calls Over Time */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -207,7 +218,6 @@ export default function AnalyticsPage() {
               </div>
             ) : (
               <div className="h-[300px]">
-                {/* Simple bar chart */}
                 <div className="flex h-full flex-col">
                   <div className="flex flex-1 items-end gap-1">
                     {callsByDay.slice(-Math.min(days, 30)).map((day) => (
@@ -219,11 +229,14 @@ export default function AnalyticsPage() {
                         <div
                           className="w-full rounded-t bg-primary transition-all hover:bg-primary/80"
                           style={{
-                            height: `${Math.max((day.count / maxCalls) * 100, day.count > 0 ? 5 : 0)}%`,
+                            height: `${Math.max(
+                              (day.count / maxCalls) * 100,
+                              day.count > 0 ? 5 : 0
+                            )}%`,
                             minHeight: day.count > 0 ? "4px" : "0",
                           }}
                         />
-                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-xs text-background opacity-0 transition-opacity group-hover:opacity-100 whitespace-nowrap">
                           {day.count}
                         </div>
                       </div>
@@ -239,20 +252,34 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Sentiment Chart */}
         <SentimentChart data={sentiment} isLoading={loadingSentiment} />
       </div>
 
-      {/* Charts Row 2: Trends + Hourly */}
+      {/* ── Row 2: Trend + Hourly ─────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-2">
         <TrendChart data={trendData} isLoading={loadingTrends} />
         <HourlyChart data={hourlyData} isLoading={loadingHourly} />
       </div>
 
-      {/* Agent Performance Table */}
+      {/* ── Agent Performance (with per-agent sentiment drill-down) ── */}
       <PerformanceTable data={agentPerformance} isLoading={loadingAgents} />
 
-      {/* Custom Report Builder */}
+      {/* ── Row 3: Day of Week + Lead Score Distribution ──────────── */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <DayOfWeekChart data={dowData} isLoading={loadingDow} />
+        <LeadScoreChart data={leadScoreData} isLoading={loadingLeadScore} />
+      </div>
+
+      {/* ── Campaign ROI ──────────────────────────────────────────── */}
+      <CampaignROIChart data={campaignROI} isLoading={loadingROI} />
+
+      {/* ── Comparison Mode ───────────────────────────────────────── */}
+      <ComparisonPanel />
+
+      {/* ── Transcript Search (with inline recording playback) ────── */}
+      <TranscriptSearch />
+
+      {/* ── Custom Report Builder ─────────────────────────────────── */}
       <ReportBuilder />
     </div>
   );
