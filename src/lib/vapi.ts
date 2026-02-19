@@ -73,6 +73,11 @@ export interface AssistantConfig {
   firstMessage?: string;
   voiceProvider?: string;
   voiceId?: string;
+  voiceSpeed?: number;                    // 0.5 – 2.0, default 1.0
+  fillerInjectionEnabled?: boolean;       // inject filler words (um, uh)
+  backgroundDenoisingEnabled?: boolean;  // suppress background noise
+  interruptionSensitivity?: "low" | "medium" | "high";
+  endCallMessage?: string;               // spoken before hanging up on fallback
   modelProvider?: string;
   model?: string;
   tools?: VapiTool[];
@@ -141,10 +146,25 @@ export async function createAssistant(config: AssistantConfig): Promise<VapiAssi
 
   console.log("[Vapi] Creating assistant with voice:", { provider: voiceProvider, voiceId });
 
-  const voiceConfig: Record<string, string> = {
+  const voiceConfig: Record<string, unknown> = {
     provider: voiceProvider,
     voiceId: voiceId,
+    ...(config.voiceSpeed !== undefined && config.voiceSpeed !== 1.0 && { speed: config.voiceSpeed }),
+    ...(config.fillerInjectionEnabled !== undefined && { fillerInjectionEnabled: config.fillerInjectionEnabled }),
   };
+
+  // Map interruption sensitivity to Vapi's startSpeakingPlan / stopSpeakingPlan
+  const interruptionPlans: Record<string, unknown> = {};
+  if (config.interruptionSensitivity === "low") {
+    interruptionPlans.startSpeakingPlan = { waitSeconds: 1.5, smartEndpointingEnabled: false };
+    interruptionPlans.stopSpeakingPlan  = { numWords: 0, backoffSeconds: 2.0 };
+  } else if (config.interruptionSensitivity === "high") {
+    interruptionPlans.startSpeakingPlan = { waitSeconds: 0.2, smartEndpointingEnabled: true };
+    interruptionPlans.stopSpeakingPlan  = { numWords: 5, backoffSeconds: 0.5 };
+  } else {
+    // medium (default)
+    interruptionPlans.startSpeakingPlan = { smartEndpointingEnabled: true };
+  }
 
   const assistantBody: Record<string, unknown> = {
     name: config.name,
@@ -161,6 +181,7 @@ export async function createAssistant(config: AssistantConfig): Promise<VapiAssi
     },
     voice: voiceConfig,
     firstMessage: config.firstMessage || "Hello, how can I help you today?",
+    ...(config.endCallMessage && { endCallMessage: config.endCallMessage }),
     // Enable live call monitoring and control (for whisper/barge-in features)
     monitorPlan: {
       listenEnabled: true,
@@ -169,7 +190,8 @@ export async function createAssistant(config: AssistantConfig): Promise<VapiAssi
     // Patience / endpointing configuration
     silenceTimeoutSeconds: 30,
     maxDurationSeconds: 1800,
-    backgroundDenoisingEnabled: true,
+    backgroundDenoisingEnabled: config.backgroundDenoisingEnabled ?? true,
+    ...interruptionPlans,
   };
 
   // Add server URL for tool/function webhooks
@@ -212,7 +234,7 @@ export async function updateAssistant(
     };
   }
 
-  if (config.voiceProvider || config.voiceId) {
+  if (config.voiceProvider || config.voiceId || config.voiceSpeed !== undefined || config.fillerInjectionEnabled !== undefined) {
     let voiceId = config.voiceId || "Elliot";
     let voiceProvider = mapVoiceProvider(config.voiceProvider || "vapi");
 
@@ -227,7 +249,28 @@ export async function updateAssistant(
     body.voice = {
       provider: voiceProvider,
       voiceId: voiceId,
+      ...(config.voiceSpeed !== undefined && config.voiceSpeed !== 1.0 && { speed: config.voiceSpeed }),
+      ...(config.fillerInjectionEnabled !== undefined && { fillerInjectionEnabled: config.fillerInjectionEnabled }),
     };
+  }
+
+  // Advanced voice / interruption settings
+  if (config.backgroundDenoisingEnabled !== undefined) {
+    body.backgroundDenoisingEnabled = config.backgroundDenoisingEnabled;
+  }
+  if (config.endCallMessage !== undefined) {
+    body.endCallMessage = config.endCallMessage;
+  }
+  if (config.interruptionSensitivity) {
+    if (config.interruptionSensitivity === "low") {
+      body.startSpeakingPlan = { waitSeconds: 1.5, smartEndpointingEnabled: false };
+      body.stopSpeakingPlan  = { numWords: 0, backoffSeconds: 2.0 };
+    } else if (config.interruptionSensitivity === "high") {
+      body.startSpeakingPlan = { waitSeconds: 0.2, smartEndpointingEnabled: true };
+      body.stopSpeakingPlan  = { numWords: 5, backoffSeconds: 0.5 };
+    } else {
+      body.startSpeakingPlan = { smartEndpointingEnabled: true };
+    }
   }
 
   // Add tools if provided

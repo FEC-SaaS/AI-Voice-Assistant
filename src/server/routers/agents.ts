@@ -71,6 +71,18 @@ const agentSchema = z.object({
   enableAppointments: z.boolean().default(false),
   enableReceptionist: z.boolean().default(false),
   receptionistConfig: receptionistConfigSchema.optional(),
+  // Advanced voice settings
+  voiceSpeed: z.number().min(0.5).max(2.0).optional(),
+  fillerWordSuppression: z.boolean().optional(),
+  backgroundNoiseCancellation: z.boolean().optional(),
+  interruptionSensitivity: z.enum(["low", "medium", "high"]).optional(),
+  // Call transfer & fallback
+  customTransferNumbers: z.array(z.object({ label: z.string().min(1), number: z.string().min(10) })).optional(),
+  fallbackConfig: z.object({
+    message: z.string().optional(),
+    action: z.enum(["hang_up", "transfer"]).default("hang_up"),
+    transferNumber: z.string().optional(),
+  }).optional(),
 });
 
 export const agentsRouter = router({
@@ -239,6 +251,11 @@ export const agentsRouter = router({
           firstMessage: input.firstMessage,
           voiceProvider: input.voiceProvider,
           voiceId: input.voiceId,
+          voiceSpeed: input.voiceSpeed,
+          fillerInjectionEnabled: input.fillerWordSuppression === false ? false : undefined,
+          backgroundDenoisingEnabled: input.backgroundNoiseCancellation,
+          interruptionSensitivity: input.interruptionSensitivity,
+          endCallMessage: input.fallbackConfig?.message,
           modelProvider: input.modelProvider,
           model: input.model,
           tools: tools.length > 0 ? tools : undefined,
@@ -274,6 +291,12 @@ export const agentsRouter = router({
             enableAppointments: input.enableAppointments,
             enableReceptionist: input.enableReceptionist,
             ...(input.receptionistConfig && { receptionistConfig: input.receptionistConfig }),
+            ...(input.voiceSpeed !== undefined && { voiceSpeed: input.voiceSpeed }),
+            ...(input.fillerWordSuppression !== undefined && { fillerWordSuppression: input.fillerWordSuppression }),
+            ...(input.backgroundNoiseCancellation !== undefined && { backgroundNoiseCancellation: input.backgroundNoiseCancellation }),
+            ...(input.interruptionSensitivity && { interruptionSensitivity: input.interruptionSensitivity }),
+            ...(input.customTransferNumbers?.length && { customTransferNumbers: input.customTransferNumbers }),
+            ...(input.fallbackConfig && { fallbackConfig: input.fallbackConfig }),
           },
         },
       });
@@ -370,12 +393,24 @@ export const agentsRouter = router({
       const agentNameForPrompt = input.data.name || existingAgent.name;
       fullSystemPrompt += `\n\nYOUR IDENTITY:\nYour name is ${agentNameForPrompt}. ALWAYS use this name when introducing yourself or when asked your name. NEVER use any other name.`;
 
+      // Resolve advanced voice settings: prefer incoming value, fall back to stored
+      const resolvedVoiceSpeed = input.data.voiceSpeed ?? (existingSettings.voiceSpeed as number | undefined);
+      const resolvedFillerSuppression = input.data.fillerWordSuppression ?? (existingSettings.fillerWordSuppression as boolean | undefined);
+      const resolvedNoiseCancellation = input.data.backgroundNoiseCancellation ?? (existingSettings.backgroundNoiseCancellation as boolean | undefined);
+      const resolvedInterruption = input.data.interruptionSensitivity ?? (existingSettings.interruptionSensitivity as "low" | "medium" | "high" | undefined);
+      const resolvedFallback = input.data.fallbackConfig ?? (existingSettings.fallbackConfig as { message?: string; action: string; transferNumber?: string } | undefined);
+
       // Update in Vapi if we have an assistant ID
       if (existingAgent.vapiAssistantId) {
         try {
           await updateAssistant(existingAgent.vapiAssistantId, {
             ...input.data,
             systemPrompt: fullSystemPrompt,
+            voiceSpeed: resolvedVoiceSpeed,
+            fillerInjectionEnabled: resolvedFillerSuppression === false ? false : undefined,
+            backgroundDenoisingEnabled: resolvedNoiseCancellation,
+            interruptionSensitivity: resolvedInterruption,
+            endCallMessage: resolvedFallback?.message,
             tools: tools.length > 0 ? tools : undefined,
             serverUrl: tools.length > 0 ? getVapiWebhookUrl() : undefined,
             serverUrlSecret: tools.length > 0 ? process.env.VAPI_WEBHOOK_SECRET : undefined,
@@ -386,22 +421,41 @@ export const agentsRouter = router({
         }
       }
 
-      // Prepare update data, including settings if capabilities changed
+      // Prepare update data — strip JSON-backed fields from top-level Prisma update
       const updateData: Record<string, unknown> = { ...input.data };
       delete updateData.enableAppointments;
       delete updateData.enableReceptionist;
       delete updateData.receptionistConfig;
-      const hasCapabilityChange =
+      delete updateData.voiceSpeed;
+      delete updateData.fillerWordSuppression;
+      delete updateData.backgroundNoiseCancellation;
+      delete updateData.interruptionSensitivity;
+      delete updateData.customTransferNumbers;
+      delete updateData.fallbackConfig;
+
+      const hasSettingsChange =
         input.data.enableAppointments !== undefined ||
         input.data.enableReceptionist !== undefined ||
-        input.data.receptionistConfig !== undefined;
+        input.data.receptionistConfig !== undefined ||
+        input.data.voiceSpeed !== undefined ||
+        input.data.fillerWordSuppression !== undefined ||
+        input.data.backgroundNoiseCancellation !== undefined ||
+        input.data.interruptionSensitivity !== undefined ||
+        input.data.customTransferNumbers !== undefined ||
+        input.data.fallbackConfig !== undefined;
 
-      if (hasCapabilityChange) {
+      if (hasSettingsChange) {
         updateData.settings = {
           ...existingSettings,
           ...(input.data.enableAppointments !== undefined && { enableAppointments: input.data.enableAppointments }),
           ...(input.data.enableReceptionist !== undefined && { enableReceptionist: input.data.enableReceptionist }),
           ...(input.data.receptionistConfig !== undefined && { receptionistConfig: input.data.receptionistConfig }),
+          ...(input.data.voiceSpeed !== undefined && { voiceSpeed: input.data.voiceSpeed }),
+          ...(input.data.fillerWordSuppression !== undefined && { fillerWordSuppression: input.data.fillerWordSuppression }),
+          ...(input.data.backgroundNoiseCancellation !== undefined && { backgroundNoiseCancellation: input.data.backgroundNoiseCancellation }),
+          ...(input.data.interruptionSensitivity !== undefined && { interruptionSensitivity: input.data.interruptionSensitivity }),
+          ...(input.data.customTransferNumbers !== undefined && { customTransferNumbers: input.data.customTransferNumbers }),
+          ...(input.data.fallbackConfig !== undefined && { fallbackConfig: input.data.fallbackConfig }),
         };
       }
 
@@ -821,6 +875,143 @@ export const agentsRouter = router({
       });
 
       return updated;
+    }),
+
+  // Clone (duplicate) an existing agent
+  clone: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const source = await ctx.db.agent.findFirst({
+        where: { id: input.id, organizationId: ctx.orgId },
+      });
+
+      if (!source) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+      }
+
+      const sourceSettings = (source.settings as Record<string, unknown>) || {};
+
+      // Create the Vapi assistant for the clone
+      let newVapiId: string | null = null;
+      try {
+        const vapiAssistant = await createAssistant({
+          name: `${source.name} (Copy)`,
+          systemPrompt: source.systemPrompt,
+          firstMessage: source.firstMessage || undefined,
+          voiceProvider: source.voiceProvider,
+          voiceId: source.voiceId,
+          voiceSpeed: sourceSettings.voiceSpeed as number | undefined,
+          backgroundDenoisingEnabled: sourceSettings.backgroundNoiseCancellation as boolean | undefined,
+          interruptionSensitivity: sourceSettings.interruptionSensitivity as "low" | "medium" | "high" | undefined,
+          modelProvider: source.modelProvider,
+          model: source.model,
+        });
+        newVapiId = vapiAssistant.id;
+      } catch (error) {
+        log.error("Failed to clone Vapi assistant:", error);
+        // Proceed without Vapi — user can sync later
+      }
+
+      const cloned = await ctx.db.agent.create({
+        data: {
+          organizationId: ctx.orgId,
+          vapiAssistantId: newVapiId,
+          name: `${source.name} (Copy)`,
+          description: source.description,
+          systemPrompt: source.systemPrompt,
+          firstMessage: source.firstMessage,
+          voiceProvider: source.voiceProvider,
+          voiceId: source.voiceId,
+          language: source.language,
+          modelProvider: source.modelProvider,
+          model: source.model,
+          isActive: false,
+          settings: source.settings as object,
+        },
+      });
+
+      return cloned;
+    }),
+
+  // Per-agent analytics
+  getAgentStats: protectedProcedure
+    .input(z.object({ id: z.string(), days: z.number().int().min(1).max(90).default(30) }))
+    .query(async ({ ctx, input }) => {
+      const agent = await ctx.db.agent.findFirst({
+        where: { id: input.id, organizationId: ctx.orgId },
+      });
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+
+      const calls = await ctx.db.call.findMany({
+        where: { agentId: input.id, organizationId: ctx.orgId, createdAt: { gte: since } },
+        select: {
+          id: true,
+          status: true,
+          duration: true,
+          sentiment: true,
+          createdAt: true,
+          metadata: true,
+        },
+        orderBy: { createdAt: "asc" },
+      });
+
+      const total = calls.length;
+      const completed = calls.filter((c) => c.status === "completed").length;
+      const avgDuration = total > 0
+        ? Math.round(calls.reduce((s, c) => s + (c.duration || 0), 0) / total)
+        : 0;
+
+      const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
+      for (const c of calls) {
+        const s = c.sentiment as string | null;
+        if (s === "positive") sentimentCounts.positive++;
+        else if (s === "negative") sentimentCounts.negative++;
+        else sentimentCounts.neutral++;
+      }
+
+      // Daily call counts for sparkline
+      const dailyMap: Record<string, number> = {};
+      for (const c of calls) {
+        const day = c.createdAt.toISOString().split("T")[0]!;
+        dailyMap[day] = (dailyMap[day] || 0) + 1;
+      }
+      const daily = Object.entries(dailyMap).map(([date, count]) => ({ date, count }));
+
+      return { total, completed, successRate: total > 0 ? Math.round((completed / total) * 100) : 0, avgDuration, sentiment: sentimentCounts, daily };
+    }),
+
+  // Test call history for an agent
+  getTestCallHistory: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const agent = await ctx.db.agent.findFirst({
+        where: { id: input.id, organizationId: ctx.orgId },
+      });
+      if (!agent) throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+
+      const calls = await ctx.db.call.findMany({
+        where: {
+          agentId: input.id,
+          organizationId: ctx.orgId,
+          metadata: { path: ["type"], equals: "test" },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          id: true,
+          toNumber: true,
+          fromNumber: true,
+          status: true,
+          duration: true,
+          createdAt: true,
+          vapiCallId: true,
+        },
+      });
+
+      return calls;
     }),
 
   // Import an existing voice assistant ID to link it to this agent

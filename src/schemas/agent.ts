@@ -7,6 +7,17 @@ export const receptionistConfigSchema = z.object({
   enableCallScreening: z.boolean().default(false),
 });
 
+export const customTransferNumberSchema = z.object({
+  label: z.string().min(1),
+  number: z.string().min(10),
+});
+
+export const fallbackConfigSchema = z.object({
+  message: z.string().optional(),
+  action: z.enum(["hang_up", "transfer"]).default("hang_up"),
+  transferNumber: z.string().optional(),
+});
+
 export const createAgentSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   description: z.string().optional(),
@@ -20,6 +31,14 @@ export const createAgentSchema = z.object({
   enableAppointments: z.boolean().default(false),
   enableReceptionist: z.boolean().default(false),
   receptionistConfig: receptionistConfigSchema.optional(),
+  // Advanced voice settings
+  voiceSpeed: z.number().min(0.5).max(2.0).optional(),
+  fillerWordSuppression: z.boolean().optional(),
+  backgroundNoiseCancellation: z.boolean().optional(),
+  interruptionSensitivity: z.enum(["low", "medium", "high"]).optional(),
+  // Call transfer & fallback
+  customTransferNumbers: z.array(customTransferNumberSchema).optional(),
+  fallbackConfig: fallbackConfigSchema.optional(),
 });
 
 export const updateAgentSchema = createAgentSchema.partial();
@@ -27,3 +46,5 @@ export const updateAgentSchema = createAgentSchema.partial();
 export type CreateAgentInput = z.infer<typeof createAgentSchema>;
 export type UpdateAgentInput = z.infer<typeof updateAgentSchema>;
 export type ReceptionistConfig = z.infer<typeof receptionistConfigSchema>;
+export type CustomTransferNumber = z.infer<typeof customTransferNumberSchema>;
+export type FallbackConfig = z.infer<typeof fallbackConfigSchema>;

@@ -28,6 +28,8 @@ SMOKE_TEST_PLAN.md
 TESTING.md
 docs/CODEBASE_GUIDE.html
 docs/TEST_PROCEDURES.md
+docs/TEST_PROCEDURES_AGENTS.md
+calltone-codebase-guide.pdf
 
 # Environment variables
 .env
