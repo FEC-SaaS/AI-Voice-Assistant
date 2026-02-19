@@ -18,6 +18,7 @@ import {
   Trash2,
   Settings,
   Search,
+  Copy,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,14 @@ export default function CampaignsPage() {
   const deleteCampaign = trpc.campaigns.delete.useMutation({
     onSuccess: () => {
       toast.success("Campaign deleted");
+      refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const cloneCampaign = trpc.campaigns.clone.useMutation({
+    onSuccess: (cloned) => {
+      toast.success(`Campaign duplicated as "${cloned.name}"`);
       refetch();
     },
     onError: (err) => toast.error(err.message),
@@ -247,6 +256,16 @@ export default function CampaignsPage() {
                           <Settings className="mr-2 h-4 w-4" />
                           View Details
                         </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          if (confirm(`Duplicate "${campaign.name}"?`)) {
+                            cloneCampaign.mutate({ id: campaign.id });
+                          }
+                        }}
+                      >
+                        <Copy className="mr-2 h-4 w-4" />
+                        Duplicate
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem

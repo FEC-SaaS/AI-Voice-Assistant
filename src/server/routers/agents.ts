@@ -950,10 +950,9 @@ export const agentsRouter = router({
         select: {
           id: true,
           status: true,
-          duration: true,
+          durationSeconds: true,
           sentiment: true,
           createdAt: true,
-          metadata: true,
         },
         orderBy: { createdAt: "asc" },
       });
@@ -961,7 +960,7 @@ export const agentsRouter = router({
       const total = calls.length;
       const completed = calls.filter((c) => c.status === "completed").length;
       const avgDuration = total > 0
-        ? Math.round(calls.reduce((s, c) => s + (c.duration || 0), 0) / total)
+        ? Math.round(calls.reduce((s, c) => s + (c.durationSeconds || 0), 0) / total / 60)
         : 0;
 
       const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
@@ -996,7 +995,6 @@ export const agentsRouter = router({
         where: {
           agentId: input.id,
           organizationId: ctx.orgId,
-          metadata: { path: ["type"], equals: "test" },
         },
         orderBy: { createdAt: "desc" },
         take: 20,
@@ -1005,7 +1003,7 @@ export const agentsRouter = router({
           toNumber: true,
           fromNumber: true,
           status: true,
-          duration: true,
+          durationSeconds: true,
           createdAt: true,
           vapiCallId: true,
         },

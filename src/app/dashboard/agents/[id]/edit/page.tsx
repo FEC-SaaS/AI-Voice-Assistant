@@ -254,7 +254,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-sm">Filler Word Suppression</Label>
-                    <p className="text-xs text-muted-foreground">Prevent agent from using filler words like "um" and "uh"</p>
+                    <p className="text-xs text-muted-foreground">Prevent agent from using filler words like &quot;um&quot; and &quot;uh&quot;</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" {...register("fillerWordSuppression")} />

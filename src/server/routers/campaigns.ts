@@ -38,6 +38,24 @@ const campaignSchema = z.object({
       questions: z.array(z.string()).optional(),
     })
     .optional(),
+  // Voicemail detection
+  voicemailAction: z.enum(["skip", "leave_message"]).default("skip").optional(),
+  voicemailMessage: z.string().optional(),
+  // Retry strategy
+  maxRetryAttempts: z.number().min(0).max(5).default(0).optional(),
+  retryIntervalMinutes: z.number().min(5).max(1440).default(60).optional(),
+  retryBackoffMultiplier: z.number().min(1).max(3).default(1).optional(),
+  // Auto-pause conditions
+  pauseOnLowConnectRate: z.boolean().default(false).optional(),
+  lowConnectRateThreshold: z.number().min(1).max(100).default(20).optional(),
+  minCallsBeforeCheck: z.number().min(10).max(500).default(50).optional(),
+  // A/B testing
+  abTestEnabled: z.boolean().default(false).optional(),
+  abTestVariants: z.array(z.object({
+    name: z.string().min(1),
+    agentId: z.string(),
+    weight: z.number().min(1).max(100).default(50),
+  })).optional(),
 });
 
 export const campaignsRouter = router({
@@ -125,6 +143,18 @@ export const campaignsRouter = router({
           jobTitle: input.jobTitle,
           jobDescription: input.jobDescription,
           jobRequirements: input.jobRequirements,
+          settings: {
+            voicemailAction: input.voicemailAction ?? "skip",
+            ...(input.voicemailMessage && { voicemailMessage: input.voicemailMessage }),
+            maxRetryAttempts: input.maxRetryAttempts ?? 0,
+            retryIntervalMinutes: input.retryIntervalMinutes ?? 60,
+            retryBackoffMultiplier: input.retryBackoffMultiplier ?? 1,
+            pauseOnLowConnectRate: input.pauseOnLowConnectRate ?? false,
+            lowConnectRateThreshold: input.lowConnectRateThreshold ?? 20,
+            minCallsBeforeCheck: input.minCallsBeforeCheck ?? 50,
+            abTestEnabled: input.abTestEnabled ?? false,
+            ...(input.abTestVariants?.length && { abTestVariants: input.abTestVariants }),
+          },
         },
       });
 
@@ -154,9 +184,38 @@ export const campaignsRouter = router({
         });
       }
 
+      // Strip settings-backed fields from the top-level update data
+      const { voicemailAction, voicemailMessage, maxRetryAttempts, retryIntervalMinutes,
+              retryBackoffMultiplier, pauseOnLowConnectRate, lowConnectRateThreshold,
+              minCallsBeforeCheck, abTestEnabled, abTestVariants, ...coreData } = input.data;
+
+      const hasSettingsChange = voicemailAction !== undefined || voicemailMessage !== undefined ||
+        maxRetryAttempts !== undefined || retryIntervalMinutes !== undefined ||
+        retryBackoffMultiplier !== undefined || pauseOnLowConnectRate !== undefined ||
+        lowConnectRateThreshold !== undefined || minCallsBeforeCheck !== undefined ||
+        abTestEnabled !== undefined || abTestVariants !== undefined;
+
+      const currentSettings = (existing.settings as Record<string, unknown>) || {};
+      const mergedSettings = hasSettingsChange ? {
+        ...currentSettings,
+        ...(voicemailAction !== undefined && { voicemailAction }),
+        ...(voicemailMessage !== undefined && { voicemailMessage }),
+        ...(maxRetryAttempts !== undefined && { maxRetryAttempts }),
+        ...(retryIntervalMinutes !== undefined && { retryIntervalMinutes }),
+        ...(retryBackoffMultiplier !== undefined && { retryBackoffMultiplier }),
+        ...(pauseOnLowConnectRate !== undefined && { pauseOnLowConnectRate }),
+        ...(lowConnectRateThreshold !== undefined && { lowConnectRateThreshold }),
+        ...(minCallsBeforeCheck !== undefined && { minCallsBeforeCheck }),
+        ...(abTestEnabled !== undefined && { abTestEnabled }),
+        ...(abTestVariants !== undefined && { abTestVariants }),
+      } : undefined;
+
       const campaign = await ctx.db.campaign.update({
         where: { id: input.id },
-        data: input.data,
+        data: {
+          ...coreData,
+          ...(mergedSettings && { settings: mergedSettings as object }),
+        },
       });
 
       return campaign;
@@ -611,6 +670,83 @@ export const campaignsRouter = router({
         progress: total > 0 ? Math.round((processed / total) * 100) : 0,
         stats: campaign.stats,
       };
+    }),
+
+  // Clone a campaign (duplicate with all settings, reset status to draft, no contacts copied)
+  clone: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const source = await ctx.db.campaign.findFirst({
+        where: { id: input.id, organizationId: ctx.orgId },
+      });
+
+      if (!source) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
+      }
+
+      const cloned = await ctx.db.campaign.create({
+        data: {
+          organizationId: ctx.orgId,
+          agentId: source.agentId,
+          name: `${source.name} (Copy)`,
+          description: source.description,
+          type: source.type,
+          timeZone: source.timeZone,
+          callingHours: source.callingHours as object,
+          maxCallsPerDay: source.maxCallsPerDay,
+          jobTitle: source.jobTitle,
+          jobDescription: source.jobDescription,
+          jobRequirements: source.jobRequirements as object | undefined,
+          settings: source.settings as object,
+          // status defaults to "draft", scheduleStart/End not copied
+        },
+      });
+
+      return cloned;
+    }),
+
+  // A/B test results for a campaign
+  getAbTestResults: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const campaign = await ctx.db.campaign.findFirst({
+        where: { id: input.id, organizationId: ctx.orgId },
+      });
+
+      if (!campaign) throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
+
+      const settings = (campaign.settings as Record<string, unknown>) || {};
+      const variants = (settings.abTestVariants as { name: string; agentId: string; weight: number }[]) || [];
+
+      if (!settings.abTestEnabled || variants.length === 0) {
+        return { enabled: false, variants: [] };
+      }
+
+      // For each variant's agent, get call stats from this campaign
+      const results = await Promise.all(variants.map(async (v) => {
+        const calls = await ctx.db.call.findMany({
+          where: { campaignId: input.id, agentId: v.agentId, organizationId: ctx.orgId },
+          select: { id: true, status: true, durationSeconds: true, sentiment: true },
+        });
+        const total = calls.length;
+        const completed = calls.filter(c => c.status === "completed").length;
+        const avgDuration = total > 0
+          ? Math.round(calls.reduce((s, c) => s + (c.durationSeconds || 0), 0) / total / 60)
+          : 0;
+        const positive = calls.filter(c => c.sentiment === "positive").length;
+        return {
+          name: v.name,
+          agentId: v.agentId,
+          weight: v.weight,
+          totalCalls: total,
+          completedCalls: completed,
+          connectRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+          avgDuration,
+          positiveRate: total > 0 ? Math.round((positive / total) * 100) : 0,
+        };
+      }));
+
+      return { enabled: true, variants: results };
     }),
 
   // Get available phone numbers for campaign

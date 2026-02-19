@@ -341,7 +341,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
                     <p className="text-sm text-foreground">{agentSettings.voiceSpeed as number}x</p>
                   </div>
                 )}
-                {agentSettings.interruptionSensitivity && (
+                {!!agentSettings.interruptionSensitivity && (
                   <div>
                     <span className="text-xs font-medium uppercase text-muted-foreground/70">Interruption Sensitivity</span>
                     <p className="text-sm text-foreground capitalize">{agentSettings.interruptionSensitivity as string}</p>
@@ -574,7 +574,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
             <div className="text-center py-16 rounded-lg border bg-card">
               <History className="mx-auto h-10 w-10 text-muted-foreground/70" />
               <p className="mt-3 text-sm text-muted-foreground">No test calls yet</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">Click "Test Call" in the header to place your first test call</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">Click &quot;Test Call&quot; in the header to place your first test call</p>
             </div>
           ) : (
             <div className="rounded-lg border bg-card overflow-hidden">
@@ -600,7 +600,7 @@ export default function AgentDetailPage({ params }: { params: { id: string } }) 
                           {call.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{formatDuration(call.duration)}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{formatDuration(call.durationSeconds)}</td>
                       <td className="px-4 py-3 text-muted-foreground">{formatDate(call.createdAt)}</td>
                     </tr>
                   ))}

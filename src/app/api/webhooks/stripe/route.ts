@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import Stripe from "stripe";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("StripeWebhook");
 
 // Dynamic imports to avoid build-time issues
 const getStripe = async () => {
@@ -21,8 +24,11 @@ function resolvePlanId(subscription: Stripe.Subscription): string {
   const priceId = licensedItem?.price.id;
 
   if (priceId === process.env.STRIPE_STARTER_PRICE_ID) return "starter";
+  if (priceId === process.env.STRIPE_STARTER_ANNUAL_PRICE_ID) return "starter";
   if (priceId === process.env.STRIPE_PROFESSIONAL_PRICE_ID) return "professional";
+  if (priceId === process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID) return "professional";
   if (priceId === process.env.STRIPE_BUSINESS_PRICE_ID) return "business";
+  if (priceId === process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID) return "business";
   return "free-trial";
 }
 
@@ -40,14 +46,14 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch (err) {
-    console.error("Stripe webhook signature verification failed:", err);
+    log.error("Stripe webhook signature verification failed:", err);
     return NextResponse.json(
       { error: "Webhook signature verification failed" },
       { status: 400 }
     );
   }
 
-  console.log(`[Stripe Webhook] Received event: ${event.type}`);
+  log.info(`Received event: ${event.type}`);
 
   try {
     const db = await getDb();
@@ -73,7 +79,7 @@ export async function POST(req: NextRequest) {
             },
           });
 
-          console.log(`[Stripe Webhook] Org ${org.id} plan set to ${planId}`);
+          log.info(`Org ${org.id} plan set to ${planId}`);
         }
         break;
       }
@@ -94,23 +100,43 @@ export async function POST(req: NextRequest) {
 
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log(`[Stripe Webhook] Payment succeeded for invoice: ${invoice.id}`);
+        const customerId = invoice.customer as string;
+
+        // Clear any recorded payment failure now that payment succeeded
+        if (customerId) {
+          await db.organization.updateMany({
+            where: { stripeCustomerId: customerId },
+            data: { paymentFailedAt: null },
+          });
+        }
+
+        log.info(`Payment succeeded for invoice: ${invoice.id}`);
         break;
       }
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log(`[Stripe Webhook] Payment failed for invoice: ${invoice.id}`);
+        const customerId = invoice.customer as string;
+
+        // Record the failure timestamp so the in-app banner can surface it
+        if (customerId) {
+          await db.organization.updateMany({
+            where: { stripeCustomerId: customerId },
+            data: { paymentFailedAt: new Date() },
+          });
+        }
+
+        log.warn(`Payment failed for invoice: ${invoice.id}`);
         break;
       }
 
       default:
-        console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+        log.info(`Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("[Stripe Webhook] Error processing event:", error);
+    log.error("Error processing event:", error);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }

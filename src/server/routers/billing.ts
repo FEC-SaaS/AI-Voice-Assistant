@@ -26,6 +26,7 @@ export const billingRouter = router({
         planId: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        paymentFailedAt: true,
       },
     });
 
@@ -56,6 +57,7 @@ export const billingRouter = router({
       plan,
       subscription: subscriptionStatus,
       hasStripeCustomer: !!org.stripeCustomerId,
+      paymentFailed: !!org.paymentFailedAt,
     };
   }),
 
@@ -63,7 +65,9 @@ export const billingRouter = router({
   getUsage: protectedProcedure.query(async ({ ctx }) => {
     const org = await ctx.db.organization.findUnique({
       where: { id: ctx.orgId },
-      include: {
+      select: {
+        planId: true,
+        settings: true,
         _count: {
           select: {
             agents: true,
@@ -82,9 +86,11 @@ export const billingRouter = router({
     }
 
     // Get total minutes used this month
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysElapsed = now.getDate();
+    const daysRemaining = daysInMonth - daysElapsed;
 
     const [minutesUsed, overageCosts] = await Promise.all([
       ctx.db.call.aggregate({
@@ -110,6 +116,20 @@ export const billingRouter = router({
       ? 0
       : Math.max(0, totalMinutes - plan.minutesPerMonth);
 
+    // Burn rate projection
+    const avgMinutesPerDay = daysElapsed > 0 ? totalMinutes / daysElapsed : 0;
+    let daysUntilLimit: number | null = null;
+    if (plan.minutesPerMonth !== -1 && avgMinutesPerDay > 0) {
+      const remainingMinutes = plan.minutesPerMonth - totalMinutes;
+      daysUntilLimit = remainingMinutes <= 0 ? 0 : Math.ceil(remainingMinutes / avgMinutesPerDay);
+    }
+
+    // Usage alert threshold from settings
+    const settings = (org.settings as Record<string, unknown>) || {};
+    const alertThreshold = typeof settings.usageAlertThreshold === "number"
+      ? settings.usageAlertThreshold
+      : 80;
+
     return {
       agents: {
         used: org._count.agents,
@@ -132,8 +152,37 @@ export const billingRouter = router({
         costCents: overageCosts._sum.costCents || 0,
         ratePerMinuteCents: OVERAGE_RATE_CENTS,
       },
+      alertThreshold,
+      burnRate: {
+        avgMinutesPerDay: Math.round(avgMinutesPerDay),
+        daysUntilLimit,
+        daysRemainingInPeriod: daysRemaining,
+      },
     };
   }),
+
+  // Set usage alert threshold
+  setUsageAlertThreshold: adminProcedure
+    .input(z.object({ threshold: z.number().int().min(50).max(99) }))
+    .mutation(async ({ ctx, input }) => {
+      const org = await ctx.db.organization.findUnique({
+        where: { id: ctx.orgId },
+        select: { settings: true },
+      });
+
+      if (!org) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Organization not found" });
+      }
+
+      const settings = (org.settings as Record<string, unknown>) || {};
+      await ctx.db.organization.update({
+        where: { id: ctx.orgId },
+        data: { settings: { ...settings, usageAlertThreshold: input.threshold } },
+      });
+
+      log.info(`Org ${ctx.orgId} usage alert threshold set to ${input.threshold}%`);
+      return { success: true };
+    }),
 
   // Get payment methods on file
   getPaymentMethods: protectedProcedure.query(async ({ ctx }) => {
@@ -239,6 +288,7 @@ export const billingRouter = router({
     .input(
       z.object({
         planId: z.string(),
+        billing: z.enum(["monthly", "annual"]).default("monthly"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -254,7 +304,20 @@ export const billingRouter = router({
       }
 
       const plan = PLANS[input.planId as keyof typeof PLANS];
-      if (!plan || !plan.priceId) {
+      if (!plan) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid plan selected",
+        });
+      }
+
+      // Pick annual priceId if requested and available, else fall back to monthly
+      let priceId: string | null | undefined = plan.priceId;
+      if (input.billing === "annual" && "annualPriceId" in plan && plan.annualPriceId) {
+        priceId = plan.annualPriceId;
+      }
+
+      if (!priceId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Invalid plan selected",
@@ -275,7 +338,6 @@ export const billingRouter = router({
       }
 
       if (!customerId) {
-        // Look up the current user's email to create the customer
         const user = await ctx.db.user.findFirst({
           where: { clerkId: ctx.userId },
           select: { email: true, name: true },
@@ -297,7 +359,7 @@ export const billingRouter = router({
 
       const session = await createCheckoutSession(
         customerId,
-        plan.priceId,
+        priceId,
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing?success=true`,
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing?canceled=true`
       );
@@ -330,20 +392,38 @@ export const billingRouter = router({
   getPlans: protectedProcedure.query(async () => {
     const plans = Object.values(PLANS).filter((plan) => plan.id !== "enterprise");
 
-    // Fetch live prices from Stripe for plans that have a priceId
     const plansWithPrices = await Promise.all(
       plans.map(async (plan) => {
-        if (!plan.priceId) return plan;
-        try {
-          const stripePrice = await getStripePrice(plan.priceId);
-          return {
-            ...plan,
-            price: Math.round(stripePrice.unitAmount / 100), // cents to dollars
-          };
-        } catch (err) {
-          log.error(`Failed to fetch price for plan ${plan.id}:`, err);
-          return plan; // Fall back to hardcoded price
+        let monthlyPrice: number | null = plan.price as number | null;
+        let annualPrice: number | null = ("annualPrice" in plan ? plan.annualPrice : null) as number | null;
+
+        // Fetch live monthly price from Stripe
+        if (plan.priceId) {
+          try {
+            const stripePrice = await getStripePrice(plan.priceId);
+            monthlyPrice = Math.round(stripePrice.unitAmount / 100);
+          } catch (err) {
+            log.error(`Failed to fetch monthly price for plan ${plan.id}:`, err);
+          }
         }
+
+        // Fetch live annual price from Stripe if available
+        if ("annualPriceId" in plan && plan.annualPriceId) {
+          try {
+            const stripeAnnual = await getStripePrice(plan.annualPriceId);
+            // Annual price in Stripe is the yearly total; convert to monthly equivalent
+            annualPrice = Math.round(stripeAnnual.unitAmount / 100 / 12);
+          } catch (err) {
+            log.error(`Failed to fetch annual price for plan ${plan.id}:`, err);
+          }
+        }
+
+        return {
+          ...plan,
+          price: monthlyPrice,
+          annualPrice,
+          annualPriceId: "annualPriceId" in plan ? plan.annualPriceId : null,
+        };
       })
     );
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   CreditCard,
   Check,
+  X,
   Loader2,
   ExternalLink,
   AlertCircle,
@@ -16,6 +17,8 @@ import {
   Shield,
   Wallet,
   ArrowRight,
+  Bell,
+  AlertTriangle,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -38,17 +41,58 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
+import { PLANS, ANNUAL_DISCOUNT_PERCENT } from "@/constants/plans";
+
+// ── Feature comparison matrix definition ───────────────────────────────
+const COMPARISON_FEATURES: Array<
+  | { type: "value"; label: string; key: "agents" | "minutesPerMonth" | "phoneNumbers" | "campaigns" }
+  | { type: "check"; label: string; plans: string[] }
+> = [
+  { type: "value", label: "Voice Agents", key: "agents" },
+  { type: "value", label: "Minutes / Month", key: "minutesPerMonth" },
+  { type: "value", label: "Phone Numbers", key: "phoneNumbers" },
+  { type: "value", label: "Campaigns", key: "campaigns" },
+  { type: "check", label: "Advanced Analytics", plans: ["professional", "business", "enterprise"] },
+  { type: "check", label: "CRM Integrations", plans: ["professional", "business", "enterprise"] },
+  { type: "check", label: "Priority Support", plans: ["professional", "business", "enterprise"] },
+  { type: "check", label: "Conversation Intelligence", plans: ["business", "enterprise"] },
+  { type: "check", label: "Dedicated Success Manager", plans: ["business", "enterprise"] },
+  { type: "check", label: "White-Label / SSO", plans: ["enterprise"] },
+];
+
+function formatLimit(value: number): string {
+  return value === -1 ? "Unlimited" : value.toLocaleString();
+}
 
 // ── Usage Bar ──────────────────────────────────────────────────────────
-function UsageBar({ used, limit, label }: { used: number; limit: number; label: string }) {
+function UsageBar({
+  used,
+  limit,
+  label,
+  alertThreshold = 80,
+  burnRate,
+}: {
+  used: number;
+  limit: number;
+  label: string;
+  alertThreshold?: number;
+  burnRate?: { daysUntilLimit: number | null; avgMinutesPerDay: number };
+}) {
   const percentage = limit === -1 ? 0 : Math.min(100, (used / limit) * 100);
   const isUnlimited = limit === -1;
-  const isNearLimit = percentage >= 80;
+  const isNearLimit = percentage >= alertThreshold;
   const isAtLimit = percentage >= 100;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-medium">
@@ -69,19 +113,30 @@ function UsageBar({ used, limit, label }: { used: number; limit: number; label: 
           Limit reached — upgrade to continue
         </p>
       )}
+      {!isAtLimit && isNearLimit && (
+        <p className="text-xs text-yellow-400 flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          {Math.round(percentage)}% used — approaching your limit
+        </p>
+      )}
+      {burnRate && !isUnlimited && burnRate.daysUntilLimit !== null && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <TrendingUp className="h-3 w-3" />
+          {burnRate.avgMinutesPerDay > 0
+            ? burnRate.daysUntilLimit === 0
+              ? "Limit already reached this period"
+              : `~${burnRate.avgMinutesPerDay} min/day · limit in ${burnRate.daysUntilLimit} day${burnRate.daysUntilLimit === 1 ? "" : "s"}`
+            : "No usage recorded yet this period"}
+        </p>
+      )}
     </div>
   );
 }
 
 // ── Card brand icon helper ─────────────────────────────────────────────
 function PaymentMethodIcon({ type, brand }: { type: string; brand?: string }) {
-  if (type === "paypal") {
-    return <Wallet className="h-5 w-5 text-blue-400" />;
-  }
-  if (type === "link") {
-    return <Zap className="h-5 w-5 text-green-400" />;
-  }
-  // Default: card icon
+  if (type === "paypal") return <Wallet className="h-5 w-5 text-blue-400" />;
+  if (type === "link") return <Zap className="h-5 w-5 text-green-400" />;
   const brandColors: Record<string, string> = {
     visa: "text-blue-400",
     mastercard: "text-orange-400",
@@ -98,12 +153,8 @@ function formatPaymentMethod(m: {
   if (m.type === "card" && m.card) {
     return `${m.card.brand.charAt(0).toUpperCase()}${m.card.brand.slice(1)} ending in ${m.card.last4}`;
   }
-  if (m.type === "paypal" && m.paypal) {
-    return `PayPal (${m.paypal.payerEmail || "connected"})`;
-  }
-  if (m.type === "link") {
-    return "Stripe Link";
-  }
+  if (m.type === "paypal" && m.paypal) return `PayPal (${m.paypal.payerEmail || "connected"})`;
+  if (m.type === "link") return "Stripe Link";
   return m.type.charAt(0).toUpperCase() + m.type.slice(1);
 }
 
@@ -111,11 +162,12 @@ function formatPaymentMethod(m: {
 export default function BillingPage() {
   const searchParams = useSearchParams();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showCompareDialog, setShowCompareDialog] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
 
   const { data: subscription, isLoading: loadingSub } = trpc.billing.getSubscription.useQuery();
-  const { data: usage, isLoading: loadingUsage } = trpc.billing.getUsage.useQuery();
+  const { data: usage, isLoading: loadingUsage, refetch: refetchUsage } = trpc.billing.getUsage.useQuery();
   const { data: plans } = trpc.billing.getPlans.useQuery();
   const { data: paymentMethods } = trpc.billing.getPaymentMethods.useQuery();
   const { data: billingHistory } = trpc.billing.getBillingHistory.useQuery();
@@ -123,26 +175,28 @@ export default function BillingPage() {
 
   const createCheckout = trpc.billing.createCheckout.useMutation({
     onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      if (data.url) window.location.href = data.url;
     },
     onError: (error) => {
       toast.error(error.message);
       setIsUpgrading(false);
-      setShowConfirmDialog(false);
+      setShowCompareDialog(false);
     },
   });
 
   const createPortal = trpc.billing.createPortalSession.useMutation({
     onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      if (data.url) window.location.href = data.url;
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: (error) => toast.error(error.message),
+  });
+
+  const setAlertThreshold = trpc.billing.setUsageAlertThreshold.useMutation({
+    onSuccess: () => {
+      toast.success("Alert threshold saved");
+      refetchUsage();
     },
+    onError: (err) => toast.error(err.message),
   });
 
   useEffect(() => {
@@ -156,18 +210,29 @@ export default function BillingPage() {
   const handlePlanClick = (planId: string) => {
     if (planId === currentPlan?.id) return;
     setSelectedPlanId(planId);
-    setShowConfirmDialog(true);
+    setShowCompareDialog(true);
   };
 
   const handleConfirmUpgrade = () => {
     if (!selectedPlanId) return;
     setIsUpgrading(true);
-    createCheckout.mutate({ planId: selectedPlanId });
+
+    // Check if the selected plan has an annual priceId when annual is requested
+    const plan = PLANS[selectedPlanId as keyof typeof PLANS];
+    const wantsAnnual = billingPeriod === "annual";
+    const hasAnnualPrice = wantsAnnual && "annualPriceId" in plan && plan.annualPriceId;
+
+    if (wantsAnnual && !hasAnnualPrice) {
+      toast.info("Annual billing coming soon — proceeding with monthly billing.");
+    }
+
+    createCheckout.mutate({
+      planId: selectedPlanId,
+      billing: wantsAnnual && hasAnnualPrice ? "annual" : "monthly",
+    });
   };
 
-  const handleManageBilling = () => {
-    createPortal.mutate();
-  };
+  const handleManageBilling = () => createPortal.mutate();
 
   if (loadingSub || loadingUsage) {
     return (
@@ -181,9 +246,71 @@ export default function BillingPage() {
   const isPaidPlan = currentPlan?.id !== "free-trial";
   const selectedPlan = plans?.find((p) => p.id === selectedPlanId);
 
+  // Usage alert: show banner when minutes % exceeds threshold
+  const minutesPct =
+    usage && usage.minutes.limit !== -1
+      ? (usage.minutes.used / usage.minutes.limit) * 100
+      : 0;
+  const showUsageAlert =
+    usage && usage.minutes.limit !== -1 && minutesPct >= (usage.alertThreshold ?? 80);
+
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* ── Payment Failure Banner ───────────────────────────────────── */}
+      {subscription?.paymentFailed && (
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-red-500/50 bg-red-500/10 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-red-400">Payment Failed</p>
+              <p className="text-sm text-red-300 mt-0.5">
+                Your last payment was declined. Update your payment method to avoid service
+                interruption.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="shrink-0"
+            onClick={handleManageBilling}
+            disabled={createPortal.isPending}
+          >
+            {createPortal.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            Update Payment Method
+          </Button>
+        </div>
+      )}
+
+      {/* ── Usage Alert Banner ───────────────────────────────────────── */}
+      {showUsageAlert && !subscription?.paymentFailed && (
+        <div className="flex items-start gap-3 rounded-lg border border-yellow-500/50 bg-yellow-500/10 p-4">
+          <Bell className="h-5 w-5 text-yellow-400 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-yellow-400">Usage Alert</p>
+            <p className="text-sm text-yellow-300 mt-0.5">
+              You have used{" "}
+              <strong>
+                {Math.round(minutesPct)}% of your {usage?.minutes.limit?.toLocaleString()}{" "}
+                monthly minutes
+              </strong>
+              . Consider upgrading before you hit your limit.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10"
+            onClick={() => document.getElementById("plan-select")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            View Plans
+          </Button>
+        </div>
+      )}
+
+      {/* ── Header ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Billing & Usage</h1>
@@ -201,7 +328,7 @@ export default function BillingPage() {
         )}
       </div>
 
-      {/* Current Plan + Usage Row */}
+      {/* ── Current Plan + Usage ─────────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Current Plan */}
         <Card>
@@ -230,7 +357,7 @@ export default function BillingPage() {
               </div>
             </div>
             {subscription?.subscription && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant={subscription.subscription.status === "active" ? "default" : "secondary"}>
                   {subscription.subscription.status}
                 </Badge>
@@ -260,13 +387,37 @@ export default function BillingPage() {
             <CardDescription>This billing period</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4">
+            <div className="grid gap-5">
               {usage && (
                 <>
-                  <UsageBar used={usage.agents.used} limit={usage.agents.limit} label="Voice Agents" />
-                  <UsageBar used={usage.phoneNumbers.used} limit={usage.phoneNumbers.limit} label="Phone Numbers" />
-                  <UsageBar used={usage.campaigns.used} limit={usage.campaigns.limit} label="Campaigns" />
-                  <UsageBar used={usage.minutes.used} limit={usage.minutes.limit} label="Minutes Used" />
+                  <UsageBar
+                    used={usage.agents.used}
+                    limit={usage.agents.limit}
+                    label="Voice Agents"
+                    alertThreshold={usage.alertThreshold}
+                  />
+                  <UsageBar
+                    used={usage.phoneNumbers.used}
+                    limit={usage.phoneNumbers.limit}
+                    label="Phone Numbers"
+                    alertThreshold={usage.alertThreshold}
+                  />
+                  <UsageBar
+                    used={usage.campaigns.used}
+                    limit={usage.campaigns.limit}
+                    label="Campaigns"
+                    alertThreshold={usage.alertThreshold}
+                  />
+                  <UsageBar
+                    used={usage.minutes.used}
+                    limit={usage.minutes.limit}
+                    label="Minutes Used"
+                    alertThreshold={usage.alertThreshold}
+                    burnRate={{
+                      daysUntilLimit: usage.burnRate.daysUntilLimit,
+                      avgMinutesPerDay: usage.burnRate.avgMinutesPerDay,
+                    }}
+                  />
                 </>
               )}
             </div>
@@ -274,7 +425,48 @@ export default function BillingPage() {
         </Card>
       </div>
 
-      {/* Overage Tracker */}
+      {/* ── Usage Alert Settings ─────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Usage Alert Threshold
+          </CardTitle>
+          <CardDescription>
+            Show an in-app warning when minutes usage reaches this percentage of your monthly limit
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <Select
+              value={String(usage?.alertThreshold ?? 80)}
+              onValueChange={(v) => setAlertThreshold.mutate({ threshold: Number(v) })}
+              disabled={setAlertThreshold.isPending}
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[50, 60, 70, 75, 80, 85, 90, 95].map((pct) => (
+                  <SelectItem key={pct} value={String(pct)}>
+                    {pct}%
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">of monthly minutes</p>
+            {setAlertThreshold.isPending && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Usage bars turn yellow at this threshold. Overage charges apply at{" "}
+            <strong>$0.15/minute</strong> after the limit is reached.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* ── Overage Tracker ─────────────────────────────────────────── */}
       {usage && usage.overage.minutes > 0 && (
         <Card className="border-border bg-orange-500/10">
           <CardContent className="pt-6">
@@ -283,8 +475,9 @@ export default function BillingPage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-orange-400">Overage Charges This Period</h3>
                 <p className="text-sm text-orange-400 mt-1">
-                  You have used <strong>{usage.overage.minutes.toLocaleString()} minutes</strong> over
-                  your plan limit. Current overage charges:{" "}
+                  You have used{" "}
+                  <strong>{usage.overage.minutes.toLocaleString()} minutes</strong> over your plan
+                  limit. Current overage charges:{" "}
                   <strong>${(usage.overage.costCents / 100).toFixed(2)}</strong> at $
                   {(usage.overage.ratePerMinuteCents / 100).toFixed(2)}/minute.
                 </p>
@@ -294,7 +487,7 @@ export default function BillingPage() {
         </Card>
       )}
 
-      {/* Upcoming Invoice */}
+      {/* ── Upcoming Invoice ─────────────────────────────────────────── */}
       {upcomingInvoice && (
         <Card>
           <CardHeader>
@@ -303,8 +496,7 @@ export default function BillingPage() {
               Upcoming Invoice
             </CardTitle>
             <CardDescription>
-              Next billing date:{" "}
-              {upcomingInvoice.periodEnd?.toLocaleDateString() || "N/A"}
+              Next billing date: {upcomingInvoice.periodEnd?.toLocaleDateString() || "N/A"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -324,27 +516,66 @@ export default function BillingPage() {
         </Card>
       )}
 
-      {/* Plan Selection */}
-      <div>
-        <h2 className="text-xl font-semibold text-foreground mb-2">Choose a Plan</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Click a plan to select it. You&apos;ll be guided through secure payment setup.
-        </p>
+      {/* ── Plan Selection ───────────────────────────────────────────── */}
+      <div id="plan-select">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">Choose a Plan</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Select a plan to see a full feature comparison before checkout.
+            </p>
+          </div>
+
+          {/* Monthly / Annual toggle */}
+          <div className="flex items-center gap-1 rounded-lg bg-secondary p-1 text-sm">
+            <button
+              onClick={() => setBillingPeriod("monthly")}
+              className={`rounded-md px-4 py-1.5 font-medium transition-all ${
+                billingPeriod === "monthly"
+                  ? "bg-background text-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingPeriod("annual")}
+              className={`flex items-center gap-2 rounded-md px-4 py-1.5 font-medium transition-all ${
+                billingPeriod === "annual"
+                  ? "bg-background text-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Annual
+              <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">
+                Save {ANNUAL_DISCOUNT_PERCENT}%
+              </Badge>
+            </button>
+          </div>
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {plans?.map((plan) => {
             const isCurrentPlan = plan.id === currentPlan?.id;
-            const isSelected = plan.id === selectedPlanId;
             const isPopular = "popular" in plan && plan.popular;
-            const isUpgrade = plan.price !== null && currentPlan?.price !== null &&
-              (plan.price ?? 0) > (currentPlan?.price ?? 0);
+            const displayPrice =
+              billingPeriod === "annual" && plan.annualPrice != null
+                ? plan.annualPrice
+                : plan.price;
+            const isUpgrade =
+              displayPrice !== null &&
+              currentPlan?.price !== null &&
+              (displayPrice ?? 0) > (currentPlan?.price ?? 0);
 
             return (
               <Card
                 key={plan.id}
                 className={`relative cursor-pointer transition-all ${
                   isPopular ? "border-primary shadow-md" : ""
-                } ${isCurrentPlan ? "bg-secondary cursor-default" : "hover:shadow-lg hover:border-primary/50"} ${
-                  isSelected && !isCurrentPlan ? "ring-2 ring-primary border-primary" : ""
+                } ${
+                  isCurrentPlan
+                    ? "bg-secondary cursor-default"
+                    : "hover:shadow-lg hover:border-primary/50"
                 }`}
                 onClick={() => !isCurrentPlan && plan.priceId && handlePlanClick(plan.id)}
               >
@@ -357,18 +588,30 @@ export default function BillingPage() {
                   <CardTitle className="flex items-center justify-between">
                     {plan.name}
                     {isCurrentPlan && (
-                      <Badge variant="outline" className="ml-2">Current</Badge>
+                      <Badge variant="outline" className="ml-2">
+                        Current
+                      </Badge>
                     )}
                   </CardTitle>
                   <CardDescription className="min-h-[40px]">{plan.description}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    {plan.price !== null ? (
-                      <p className="text-3xl font-bold">
-                        ${plan.price}
-                        <span className="text-sm font-normal text-muted-foreground">/mo</span>
-                      </p>
+                    {displayPrice !== null ? (
+                      <div>
+                        <p className="text-3xl font-bold">
+                          ${displayPrice}
+                          <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                        </p>
+                        {billingPeriod === "annual" && plan.annualPrice != null && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            ${(plan.annualPrice * 12).toLocaleString()}/yr · billed annually
+                          </p>
+                        )}
+                        {billingPeriod === "annual" && plan.price && plan.annualPrice == null && (
+                          <p className="text-xs text-muted-foreground mt-0.5">Annual pricing coming soon</p>
+                        )}
+                      </div>
                     ) : (
                       <p className="text-xl font-semibold text-muted-foreground">Contact Us</p>
                     )}
@@ -389,10 +632,7 @@ export default function BillingPage() {
                         Current Plan
                       </Button>
                     ) : plan.priceId ? (
-                      <Button
-                        className="w-full"
-                        variant={isSelected ? "default" : "outline"}
-                      >
+                      <Button className="w-full" variant="outline">
                         {isUpgrade ? "Upgrade" : "Switch Plan"}
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
@@ -409,7 +649,7 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Tabs: Payment Methods + Billing History */}
+      {/* ── Payment Methods + Billing History ────────────────────────── */}
       <Tabs defaultValue="payment-methods">
         <TabsList>
           <TabsTrigger value="payment-methods">Payment Methods</TabsTrigger>
@@ -474,7 +714,6 @@ export default function BillingPage() {
                   ))}
                 </div>
               )}
-              {/* Security note */}
               <div className="flex items-center gap-2 mt-4 pt-4 border-t text-xs text-muted-foreground/70">
                 <Shield className="h-3.5 w-3.5" />
                 Payments are securely processed by Stripe. We never store your card details.
@@ -563,7 +802,7 @@ export default function BillingPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Overage Info */}
+      {/* ── Overage Info ─────────────────────────────────────────────── */}
       <Card className="bg-blue-500/10 border-border">
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
@@ -572,8 +811,8 @@ export default function BillingPage() {
               <h3 className="font-semibold text-blue-400">About Overage Charges</h3>
               <p className="text-sm text-blue-400">
                 If you exceed your monthly minute limit, additional minutes are billed at{" "}
-                <strong>$0.15/minute</strong>. Overage is tracked automatically and included
-                in your next invoice as a metered line item via Stripe.
+                <strong>$0.15/minute</strong>. Overage is tracked automatically and included in your
+                next invoice as a metered line item via Stripe.
               </p>
               <div className="flex items-center gap-2 text-xs text-blue-400">
                 <Shield className="h-3.5 w-3.5" />
@@ -584,67 +823,123 @@ export default function BillingPage() {
         </CardContent>
       </Card>
 
-      {/* Confirm Upgrade Dialog */}
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent>
+      {/* ── Plan Comparison Dialog ───────────────────────────────────── */}
+      <Dialog open={showCompareDialog} onOpenChange={setShowCompareDialog}>
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>
-              {selectedPlan && currentPlan && (selectedPlan.price ?? 0) > (currentPlan.price ?? 0)
-                ? "Upgrade"
-                : "Switch"}{" "}
-              to {selectedPlan?.name}
-            </DialogTitle>
+            <DialogTitle>Compare Plans</DialogTitle>
             <DialogDescription>
-              Review your plan change before proceeding to checkout.
+              Review the full feature matrix before switching to{" "}
+              <strong>{selectedPlan?.name}</strong>.
             </DialogDescription>
           </DialogHeader>
-          {selectedPlan && (
-            <div className="space-y-4 py-2">
-              {/* Plan comparison */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Current Plan</p>
-                  <p className="font-semibold">{currentPlan?.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {currentPlan?.price !== null ? `$${currentPlan?.price}/mo` : "Free"}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-primary p-3 bg-primary/5">
-                  <p className="text-xs text-primary mb-1">New Plan</p>
-                  <p className="font-semibold">{selectedPlan.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedPlan.price !== null ? `$${selectedPlan.price}/mo` : "Custom"}
-                  </p>
-                </div>
-              </div>
 
-              {/* What you'll get */}
-              <div>
-                <p className="text-sm font-medium mb-2">What&apos;s included:</p>
-                <ul className="space-y-1">
-                  {selectedPlan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="h-3.5 w-3.5 text-green-500" />
-                      {feature}
-                    </li>
+          {plans && (
+            <div className="overflow-x-auto -mx-1">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <th className="text-left py-3 pr-4 font-medium text-muted-foreground w-44">
+                      Feature
+                    </th>
+                    {plans.map((plan) => {
+                      const isCurrent = plan.id === currentPlan?.id;
+                      const isSelected = plan.id === selectedPlanId;
+                      const displayPrice =
+                        billingPeriod === "annual" && plan.annualPrice != null
+                          ? plan.annualPrice
+                          : plan.price;
+                      return (
+                        <th
+                          key={plan.id}
+                          className={`text-center py-3 px-3 rounded-t-lg ${
+                            isSelected
+                              ? "bg-primary/10 text-primary"
+                              : isCurrent
+                                ? "bg-secondary text-foreground"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          <div className="font-semibold">{plan.name}</div>
+                          <div className="font-normal text-xs mt-0.5">
+                            {displayPrice !== null ? (
+                              <>
+                                ${displayPrice}/mo
+                                {billingPeriod === "annual" && plan.annualPrice != null && (
+                                  <span className="block text-green-400">Annual</span>
+                                )}
+                              </>
+                            ) : (
+                              "Custom"
+                            )}
+                          </div>
+                          {isCurrent && (
+                            <Badge variant="outline" className="text-[10px] mt-1">
+                              Current
+                            </Badge>
+                          )}
+                          {isSelected && !isCurrent && (
+                            <Badge className="text-[10px] mt-1 bg-primary">Selected</Badge>
+                          )}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARISON_FEATURES.map((row, i) => (
+                    <tr key={i} className="border-t border-border/50">
+                      <td className="py-2.5 pr-4 text-muted-foreground">{row.label}</td>
+                      {plans.map((plan) => {
+                        const isCurrent = plan.id === currentPlan?.id;
+                        const isSelected = plan.id === selectedPlanId;
+                        let cell: React.ReactNode;
+
+                        if (row.type === "value") {
+                          const rawPlan = PLANS[plan.id as keyof typeof PLANS];
+                          const val = rawPlan[row.key];
+                          cell = (
+                            <span className="font-medium">{formatLimit(val as number)}</span>
+                          );
+                        } else {
+                          const included = row.plans.includes(plan.id);
+                          cell = included ? (
+                            <Check className="h-4 w-4 text-green-500 mx-auto" />
+                          ) : (
+                            <X className="h-4 w-4 text-muted-foreground/40 mx-auto" />
+                          );
+                        }
+
+                        return (
+                          <td
+                            key={plan.id}
+                            className={`py-2.5 px-3 text-center ${
+                              isSelected
+                                ? "bg-primary/5"
+                                : isCurrent
+                                  ? "bg-secondary/50"
+                                  : ""
+                            }`}
+                          >
+                            {cell}
+                          </td>
+                        );
+                      })}
+                    </tr>
                   ))}
-                </ul>
-              </div>
-
-              {/* Payment info */}
-              <div className="rounded-lg bg-secondary p-3 text-sm text-muted-foreground space-y-1">
-                <p className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-muted-foreground/70" />
-                  Secure checkout powered by Stripe
-                </p>
-                <p className="text-xs text-muted-foreground pl-6">
-                  You can pay with credit/debit card, Apple Pay, or Google Pay
-                </p>
-              </div>
+                </tbody>
+              </table>
             </div>
           )}
+
+          {/* Security note */}
+          <div className="rounded-lg bg-secondary p-3 text-sm text-muted-foreground flex items-center gap-2">
+            <Shield className="h-4 w-4 shrink-0" />
+            Secure checkout powered by Stripe · Credit/debit card, Apple Pay, Google Pay
+          </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+            <Button variant="outline" onClick={() => setShowCompareDialog(false)}>
               Cancel
             </Button>
             <Button onClick={handleConfirmUpgrade} disabled={isUpgrading}>
@@ -654,6 +949,11 @@ export default function BillingPage() {
                 <Zap className="mr-2 h-4 w-4" />
               )}
               Continue to Checkout
+              {billingPeriod === "annual" && selectedPlan?.annualPrice != null && (
+                <Badge className="ml-2 bg-green-500/20 text-green-400 border-0 text-xs">
+                  Annual
+                </Badge>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

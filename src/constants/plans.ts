@@ -1,3 +1,5 @@
+export const ANNUAL_DISCOUNT_PERCENT = 17; // ~17% off (2 months free)
+
 export const PLANS = {
   "free-trial": {
     id: "free-trial",
@@ -5,6 +7,8 @@ export const PLANS = {
     description: "Try CallTone free for 14 days",
     price: 0,
     priceId: null,
+    annualPrice: null,
+    annualPriceId: null,
     agents: 1,
     minutesPerMonth: 100,
     phoneNumbers: 1,
@@ -23,6 +27,8 @@ export const PLANS = {
     description: "For solo entrepreneurs and small teams",
     price: 49,
     priceId: process.env.STRIPE_STARTER_PRICE_ID,
+    annualPrice: 41, // $490/yr ÷ 12 ≈ $40.83 → $41/mo
+    annualPriceId: process.env.STRIPE_STARTER_ANNUAL_PRICE_ID,
     agents: 1,
     minutesPerMonth: 500,
     phoneNumbers: 1,
@@ -42,6 +48,8 @@ export const PLANS = {
     description: "For growing businesses",
     price: 149,
     priceId: process.env.STRIPE_PROFESSIONAL_PRICE_ID,
+    annualPrice: 124, // $1,490/yr ÷ 12 ≈ $124.17 → $124/mo
+    annualPriceId: process.env.STRIPE_PROFESSIONAL_ANNUAL_PRICE_ID,
     agents: 3,
     minutesPerMonth: 2000,
     phoneNumbers: 3,
@@ -63,6 +71,8 @@ export const PLANS = {
     description: "For larger teams and high volume",
     price: 249,
     priceId: process.env.STRIPE_BUSINESS_PRICE_ID,
+    annualPrice: 208, // $2,490/yr ÷ 12 ≈ $207.50 → $208/mo
+    annualPriceId: process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID,
     agents: 10,
     minutesPerMonth: 5000,
     phoneNumbers: 10,
@@ -83,6 +93,8 @@ export const PLANS = {
     description: "Custom solutions for large organizations",
     price: null, // Custom pricing
     priceId: null,
+    annualPrice: null,
+    annualPriceId: null,
     agents: -1, // Unlimited
     minutesPerMonth: -1, // Unlimited
     phoneNumbers: -1, // Unlimited

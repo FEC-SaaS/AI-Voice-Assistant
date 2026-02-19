@@ -18,6 +18,7 @@ model Organization {
   slug                 String   @unique
   stripeCustomerId     String?
   stripeSubscriptionId String?
+  paymentFailedAt      DateTime?
   planId               String   @default("free-trial")
   onboardingComplete   Boolean  @default(false)
   settings             Json     @default("{}")

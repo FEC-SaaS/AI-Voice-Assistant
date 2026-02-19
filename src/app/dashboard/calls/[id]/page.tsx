@@ -181,7 +181,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               <p className="text-sm text-foreground">{formatDuration(call.durationSeconds)}</p>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase text-muted-foreground/70">Vapi Call ID</span>
+              <span className="text-xs font-medium uppercase text-muted-foreground/70">Voice System Call ID</span>
               <p className="text-sm font-mono text-muted-foreground">{call.vapiCallId || "—"}</p>
             </div>
           </div>
