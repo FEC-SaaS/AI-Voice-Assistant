@@ -29,11 +29,12 @@ export const engagementRouter = router({
 
   getDormantOrgs: superAdminProcedure.query(async ({ ctx }) => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    // suspendedAt may not exist if schema hasn't been pushed — fall back without that filter
     const orgs = await ctx.db.organization.findMany({
       where: {
         suspendedAt: null,
         calls: { none: { createdAt: { gte: thirtyDaysAgo } } },
-        agents: { some: {} }, // Has an agent but no recent calls
+        agents: { some: {} },
       },
       select: {
         id: true, name: true, planId: true, createdAt: true,
@@ -41,7 +42,20 @@ export const engagementRouter = router({
       },
       orderBy: { createdAt: "asc" },
       take: 50,
-    });
+    }).catch(() =>
+      ctx.db.organization.findMany({
+        where: {
+          calls: { none: { createdAt: { gte: thirtyDaysAgo } } },
+          agents: { some: {} },
+        },
+        select: {
+          id: true, name: true, planId: true, createdAt: true,
+          _count: { select: { calls: true } },
+        },
+        orderBy: { createdAt: "asc" },
+        take: 50,
+      })
+    );
     return orgs;
   }),
 

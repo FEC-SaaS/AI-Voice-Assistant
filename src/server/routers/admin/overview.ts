@@ -10,27 +10,23 @@ export const overviewRouter = router({
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
+    // Core counts — always available
     const [
       totalOrgs,
-      activeOrgs,
       newOrgsLast30,
       totalUsers,
       totalCallsAllTime,
       callsLast7Days,
       callsToday,
-      suspendedOrgs,
       planDistribution,
       recentSignups,
-      systemAlerts,
     ] = await Promise.all([
       db.organization.count(),
-      db.organization.count({ where: { suspendedAt: null } }),
       db.organization.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
       db.user.count(),
       db.call.count(),
       db.call.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
       db.call.count({ where: { createdAt: { gte: startOfToday } } }),
-      db.organization.count({ where: { suspendedAt: { not: null } } }),
       db.organization.groupBy({
         by: ["planId"],
         _count: { id: true },
@@ -41,26 +37,30 @@ export const overviewRouter = router({
         take: 5,
         select: { id: true, name: true, planId: true, createdAt: true },
       }),
-      db.organization.count({ where: { paymentFailedAt: { not: null } } }),
     ]);
 
-    // Signup trend last 30 days (grouped by day)
+    // These use columns that may not exist yet if db push hasn't run
+    const [activeOrgs, suspendedOrgs, paymentFailures] = await Promise.all([
+      db.organization.count({ where: { suspendedAt: null } }).catch(() => totalOrgs),
+      db.organization.count({ where: { suspendedAt: { not: null } } }).catch(() => 0),
+      db.organization.count({ where: { paymentFailedAt: { not: null } } }).catch(() => 0),
+    ]);
+
     const signupsByDay = await db.$queryRaw<{ day: string; count: number }[]>`
       SELECT DATE_TRUNC('day', "createdAt") AS day, COUNT(*)::int AS count
       FROM "Organization"
       WHERE "createdAt" >= ${thirtyDaysAgo}
       GROUP BY day
       ORDER BY day ASC
-    `;
+    `.catch(() => [] as { day: string; count: number }[]);
 
-    // Calls trend last 30 days
     const callsByDay = await db.$queryRaw<{ day: string; count: number }[]>`
       SELECT DATE_TRUNC('day', "createdAt") AS day, COUNT(*)::int AS count
       FROM "Call"
       WHERE "createdAt" >= ${thirtyDaysAgo}
       GROUP BY day
       ORDER BY day ASC
-    `;
+    `.catch(() => [] as { day: string; count: number }[]);
 
     return {
       kpis: {
@@ -72,7 +72,7 @@ export const overviewRouter = router({
         callsLast7Days,
         callsToday,
         suspendedOrgs,
-        paymentFailures: systemAlerts,
+        paymentFailures,
       },
       planDistribution: planDistribution.map((p) => ({
         planId: p.planId,
