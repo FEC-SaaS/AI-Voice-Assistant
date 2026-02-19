@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Trash2,
   ExternalLink,
+  Send,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,15 @@ export default function EmailSettingsPage() {
     },
   });
 
+  const sendTestEmail = trpc.organization.sendTestEmail.useMutation({
+    onSuccess: () => {
+      toast.success("Test email sent to your account email address");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   // Initialize form with fetched settings
   useEffect(() => {
     if (settings) {
@@ -181,15 +191,34 @@ export default function EmailSettingsPage() {
             Configure how your appointment confirmation emails appear to customers
           </p>
         </div>
-        <Button onClick={handleSave} disabled={!hasChanges || updateSettings.isPending}>
-          {updateSettings.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          Save Changes
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => sendTestEmail.mutate()}
+            disabled={sendTestEmail.isPending}
+          >
+            {sendTestEmail.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="mr-2 h-4 w-4" />
+            )}
+            Send Test Email
+          </Button>
+          <Button onClick={handleSave} disabled={!hasChanges || updateSettings.isPending}>
+            {updateSettings.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save Changes
+          </Button>
+        </div>
       </div>
+
+      {/* Test email note */}
+      <p className="text-xs text-muted-foreground -mt-4">
+        Test email will be sent to your account email address using the current branding settings.
+      </p>
 
       {/* Business Name */}
       <Card>

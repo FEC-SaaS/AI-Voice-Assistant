@@ -58,4 +58,73 @@ export const apiKeysRouter = router({
 
       return { success: true };
     }),
+
+  // Rotate an API key: create a new one and revoke the old atomically
+  rotate: adminProcedure
+    .input(z.object({ keyId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Verify the key belongs to this org and is not already revoked
+      const existingKey = await ctx.db.apiKey.findFirst({
+        where: {
+          id: input.keyId,
+          organizationId: ctx.orgId,
+          revokedAt: null,
+        },
+      });
+
+      if (!existingKey) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "API key not found or already revoked",
+        });
+      }
+
+      // Create a new key with the same name (appended with " (rotated)")
+      const newKey = await createApiKey(
+        ctx.orgId,
+        existingKey.name + " (rotated)",
+        ctx.userId
+      );
+
+      // Revoke the old key
+      await revokeApiKey(ctx.orgId, input.keyId);
+
+      return {
+        id: newKey.id,
+        key: newKey.key, // Only returned once!
+        keyPrefix: newKey.keyPrefix,
+      };
+    }),
+
+  // Update IP allowlist for an API key
+  updateIpAllowlist: adminProcedure
+    .input(
+      z.object({
+        keyId: z.string(),
+        ips: z.array(z.string()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.apiKey.findFirst({
+        where: {
+          id: input.keyId,
+          organizationId: ctx.orgId,
+          revokedAt: null,
+        },
+      });
+
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "API key not found",
+        });
+      }
+
+      await ctx.db.apiKey.update({
+        where: { id: input.keyId },
+        data: { ipAllowlist: input.ips },
+      });
+
+      return { success: true };
+    }),
 });

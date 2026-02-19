@@ -14,12 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Bell, BarChart3, Megaphone, Bot, CreditCard, PhoneCall } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 
 interface NotifSetting {
   key: keyof NotifState;
   label: string;
   description: string;
   icon: React.ElementType;
+  tooltip?: string;
 }
 
 interface NotifState {
@@ -43,6 +46,7 @@ const NOTIFICATION_SETTINGS: NotifSetting[] = [
     label: "Daily digest",
     description: "A morning summary of yesterday's call volume, outcomes, and top agents",
     icon: BarChart3,
+    tooltip: "Sent every morning at 8 AM covering the previous day's activity across all campaigns and agents.",
   },
   {
     key: "notifyCampaignCompleted",
@@ -55,6 +59,7 @@ const NOTIFICATION_SETTINGS: NotifSetting[] = [
     label: "Weekly performance report",
     description: "A weekly email with trends, comparisons, and actionable insights",
     icon: BarChart3,
+    tooltip: "Delivered every Monday morning. Includes week-over-week comparisons, top-performing agents, and recommended next steps.",
   },
   {
     key: "notifyAgentErrors",
@@ -156,32 +161,37 @@ export default function NotificationsSettingsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="divide-y divide-border">
-              {NOTIFICATION_SETTINGS.map(({ key, label, description, icon: Icon }) => (
-                <div key={key} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
-                  <div className="flex items-start gap-3 pr-4">
-                    <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-secondary shrink-0">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
+            <TooltipProvider>
+              <div className="divide-y divide-border">
+                {NOTIFICATION_SETTINGS.map(({ key, label, description, icon: Icon, tooltip }) => (
+                  <div key={key} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
+                    <div className="flex items-start gap-3 pr-4">
+                      <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-secondary shrink-0">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <Label htmlFor={key} className="text-sm font-medium cursor-pointer">
+                            {label}
+                          </Label>
+                          {tooltip && <HelpTooltip content={tooltip} />}
+                        </div>
+                        <p
+                          className="text-xs text-muted-foreground"
+                          dangerouslySetInnerHTML={{ __html: description }}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-0.5">
-                      <Label htmlFor={key} className="text-sm font-medium cursor-pointer">
-                        {label}
-                      </Label>
-                      <p
-                        className="text-xs text-muted-foreground"
-                        dangerouslySetInnerHTML={{ __html: description }}
-                      />
-                    </div>
+                    <Switch
+                      id={key}
+                      checked={settings[key]}
+                      onCheckedChange={() => toggle(key)}
+                      disabled={update.isLoading}
+                    />
                   </div>
-                  <Switch
-                    id={key}
-                    checked={settings[key]}
-                    onCheckedChange={() => toggle(key)}
-                    disabled={update.isLoading}
-                  />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </TooltipProvider>
           )}
         </CardContent>
       </Card>

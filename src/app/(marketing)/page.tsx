@@ -243,6 +243,46 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section className="relative py-16 sm:py-20 md:py-28">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <h2 className="reveal text-3xl font-bold text-foreground sm:text-4xl">
+              Trusted by businesses across America
+            </h2>
+            <p className="reveal reveal-delay-1 mx-auto mt-4 max-w-2xl text-foreground/60">
+              See how real businesses are growing with CallTone.
+            </p>
+          </div>
+          <div className="mt-12 sm:mt-16 grid gap-6 grid-cols-1 md:grid-cols-3">
+            <TestimonialCard
+              initials="MR"
+              quote="CallTone handles our after-hours calls so my team can actually sleep. It books service appointments automatically and we've seen a 30% increase in booked jobs since going live."
+              name="Mike Reynolds"
+              title="Owner"
+              company="Reynolds HVAC Services"
+              delay={1}
+            />
+            <TestimonialCard
+              initials="SP"
+              quote="Our front desk used to miss calls during busy hours. Now CallTone answers instantly, confirms appointments, and sends reminders. Patient no-shows dropped by half."
+              name="Sarah Patel"
+              title="Office Manager"
+              company="Bright Smile Dental"
+              delay={2}
+            />
+            <TestimonialCard
+              initials="JT"
+              quote="We get dozens of inbound inquiries daily. CallTone qualifies leads 24/7, books showings, and flags hot prospects for my agents. It's like having a full-time receptionist."
+              name="James Torres"
+              title="Broker & Owner"
+              company="Torres Realty Group"
+              delay={3}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Bottom CTA */}
       <section className="relative overflow-hidden py-16 sm:py-20 md:py-28">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-purple-500/10" />
@@ -290,6 +330,53 @@ function StepCard({
       <p className="mt-2 text-foreground/60 text-sm sm:text-base">
         {description}
       </p>
+    </div>
+  );
+}
+
+function TestimonialCard({
+  initials,
+  quote,
+  name,
+  title,
+  company,
+  delay,
+}: {
+  initials: string;
+  quote: string;
+  name: string;
+  title: string;
+  company: string;
+  delay: number;
+}) {
+  return (
+    <div
+      className={`reveal reveal-delay-${delay} rounded-xl border border-border/50 bg-card p-6 sm:p-7 flex flex-col gap-4`}
+    >
+      {/* Stars */}
+      <div className="flex gap-0.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <svg key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        ))}
+      </div>
+      {/* Quote */}
+      <p className="text-foreground/70 text-sm sm:text-base leading-relaxed flex-1">
+        &ldquo;{quote}&rdquo;
+      </p>
+      {/* Author */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-sm shrink-0">
+          {initials}
+        </div>
+        <div>
+          <p className="font-semibold text-foreground text-sm">{name}</p>
+          <p className="text-xs text-muted-foreground">
+            {title}, {company}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

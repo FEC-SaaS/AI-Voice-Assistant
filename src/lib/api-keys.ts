@@ -27,10 +27,12 @@ export function getKeyPrefix(key: string): string {
 }
 
 /**
- * Validate an API key and return the organization if valid
+ * Validate an API key and return the organization if valid.
+ * Optionally checks requestIp against the key's IP allowlist.
  */
 export async function validateApiKey(
-  apiKey: string
+  apiKey: string,
+  requestIp?: string
 ): Promise<{ valid: boolean; organizationId?: string; error?: string }> {
   if (!apiKey) {
     return { valid: false, error: "API key is required" };
@@ -62,6 +64,14 @@ export async function validateApiKey(
 
   if (!apiKeyRecord) {
     return { valid: false, error: "Invalid API key" };
+  }
+
+  // Check IP allowlist if configured
+  if (apiKeyRecord.ipAllowlist.length > 0 && requestIp) {
+    const allowed = apiKeyRecord.ipAllowlist.some((ip) => ip === requestIp);
+    if (!allowed) {
+      return { valid: false, error: "Request IP not in allowlist" };
+    }
   }
 
   // Update last used timestamp
@@ -141,6 +151,7 @@ export async function listApiKeys(organizationId: string) {
       keyPrefix: true,
       createdAt: true,
       lastUsedAt: true,
+      ipAllowlist: true,
     },
     orderBy: {
       createdAt: "desc",

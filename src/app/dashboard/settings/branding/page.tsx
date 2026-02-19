@@ -27,6 +27,8 @@ import { toast } from "sonner";
 import { useDropzone } from "react-dropzone";
 import { canHidePoweredBy } from "@/lib/plan-features";
 import Link from "next/link";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 
 export default function BrandingSettingsPage() {
   const [brandName, setBrandName] = useState("");
@@ -480,23 +482,28 @@ export default function BrandingSettingsPage() {
         </CardHeader>
         <CardContent>
           {planAllowsHide ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-foreground">
-                  Hide &quot;Powered by CallTone&quot;
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Removes branding from sidebar footer and appointment pages
-                </p>
+            <TooltipProvider>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium text-foreground">
+                      Hide &quot;Powered by CallTone&quot;
+                    </p>
+                    <HelpTooltip content="Requires Business plan or higher. Removes the 'Powered by CallTone' badge from the sidebar footer and public-facing appointment booking pages." />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Removes branding from sidebar footer and appointment pages
+                  </p>
+                </div>
+                <Switch
+                  checked={poweredByHidden}
+                  onCheckedChange={(checked) => {
+                    setPoweredByHidden(checked);
+                    markChanged();
+                  }}
+                />
               </div>
-              <Switch
-                checked={poweredByHidden}
-                onCheckedChange={(checked) => {
-                  setPoweredByHidden(checked);
-                  markChanged();
-                }}
-              />
-            </div>
+            </TooltipProvider>
           ) : (
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
               <div className="flex items-start gap-3">

@@ -14,6 +14,7 @@ const settingsNav = [
   { title: "Team", href: "/dashboard/settings/team" },
   { title: "Billing", href: "/dashboard/settings/billing" },
   { title: "API Keys", href: "/dashboard/settings/api-keys" },
+  { title: "Webhooks", href: "/dashboard/settings/webhooks" },
   { title: "Activity Log", href: "/dashboard/settings/activity" },
 ];
 

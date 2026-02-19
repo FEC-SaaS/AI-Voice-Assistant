@@ -305,6 +305,7 @@ model ApiKey {
   createdById    String       // Clerk user ID who created the key
   lastUsedAt     DateTime?
   revokedAt      DateTime?
+  ipAllowlist    String[]     // Empty = allow all; populated = restrict to these IPs
   createdAt      DateTime     @default(now())
 
   @@index([organizationId])

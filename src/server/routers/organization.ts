@@ -8,6 +8,8 @@ import {
   removeDomain,
 } from "@/lib/resend-domains";
 import { canHidePoweredBy } from "@/lib/plan-features";
+import { clerkClient } from "@clerk/nextjs/server";
+import { sendEmail } from "@/lib/email";
 
 // Email settings schema
 const emailSettingsSchema = z.object({
@@ -455,6 +457,92 @@ export const organizationRouter = router({
 
       return { success: true };
     }),
+
+  // Send a test email using current org branding to the requesting user's email
+  sendTestEmail: adminProcedure.mutation(async ({ ctx }) => {
+    const org = await ctx.db.organization.findUnique({
+      where: { id: ctx.orgId },
+      select: { name: true, settings: true },
+    });
+
+    if (!org) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Organization not found" });
+    }
+
+    const settings = (org.settings as Record<string, unknown>) ?? {};
+    const businessName = (settings.emailBusinessName as string) || org.name;
+    const primaryColor = (settings.emailPrimaryColor as string) || "#22c55e";
+    const logoUrl = (settings.emailLogoUrl as string) || null;
+    const fromAddress = (settings.emailFromAddress as string) || undefined;
+
+    // Get the requesting user's email from Clerk
+    const clerk = await clerkClient();
+    const clerkUser = await clerk.users.getUser(ctx.userId);
+    const userEmail =
+      clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)
+        ?.emailAddress ?? clerkUser.emailAddresses[0]?.emailAddress;
+
+    if (!userEmail) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "No email address found for your account" });
+    }
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 0;">
+    <tr><td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+        <tr>
+          <td style="background:${primaryColor};padding:28px 32px;text-align:center;">
+            ${logoUrl ? `<img src="${logoUrl}" alt="${businessName}" style="max-height:48px;max-width:200px;object-fit:contain;margin-bottom:12px;" /><br/>` : ""}
+            <h2 style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">${businessName}</h2>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <h3 style="margin:0 0 12px;color:#111827;font-size:18px;">Test Email</h3>
+            <p style="margin:0 0 16px;color:#6b7280;font-size:15px;line-height:1.6;">
+              This is a test email from <strong>${businessName}</strong>. Your email branding is configured correctly.
+            </p>
+            <p style="margin:0;color:#9ca3af;font-size:13px;">
+              Emails from your organization will appear with this branding and color scheme.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px;border-top:1px solid #f3f4f6;text-align:center;">
+            <p style="margin:0;color:#9ca3af;font-size:12px;">Sent from ${businessName} via VoxForge AI</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+    const result = await sendEmail({
+      to: userEmail,
+      subject: `Test Email from ${businessName}`,
+      html,
+      branding: {
+        businessName,
+        fromEmail: fromAddress,
+        primaryColor,
+        logoUrl: logoUrl ?? undefined,
+      },
+    });
+
+    if (!result.success) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to send test email. Please check your email configuration.",
+      });
+    }
+
+    return { success: true };
+  }),
 
   // Remove custom domain
   removeCustomDomain: adminProcedure.mutation(async ({ ctx }) => {
