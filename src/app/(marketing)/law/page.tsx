@@ -124,7 +124,7 @@ export default function LawPage() {
             <span className="vp-accent">Yours went to voicemail.</span>
           </h1>
           <p className="reveal reveal-delay-2" style={{ fontSize: 18, lineHeight: 1.7, maxWidth: 640, margin: "0 auto 40px", color: "var(--text-body)" }}>
-            Legal clients in distress call multiple firms. Whoever answers first earns the trust — and the retainer. After-hours calls, weekend crises, Monday morning surges. CallTone answers every call in under 2 seconds, qualifies the lead, and schedules the consultation before your competitor's phone even rings twice.
+            Legal clients in distress call multiple firms. Whoever answers first earns the trust — and the retainer. After-hours calls, weekend crises, Monday morning surges. CallTone answers every call in under 2 seconds, qualifies the lead, and schedules the consultation before your competitor&apos;s phone even rings twice.
           </p>
           <div className="reveal reveal-delay-3" style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 60 }}>
             <Link href="/sign-up" className="vp-btn-primary">Start Free Trial</Link>
@@ -174,7 +174,7 @@ export default function LawPage() {
                 Every caller — even at 5:01 pm — gets a live answer.
               </h2>
               <p className="reveal reveal-delay-2" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--text-body)", marginBottom: 24 }}>
-                The most urgent legal calls happen outside office hours. Car accidents, arrests, served papers. CallTone's after-hours voice agents answer instantly, ask the right intake questions, assess urgency, and schedule a consultation — or escalate emergencies to the on-call attorney.
+                The most urgent legal calls happen outside office hours. Car accidents, arrests, served papers. CallTone&apos;s after-hours voice agents answer instantly, ask the right intake questions, assess urgency, and schedule a consultation — or escalate emergencies to the on-call attorney.
               </p>
               <div className="reveal reveal-delay-3" style={{ fontSize: 13, color: "var(--text-muted)" }}>
                 After-hours capture rate — <span style={{ color: "var(--accent)", fontWeight: 700 }}>100% of inbound calls</span>
@@ -318,7 +318,7 @@ export default function LawPage() {
         <section style={{ padding: "80px 24px", background: "var(--accent-dim)", borderTop: "1px solid var(--accent-border)", borderBottom: "1px solid var(--accent-border)" }}>
           <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center" }}>
             <h2 className="reveal" style={{ fontSize: "clamp(26px, 4vw, 44px)", fontWeight: 800, color: "var(--text-head)", marginBottom: 20 }}>
-              Every unanswered call is a retainer you'll never see.
+              Every unanswered call is a retainer you&apos;ll never see.
             </h2>
             <p className="reveal reveal-delay-1" style={{ fontSize: 17, color: "var(--text-body)", marginBottom: 40, lineHeight: 1.6 }}>
               Set up in 15 minutes. Works with your existing number and calendar. No hardware. No IT. First 14 days free — no credit card required.

@@ -159,7 +159,7 @@ export default function DentalPage() {
             <span className="vp-accent">3 callers chose a different practice.</span>
           </h1>
           <p className="reveal reveal-delay-2" style={{ fontSize: 18, lineHeight: 1.7, maxWidth: 640, margin: "0 auto 40px", color: "var(--text-body)" }}>
-            Every unanswered call is a new patient walking into your competitor's chair. CallTone BURST answers every call — simultaneously — in under 2 seconds, books the appointment, and sends the confirmation. While you're with patients.
+            Every unanswered call is a new patient walking into your competitor&apos;s chair. CallTone BURST answers every call — simultaneously — in under 2 seconds, books the appointment, and sends the confirmation. While you&apos;re with patients.
           </p>
           <div className="reveal reveal-delay-3" style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 60 }}>
             <Link href="/sign-up" className="vp-btn-primary">Start Free Trial</Link>
@@ -181,10 +181,10 @@ export default function DentalPage() {
 
         {/* ── 2. PAIN STATS ──────────────────────────────────────── */}
         <section style={{ padding: "80px 24px", maxWidth: 960, margin: "0 auto" }}>
-          <p className="reveal" style={{ textAlign: "center", fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 48 }}>The numbers your practice can't afford to ignore</p>
+          <p className="reveal" style={{ textAlign: "center", fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 48 }}>The numbers your practice can&apos;t afford to ignore</p>
           <div className="reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
             {[
-              { num: "62%", label: "of callers won't leave a voicemail", sub: "They move on immediately" },
+              { num: "62%", label: "of callers won&apos;t leave a voicemail", sub: "They move on immediately" },
               { num: "78%", label: "book with the first practice that answers", sub: "Speed is the entire competition" },
               { num: "$850", label: "average new patient lifetime value", sub: "Each missed call = $850 gone" },
               { num: "34%", label: "of calls arrive during busy or lunch hours", sub: "Your highest-risk windows" },
@@ -209,7 +209,7 @@ export default function DentalPage() {
                 Every caller gets a live answer. Simultaneously.
               </h2>
               <p className="reveal reveal-delay-2" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--text-body)", marginBottom: 24 }}>
-                Traditional phone systems queue callers or send them to voicemail. BURST spins up independent voice agents for every inbound call — no queue, no hold music, no missed opportunity. Your lunch break is no longer your competitor's best sales hour.
+                Traditional phone systems queue callers or send them to voicemail. BURST spins up independent voice agents for every inbound call — no queue, no hold music, no missed opportunity. Your lunch break is no longer your competitor&apos;s best sales hour.
               </p>
               <div className="reveal reveal-delay-3" style={{ fontSize: 13, color: "var(--text-muted)" }}>
                 Avg answer time — <span style={{ color: "var(--accent)", fontWeight: 700 }}>1.8 seconds</span>
@@ -288,7 +288,7 @@ export default function DentalPage() {
             Bright Smile Dental — Tuesday, 12:30 pm
           </h2>
           <p className="reveal reveal-delay-2" style={{ fontSize: 15, color: "var(--text-body)", marginBottom: 40, lineHeight: 1.6 }}>
-            Front desk on lunch. Dr. Kim with a patient. Four prospective patients call in 11 minutes. Without CallTone, that's $4,200 in new patient value walking out the door. Here's what CallTone logged instead.
+            Front desk on lunch. Dr. Kim with a patient. Four prospective patients call in 11 minutes. Without CallTone, that&apos;s $4,200 in new patient value walking out the door. Here&apos;s what CallTone logged instead.
           </p>
           <div className="reveal reveal-delay-2" style={{ background: "var(--card)", border: "1px solid var(--rule)", borderRadius: 12, padding: "24px 28px" }}>
             {[

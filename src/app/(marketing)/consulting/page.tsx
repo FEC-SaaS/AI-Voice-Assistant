@@ -264,7 +264,7 @@ export default function ConsultingPage() {
             TechBridge Staffing — SAP S/4HANA Req, 9:14 am
           </h2>
           <p className="reveal reveal-delay-2" style={{ fontSize: 15, color: "var(--text-body)", marginBottom: 40, lineHeight: 1.6 }}>
-            Urgent SAP S/4HANA FICO consultant req. 6-month contract, $110/hr, remote. 500 SAP consultants in the CRM. Without BURST, a recruiter dials 7 by the time a competitor has submitted 40. Here's the BURST log.
+            Urgent SAP S/4HANA FICO consultant req. 6-month contract, $110/hr, remote. 500 SAP consultants in the CRM. Without BURST, a recruiter dials 7 by the time a competitor has submitted 40. Here&apos;s the BURST log.
           </p>
           <div className="reveal reveal-delay-2" style={{ background: "var(--card)", border: "1px solid var(--rule)", borderRadius: 12, padding: "24px 28px" }}>
             {[
@@ -329,7 +329,7 @@ export default function ConsultingPage() {
         <section style={{ padding: "80px 24px", background: "var(--accent-dim)", borderTop: "1px solid var(--accent-border)", borderBottom: "1px solid var(--accent-border)" }}>
           <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center" }}>
             <h2 className="reveal" style={{ fontSize: "clamp(26px, 4vw, 44px)", fontWeight: 800, color: "var(--text-head)", marginBottom: 20 }}>
-              Every RTR you lose is a placement you'll never see.
+              Every RTR you lose is a placement you&apos;ll never see.
             </h2>
             <p className="reveal reveal-delay-1" style={{ fontSize: 17, color: "var(--text-body)", marginBottom: 40, lineHeight: 1.6 }}>
               Set up in 15 minutes. Works with your existing CRM and phone numbers. No hardware. No IT. First 14 days free — no credit card required.

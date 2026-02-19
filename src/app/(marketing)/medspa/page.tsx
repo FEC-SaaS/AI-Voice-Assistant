@@ -124,7 +124,7 @@ export default function MedspaPage() {
             <span className="vp-accent">Your team answered 18.</span>
           </h1>
           <p className="reveal reveal-delay-2" style={{ fontSize: 18, lineHeight: 1.7, maxWidth: 640, margin: "0 auto 40px", color: "var(--text-body)" }}>
-            MedSpa promotions create call surges your front desk can't handle. The 48-hour window closes, the promo ends, and 282 interested clients are gone — not rescheduled, gone. CallTone BURST answers every call simultaneously, books every appointment, and captures every revenue dollar your promo generates.
+            MedSpa promotions create call surges your front desk can&apos;t handle. The 48-hour window closes, the promo ends, and 282 interested clients are gone — not rescheduled, gone. CallTone BURST answers every call simultaneously, books every appointment, and captures every revenue dollar your promo generates.
           </p>
           <div className="reveal reveal-delay-3" style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 60 }}>
             <Link href="/sign-up" className="vp-btn-primary">Start Free Trial</Link>
@@ -204,7 +204,7 @@ export default function MedspaPage() {
         {/* ── 4. THE RACE ────────────────────────────────────────── */}
         <section style={{ padding: "80px 24px", maxWidth: 960, margin: "0 auto" }}>
           <h2 className="reveal" style={{ fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 800, color: "var(--text-head)", textAlign: "center", marginBottom: 48 }}>
-            Valentine's promo. Two MedSpas. Same Instagram ad spend.
+            Valentine&apos;s promo. Two MedSpas. Same Instagram ad spend.
           </h2>
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
             <div className="vp-race-card lose reveal">
@@ -250,10 +250,10 @@ export default function MedspaPage() {
         <section style={{ padding: "80px 24px", maxWidth: 760, margin: "0 auto" }}>
           <p className="reveal" style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 8 }}>Real Scenario</p>
           <h2 className="reveal reveal-delay-1" style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 800, color: "var(--text-head)", marginBottom: 8 }}>
-            Glow Studio MedSpa — Valentine's Day Promo
+            Glow Studio MedSpa — Valentine&apos;s Day Promo
           </h2>
           <p className="reveal reveal-delay-2" style={{ fontSize: 15, color: "var(--text-body)", marginBottom: 40, lineHeight: 1.6 }}>
-            40% off Botox + filler packages for 48 hours. 300 inbound calls. Two front desk staff. Without CallTone, $29K walks out the door. Here's the CallTone log from the same promo run at a BURST-enabled location.
+            40% off Botox + filler packages for 48 hours. 300 inbound calls. Two front desk staff. Without CallTone, $29K walks out the door. Here&apos;s the CallTone log from the same promo run at a BURST-enabled location.
           </p>
           <div className="reveal reveal-delay-2" style={{ background: "var(--card)", border: "1px solid var(--rule)", borderRadius: 12, padding: "24px 28px" }}>
             {[

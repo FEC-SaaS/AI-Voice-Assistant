@@ -127,7 +127,7 @@ export default function HvacPage() {
             <span className="vp-accent">One answered.</span>
           </h1>
           <p className="reveal reveal-delay-2" style={{ fontSize: 18, lineHeight: 1.7, maxWidth: 640, margin: "0 auto 40px", color: "var(--text-body)" }}>
-            Emergency trades live and die by first-call response. Homeowners in crisis don't negotiate — they hire whoever picks up. CallTone BURST answers every inbound call in under 2 seconds, dispatches the job, and confirms with the customer. At 2am. In a blizzard.
+            Emergency trades live and die by first-call response. Homeowners in crisis don&apos;t negotiate — they hire whoever picks up. CallTone BURST answers every inbound call in under 2 seconds, dispatches the job, and confirms with the customer. At 2am. In a blizzard.
           </p>
           <div className="reveal reveal-delay-3" style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 60 }}>
             <Link href="/sign-up" className="vp-btn-primary">Start Free Trial</Link>
@@ -177,7 +177,7 @@ export default function HvacPage() {
                 40 simultaneous emergencies. 40 simultaneous answers.
               </h2>
               <p className="reveal reveal-delay-2" style={{ fontSize: 15, lineHeight: 1.7, color: "var(--text-body)", marginBottom: 24 }}>
-                Winter storm surge. Pipe freeze across a neighborhood. Every homeowner calls at once. BURST doesn't queue them — it spins up 40 independent voice agents in parallel. Every caller gets a live answer in under 2 seconds, job details captured, technician dispatched.
+                Winter storm surge. Pipe freeze across a neighborhood. Every homeowner calls at once. BURST doesn&apos;t queue them — it spins up 40 independent voice agents in parallel. Every caller gets a live answer in under 2 seconds, job details captured, technician dispatched.
               </p>
               <div className="reveal reveal-delay-3" style={{ fontSize: 13, color: "var(--text-muted)" }}>
                 Storm surge capacity — <span style={{ color: "var(--accent)", fontWeight: 700 }}>unlimited simultaneous calls</span>
