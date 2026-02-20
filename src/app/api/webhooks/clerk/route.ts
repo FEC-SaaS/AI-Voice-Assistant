@@ -130,7 +130,8 @@ export async function POST(req: Request) {
     const { id } = evt.data;
 
     if (id) {
-      await db.organization.delete({
+      // deleteMany never throws if the record doesn't exist (unlike delete)
+      await db.organization.deleteMany({
         where: { id },
       });
     }
@@ -141,6 +142,25 @@ export async function POST(req: Request) {
     const { organization, public_user_data, role } = evt.data;
 
     if (organization && public_user_data) {
+      // ── Race-condition guard ───────────────────────────────────────────
+      // organization.created and organizationMembership.created fire within
+      // milliseconds of each other. If this handler runs first, the org row
+      // won't exist yet and the user upsert below will fail with a FK error.
+      // Upsert the org here so the row is guaranteed to exist regardless of
+      // delivery order. organization.created will update it again (harmlessly)
+      // and will add the Stripe customer ID when it arrives.
+      await db.organization.upsert({
+        where: { clerkOrgId: organization.id },
+        create: {
+          id: organization.id,
+          clerkOrgId: organization.id,
+          name: organization.name,
+          slug: organization.slug || slugify(organization.name),
+          trialExpiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        },
+        update: { name: organization.name },
+      });
+
       // Map Clerk roles to our roles
       // Clerk sends: "org:admin", "org:member", or "admin", "member"
       // We support: owner, admin, manager, member, viewer
