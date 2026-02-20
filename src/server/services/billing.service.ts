@@ -94,6 +94,8 @@ export async function getOrganizationUsage(orgId: string): Promise<UsageStats> {
  * Check if organization can add an agent
  */
 export async function checkAgentLimit(orgId: string): Promise<LimitCheckResult> {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return { allowed: true };
+
   const usage = await getOrganizationUsage(orgId);
 
   if (usage.agents.limit === -1) return { allowed: true };
@@ -115,6 +117,8 @@ export async function checkAgentLimit(orgId: string): Promise<LimitCheckResult> 
  * Check if organization can add a phone number
  */
 export async function checkPhoneNumberLimit(orgId: string): Promise<LimitCheckResult> {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return { allowed: true };
+
   const usage = await getOrganizationUsage(orgId);
 
   if (usage.phoneNumbers.limit === -1) return { allowed: true };
@@ -136,6 +140,8 @@ export async function checkPhoneNumberLimit(orgId: string): Promise<LimitCheckRe
  * Check if organization can add a campaign
  */
 export async function checkCampaignLimit(orgId: string): Promise<LimitCheckResult> {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return { allowed: true };
+
   const usage = await getOrganizationUsage(orgId);
 
   if (usage.campaigns.limit === -1) return { allowed: true };
@@ -157,6 +163,8 @@ export async function checkCampaignLimit(orgId: string): Promise<LimitCheckResul
  * Check if organization can make calls (minutes remaining + trial rules)
  */
 export async function checkMinutesLimit(orgId: string, estimatedMinutes: number = 1): Promise<LimitCheckResult> {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return { allowed: true };
+
   const org = await db.organization.findUnique({
     where: { id: orgId },
     select: {

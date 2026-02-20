@@ -181,6 +181,8 @@ export const actionRateLimit = (action: string, limit: number, windowSeconds: nu
  * Plan limit enforcement middleware - Agents
  */
 export const enforceAgentLimit = middleware(async ({ ctx, next }) => {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return next();
+
   if (!ctx.orgId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
@@ -213,6 +215,8 @@ export const enforceAgentLimit = middleware(async ({ ctx, next }) => {
  * Plan limit enforcement middleware - Campaigns
  */
 export const enforceCampaignLimit = middleware(async ({ ctx, next }) => {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return next();
+
   if (!ctx.orgId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
@@ -245,6 +249,8 @@ export const enforceCampaignLimit = middleware(async ({ ctx, next }) => {
  * Plan limit enforcement middleware - Phone Numbers
  */
 export const enforcePhoneNumberLimit = middleware(async ({ ctx, next }) => {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return next();
+
   if (!ctx.orgId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
@@ -278,6 +284,8 @@ export const enforcePhoneNumberLimit = middleware(async ({ ctx, next }) => {
  * Checks if organization has remaining minutes
  */
 export const enforceMinutesLimit = middleware(async ({ ctx, next }) => {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return next();
+
   if (!ctx.orgId) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }

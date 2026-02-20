@@ -143,16 +143,19 @@ export function getPlan(planId: string): Plan {
 }
 
 export function canAddAgent(currentCount: number, planId: string): boolean {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return true;
   const plan = getPlan(planId);
   return plan.agents === -1 || currentCount < plan.agents;
 }
 
 export function canAddPhoneNumber(currentCount: number, planId: string): boolean {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return true;
   const plan = getPlan(planId);
   return plan.phoneNumbers === -1 || currentCount < plan.phoneNumbers;
 }
 
 export function canAddCampaign(currentCount: number, planId: string): boolean {
+  if (process.env.BYPASS_PLAN_CHECK === "true") return true;
   const plan = getPlan(planId);
   return plan.campaigns === -1 || currentCount < plan.campaigns;
 }
