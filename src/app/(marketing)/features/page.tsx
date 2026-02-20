@@ -4,284 +4,342 @@ import {
   Bot,
   Phone,
   BarChart3,
-  Zap,
   Shield,
-  Users,
-  ArrowRight,
-  Mic,
-  Globe,
-  FileText,
-  Clock,
+  Zap,
+  Brain,
+  Calendar,
   MessageSquare,
-  Settings,
+  Eye,
+  Target,
+  Webhook,
+  Users,
+  Clock,
+  Globe,
+  ArrowRight,
+  CheckCircle2,
+  Mic,
+  FileText,
+  TrendingUp,
+  PhoneIncoming,
+  PhoneMissed,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Features | CallTone",
-  description: "Powerful voice agent features — agent builder, inbound & outbound calling, conversation intelligence, and enterprise-grade compliance.",
+  description:
+    "Powerful voice agent features — agent builder, inbound & outbound calling, conversation intelligence, compliance, and enterprise-grade integrations.",
 };
+
+const CORE_FEATURES = [
+  {
+    icon: Bot,
+    color: "#6366f1",
+    glow: "rgba(99,102,241,0.15)",
+    label: "Voice Agent Builder",
+    title: "Build Intelligent Agents in Minutes",
+    description:
+      "Create production-ready voice agents without writing a single line of code. Configure personality, voice, knowledge base, and conversation flow through an intuitive interface.",
+    bullets: [
+      "Custom system prompts and conversation scripts",
+      "Multiple voice providers: ElevenLabs, PlayHT, Deepgram",
+      "Upload PDFs, URLs, and Q&A pairs as knowledge base",
+      "Test calls directly from the dashboard",
+    ],
+  },
+  {
+    icon: Phone,
+    color: "#10b981",
+    glow: "rgba(16,185,129,0.15)",
+    label: "Inbound & Outbound Calling",
+    title: "Handle Every Call, at Any Scale",
+    description:
+      "Launch outbound campaigns to hundreds of contacts per day and receive inbound calls 24/7 with no missed calls — all with consistent, professional quality.",
+    bullets: [
+      "Automated outbound campaigns with smart scheduling",
+      "Timezone-aware calling hours (TCPA compliant)",
+      "Real-time transcription and call summaries",
+      "Concurrent inbound call handling",
+    ],
+  },
+  {
+    icon: Brain,
+    color: "#8b5cf6",
+    glow: "rgba(139,92,246,0.15)",
+    label: "Conversation Intelligence",
+    title: "Deep Insights from Every Call",
+    description:
+      "Every conversation is analyzed automatically — sentiment, objections, buying signals, and competitor mentions — giving you actionable data to sharpen your strategy.",
+    bullets: [
+      "Turn-by-turn sentiment scoring and trend analysis",
+      "Automatic objection and buying-signal detection",
+      "Competitor mention tracking across all calls",
+      "AI-generated coaching recommendations per agent",
+    ],
+  },
+  {
+    icon: Target,
+    color: "#f59e0b",
+    glow: "rgba(245,158,11,0.15)",
+    label: "Smart Lead Scoring",
+    title: "Prioritize Your Best Opportunities",
+    description:
+      "AI-driven lead scoring ranks every prospect 0–100 based on conversation data, engagement level, and intent signals. Know exactly who to call next.",
+    bullets: [
+      "Hot / Warm / Cool / Cold automatic tier classification",
+      "Next-best-action recommendations per lead",
+      "Scoring history and trend tracking",
+      "CRM sync to push scored leads downstream",
+    ],
+  },
+  {
+    icon: Shield,
+    color: "#ef4444",
+    glow: "rgba(239,68,68,0.15)",
+    label: "Compliance & Security",
+    title: "Enterprise-Grade Protection Built In",
+    description:
+      "TCPA compliance tools, DNC list management, consent tracking, and audit logging are built directly into the platform — not bolted on as an afterthought.",
+    bullets: [
+      "National DNC registry + internal DNC list management",
+      "Consent tracking with timestamp and source logging",
+      "Automated calling hour restrictions by recipient timezone",
+      "Full audit log for every action across your organization",
+    ],
+  },
+  {
+    icon: Zap,
+    color: "#06b6d4",
+    glow: "rgba(6,182,212,0.15)",
+    label: "Integrations & API",
+    title: "Connect Your Entire Stack",
+    description:
+      "Nine native integrations plus a full REST API and webhook system with HMAC signing let you connect CallTone to any CRM, calendar, or workflow tool.",
+    bullets: [
+      "HubSpot, Salesforce, GHL, Google Calendar, Slack, Zapier",
+      "Google Sheets for contact sync and reporting",
+      "REST API with API key management and IP allowlisting",
+      "Outbound webhooks with HMAC signature verification",
+    ],
+  },
+];
+
+const ADDITIONAL = [
+  { icon: PhoneIncoming, label: "AI Receptionist", color: "#6366f1", desc: "24/7 inbound answering with department routing and message-taking" },
+  { icon: PhoneMissed, label: "Missed Call Text-Back", color: "#10b981", desc: "Auto-SMS and callback scheduling for every missed inbound call" },
+  { icon: Calendar, label: "Appointment Scheduling", color: "#8b5cf6", desc: "Calendar integration, reminders, and a self-service booking portal" },
+  { icon: MessageSquare, label: "Two-Way SMS", color: "#f59e0b", desc: "Send and receive SMS messages with full conversation history" },
+  { icon: Eye, label: "Real-time Monitoring", color: "#ef4444", desc: "Listen live, whisper coaching, or barge into active calls as a supervisor" },
+  { icon: BarChart3, label: "Advanced Analytics", color: "#06b6d4", desc: "Dashboards for call volume, conversion rate, sentiment trends, and ROI" },
+  { icon: TrendingUp, label: "Campaign ROI Tracking", color: "#f97316", desc: "Per-campaign revenue attribution, cost-per-lead, and booking-rate metrics" },
+  { icon: Users, label: "Team Management", color: "#14b8a6", desc: "Role-based access control with member invitations and permission scopes" },
+];
+
+const INTEGRATIONS = [
+  "HubSpot", "Salesforce", "GoHighLevel", "Google Calendar",
+  "Google Sheets", "Slack", "Zapier", "Make", "MCP Protocol",
+];
 
 export default function FeaturesPage() {
   return (
-    <>
-      {/* Hero */}
-      <section className="bg-gradient-to-b from-secondary to-background py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Powerful Features for Modern Business
+    <div style={{ background: "#08080f", minHeight: "100vh", color: "#c8c8d8" }}>
+      <style>{`
+        @keyframes featureFadeUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .feat-reveal { animation: featureFadeUp 0.6s ease both; }
+      `}</style>
+
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ paddingTop: "6rem", paddingBottom: "5rem" }}>
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 rounded-full blur-3xl"
+            style={{ width: 800, height: 400, background: "rgba(99,102,241,0.1)" }} />
+          <div className="absolute bottom-0 left-0 rounded-full blur-3xl"
+            style={{ width: 400, height: 300, background: "rgba(139,92,246,0.06)" }} />
+          <div className="absolute bottom-0 right-0 rounded-full blur-3xl"
+            style={{ width: 400, height: 300, background: "rgba(16,185,129,0.06)" }} />
+        </div>
+        <div className="relative mx-auto max-w-4xl px-6 text-center feat-reveal">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest"
+            style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", color: "#818cf8" }}>
+            Platform Features
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl"
+            style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #d0d0f0 50%, #9090d0 100%)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+              lineHeight: 1.1,
+            }}>
+            Every Feature You Need<br />to Scale Voice
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Everything you need to deploy, manage, and scale voice agents.
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed" style={{ color: "rgba(200,200,216,0.65)" }}>
+            From building your first AI voice agent to running enterprise-scale outbound campaigns —
+            everything is included, nothing is hidden behind add-ons.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <Link href="/sign-up"
+              className="inline-flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 hover:scale-[1.02]"
+              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}>
+              Start Free Trial
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="/pricing"
+              className="inline-flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-medium transition-all"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(200,200,216,0.8)" }}>
+              View Pricing
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Core Features Grid ────────────────────────────────── */}
+      <div className="mx-auto max-w-7xl px-6 pb-20">
+        <div className="mb-12 text-center">
+          <h2 className="text-2xl font-bold text-white">Core Platform</h2>
+          <p className="mt-2 text-sm" style={{ color: "rgba(200,200,216,0.5)" }}>
+            Six pillars that power every voice operation
           </p>
         </div>
-      </section>
-
-      {/* AI Agents Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <div>
-              <span className="text-sm font-semibold uppercase tracking-wide text-primary">
-                Voice Agents
-              </span>
-              <h2 className="mt-2 text-3xl font-bold text-foreground">
-                Build Intelligent Voice Agents in Minutes
-              </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                Create sophisticated voice agents with natural language capabilities.
-                No coding required - just describe what you want and deploy.
-              </p>
-              <ul className="mt-8 space-y-4">
-                <FeatureListItem
-                  icon={Bot}
-                  title="Visual Agent Builder"
-                  description="Intuitive interface to configure agent behavior and responses"
-                />
-                <FeatureListItem
-                  icon={Mic}
-                  title="Natural Voice Synthesis"
-                  description="Choose from multiple voice providers including ElevenLabs and PlayHT"
-                />
-                <FeatureListItem
-                  icon={FileText}
-                  title="Knowledge Base Integration"
-                  description="Upload documents and URLs to train your agents on your content"
-                />
-              </ul>
-            </div>
-            <div className="rounded-2xl bg-secondary p-8">
-              <div className="aspect-video rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                <Bot className="h-24 w-24 text-primary/40" />
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {CORE_FEATURES.map((feat) => {
+            const Icon = feat.icon;
+            return (
+              <div key={feat.label}
+                className="group relative rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: "linear-gradient(160deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.015) 100%)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 2px 20px rgba(0,0,0,0.35)",
+                }}>
+                {/* top glow on hover */}
+                <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: `radial-gradient(400px circle at 50% -40%, ${feat.glow}, transparent)` }} />
+                <div className="relative">
+                  <div className="mb-5 flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl"
+                      style={{ background: `${feat.color}18`, boxShadow: `0 0 20px ${feat.glow}` }}>
+                      <Icon className="h-5 w-5" style={{ color: feat.color }} />
+                    </div>
+                    <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: feat.color }}>
+                      {feat.label}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white leading-snug">{feat.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed" style={{ color: "rgba(200,200,216,0.55)" }}>
+                    {feat.description}
+                  </p>
+                  <ul className="mt-5 space-y-2">
+                    {feat.bullets.map((b) => (
+                      <li key={b} className="flex items-start gap-2.5 text-sm" style={{ color: "rgba(200,200,216,0.7)" }}>
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: feat.color }} />
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
-      </section>
+      </div>
 
-      {/* Calling Features */}
-      <section className="bg-secondary py-20">
-        <div className="container mx-auto px-4">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <div className="order-2 lg:order-1 rounded-2xl bg-card p-8 shadow-sm">
-              <div className="aspect-video rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10 flex items-center justify-center">
-                <Phone className="h-24 w-24 text-green-500/40" />
-              </div>
-            </div>
-            <div className="order-1 lg:order-2">
-              <span className="text-sm font-semibold uppercase tracking-wide text-primary">
-                Voice Calling
-              </span>
-              <h2 className="mt-2 text-3xl font-bold text-foreground">
-                Inbound & Outbound Calling at Scale
-              </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                Handle thousands of calls simultaneously with intelligent routing,
-                scheduling, and automated follow-ups.
-              </p>
-              <ul className="mt-8 space-y-4">
-                <FeatureListItem
-                  icon={Globe}
-                  title="Global Phone Numbers"
-                  description="Get phone numbers in 30+ countries instantly"
-                />
-                <FeatureListItem
-                  icon={Clock}
-                  title="Smart Scheduling"
-                  description="Automated campaigns with timezone-aware calling hours"
-                />
-                <FeatureListItem
-                  icon={MessageSquare}
-                  title="Real-time Transcription"
-                  description="Every call is transcribed and analyzed in real-time"
-                />
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Analytics Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <div>
-              <span className="text-sm font-semibold uppercase tracking-wide text-primary">
-                Analytics & Intelligence
-              </span>
-              <h2 className="mt-2 text-3xl font-bold text-foreground">
-                Conversation Intelligence
-              </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                Gain deep insights from every conversation with automated analysis,
-                sentiment tracking, and actionable recommendations.
-              </p>
-              <ul className="mt-8 space-y-4">
-                <FeatureListItem
-                  icon={BarChart3}
-                  title="Performance Dashboards"
-                  description="Track call outcomes, conversion rates, and agent performance"
-                />
-                <FeatureListItem
-                  icon={Zap}
-                  title="Automated Lead Scoring"
-                  description="Automatically scores leads based on conversation content and engagement"
-                />
-                <FeatureListItem
-                  icon={FileText}
-                  title="Smart Summaries"
-                  description="Auto-generated summaries and action items from every call"
-                />
-              </ul>
-            </div>
-            <div className="rounded-2xl bg-secondary p-8">
-              <div className="aspect-video rounded-lg bg-gradient-to-br from-blue-500/10 to-indigo-500/10 flex items-center justify-center">
-                <BarChart3 className="h-24 w-24 text-blue-500/40" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Compliance & Security */}
-      <section className="bg-secondary py-20">
-        <div className="container mx-auto px-4">
-          <div className="text-center">
-            <span className="text-sm font-semibold uppercase tracking-wide text-primary">
-              Compliance & Security
-            </span>
-            <h2 className="mt-2 text-3xl font-bold text-foreground">
-              Enterprise-Grade Security & Compliance
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-              Built-in compliance tools to keep your business protected.
+      {/* ── Additional Capabilities ───────────────────────────── */}
+      <div style={{ background: "rgba(255,255,255,0.015)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mb-12 text-center">
+            <h2 className="text-2xl font-bold text-white">More Capabilities</h2>
+            <p className="mt-2 text-sm" style={{ color: "rgba(200,200,216,0.5)" }}>
+              Additional tools included in every plan
             </p>
           </div>
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
-            <FeatureCard
-              icon={Shield}
-              title="TCPA Compliance"
-              description="Automated DNC list checking, consent management, and calling hour restrictions."
-            />
-            <FeatureCard
-              icon={Users}
-              title="Role-Based Access"
-              description="Granular permissions for team members with audit logging."
-            />
-            <FeatureCard
-              icon={Settings}
-              title="Data Security"
-              description="SOC 2 compliant infrastructure with encryption at rest and in transit."
-            />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {ADDITIONAL.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.label}
+                  className="group rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5"
+                  style={{
+                    background: "rgba(255,255,255,0.025)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                  }}>
+                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg"
+                    style={{ background: `${item.color}15` }}>
+                    <Icon className="h-4 w-4" style={{ color: item.color }} />
+                  </div>
+                  <h3 className="text-sm font-semibold text-white">{item.label}</h3>
+                  <p className="mt-1 text-xs leading-relaxed" style={{ color: "rgba(200,200,216,0.5)" }}>
+                    {item.desc}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Integration Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4 text-center">
-          <span className="text-sm font-semibold uppercase tracking-wide text-primary">
-            Integrations
-          </span>
-          <h2 className="mt-2 text-3xl font-bold text-foreground">
-            Connect Your Favorite Tools
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Seamlessly integrate with your existing CRM, calendar, and business tools.
-          </p>
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-8">
-            {["Salesforce", "HubSpot", "Zapier", "Google Calendar", "Slack", "Webhooks"].map((tool) => (
-              <div
-                key={tool}
-                className="rounded-lg border bg-card px-6 py-4 text-sm font-medium text-muted-foreground shadow-sm"
-              >
-                {tool}
-              </div>
-            ))}
+      {/* ── Integrations ─────────────────────────────────────── */}
+      <div className="mx-auto max-w-5xl px-6 py-20 text-center">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest"
+          style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", color: "#818cf8" }}>
+          Integrations
+        </div>
+        <h2 className="text-2xl font-bold text-white">Connect Your Existing Tools</h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed" style={{ color: "rgba(200,200,216,0.55)" }}>
+          Native connections to your CRM, calendar, automation platform, and more.
+          Plus REST API and webhooks for anything custom.
+        </p>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          {INTEGRATIONS.map((name) => (
+            <div key={name}
+              className="rounded-xl px-5 py-2.5 text-sm font-medium"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.09)",
+                color: "rgba(200,200,216,0.75)",
+              }}>
+              {name}
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-xs" style={{ color: "rgba(200,200,216,0.35)" }}>
+          And more through our open API and webhook system
+        </p>
+      </div>
+
+      {/* ── CTA ──────────────────────────────────────────────── */}
+      <div className="mx-auto max-w-4xl px-6 pb-24">
+        <div className="relative overflow-hidden rounded-2xl p-10 text-center"
+          style={{
+            background: "linear-gradient(135deg, #0d0d22 0%, #12102e 100%)",
+            border: "1px solid rgba(99,102,241,0.2)",
+            boxShadow: "0 0 60px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.05)",
+          }}>
+          <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+            style={{ width: 400, height: 200, background: "rgba(99,102,241,0.18)" }} />
+          <div className="relative">
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">
+              Ready to Transform Your Business Communications?
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed" style={{ color: "rgba(200,200,216,0.55)" }}>
+              Set up your first AI voice agent in under 30 minutes. No credit card required.
+            </p>
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-4">
+              <Link href="/sign-up"
+                className="inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold text-white transition-all hover:opacity-90 hover:scale-[1.02]"
+                style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}>
+                Start Free Trial
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/pricing"
+                className="inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-medium transition-all"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(200,200,216,0.8)" }}>
+                See Pricing
+              </Link>
+            </div>
           </div>
-          <p className="mt-8 text-sm text-muted-foreground">
-            And many more through our API and webhook integrations.
-          </p>
         </div>
-      </section>
-
-      {/* CTA */}
-      <section className="bg-primary py-16 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold">Ready to Transform Your Voice Communications?</h2>
-          <p className="mx-auto mt-4 max-w-xl text-primary-foreground/80">
-            Start your 14-day free trial today. No credit card required.
-          </p>
-          <Link href="/sign-up">
-            <Button size="lg" variant="secondary" className="mt-8">
-              Start Free Trial
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-      </section>
-    </>
-  );
-}
-
-function FeatureListItem({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}) {
-  return (
-    <li className="flex gap-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-        <Icon className="h-5 w-5 text-primary" />
       </div>
-      <div>
-        <h3 className="font-semibold text-foreground">{title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-      </div>
-    </li>
-  );
-}
-
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border bg-card p-6 text-center shadow-sm">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-        <Icon className="h-6 w-6 text-primary" />
-      </div>
-      <h3 className="mt-4 text-lg font-semibold text-foreground">{title}</h3>
-      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }

@@ -62,15 +62,17 @@ export async function createCheckoutSession(
   customerId: string,
   priceId: string,
   successUrl: string,
-  cancelUrl: string
+  cancelUrl: string,
+  includeOverage = true
 ): Promise<Stripe.Checkout.Session> {
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
     { price: priceId, quantity: 1 },
   ];
 
-  // Add metered overage line item if configured
+  // Add metered overage line item only for monthly plans.
+  // Annual prices have interval "year" — Stripe rejects mixing yearly + monthly prices.
   const overagePriceId = process.env.STRIPE_OVERAGE_PRICE_ID;
-  if (overagePriceId) {
+  if (overagePriceId && includeOverage) {
     lineItems.push({ price: overagePriceId });
   }
 

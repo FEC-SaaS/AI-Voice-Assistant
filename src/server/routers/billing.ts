@@ -376,7 +376,8 @@ export const billingRouter = router({
         customerId,
         priceId,
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing?success=true`,
-        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing?canceled=true`
+        `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing?canceled=true`,
+        input.billing !== "annual" // annual plans can't mix with monthly overage price
       );
 
       return { url: session.url };
