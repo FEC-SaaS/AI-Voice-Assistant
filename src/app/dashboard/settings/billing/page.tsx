@@ -559,8 +559,13 @@ export default function BillingPage() {
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            Usage bars turn yellow at this threshold. Overage charges apply at{" "}
-            <strong>${((usage?.overage.ratePerMinuteCents ?? 20) / 100).toFixed(2)}/minute</strong> after the limit is reached.
+            Usage bars turn yellow at this threshold.{" "}
+            {currentPlan?.id === "free-trial"
+              ? "On the free trial, calls pause when the limit is reached — no overage charges."
+              : <>Overage charges apply at{" "}
+                  <strong>${((usage?.overage.ratePerMinuteCents ?? 20) / 100).toFixed(2)}/minute</strong>{" "}
+                  after the limit is reached.</>
+            }
           </p>
         </CardContent>
       </Card>
@@ -617,8 +622,11 @@ export default function BillingPage() {
             </p>
           ) : (
             <p className="text-xs text-muted-foreground mt-3">
-              No cap set — overage charges apply automatically beyond your plan limit at{" "}
-              <strong>${((usage?.overage.ratePerMinuteCents ?? 20) / 100).toFixed(2)}/minute</strong>.
+              {currentPlan?.id === "free-trial"
+                ? "Not applicable on the free trial — calls pause automatically when your limit is reached."
+                : <>No cap set — overage charges apply automatically beyond your plan limit at{" "}
+                    <strong>${((usage?.overage.ratePerMinuteCents ?? 20) / 100).toFixed(2)}/minute</strong>.</>
+              }
             </p>
           )}
         </CardContent>
@@ -967,11 +975,20 @@ export default function BillingPage() {
             <FileText className="h-6 w-6 text-blue-400 shrink-0" />
             <div className="space-y-2">
               <h3 className="font-semibold text-blue-400">About Overage Charges</h3>
-              <p className="text-sm text-blue-400">
-                If you exceed your monthly minute limit, additional minutes are billed at{" "}
-                <strong>${((usage?.overage.ratePerMinuteCents ?? 20) / 100).toFixed(2)}/minute</strong> on your current plan. Overage is tracked automatically and included in your
-                next invoice as a metered line item via Stripe.
-              </p>
+              {currentPlan?.id === "free-trial" ? (
+                <p className="text-sm text-blue-400">
+                  You are on the <strong>Free Trial</strong>. When your 100 included minutes are used up,
+                  outbound calls will pause automatically — you will <strong>not</strong> be charged overage.
+                  Upgrade to a paid plan to continue calling and unlock overage billing at flat per-minute rates.
+                </p>
+              ) : (
+                <p className="text-sm text-blue-400">
+                  If you exceed your monthly minute limit, additional minutes are billed at{" "}
+                  <strong>${((usage?.overage.ratePerMinuteCents ?? 20) / 100).toFixed(2)}/minute</strong>{" "}
+                  on your <strong>{currentPlan?.name}</strong> plan. Overage is tracked automatically and
+                  included in your next invoice via Stripe.
+                </p>
+              )}
               <div className="flex items-center gap-2 text-xs text-blue-400">
                 <Shield className="h-3.5 w-3.5" />
                 Accepted payment methods: Visa, Mastercard, Amex, Apple Pay, Google Pay
@@ -983,137 +1000,206 @@ export default function BillingPage() {
 
       {/* ── Plan Comparison Dialog ───────────────────────────────────── */}
       <Dialog open={showCompareDialog} onOpenChange={setShowCompareDialog}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Compare Plans</DialogTitle>
-            <DialogDescription>
-              Review the full feature matrix before switching to{" "}
-              <strong>{selectedPlan?.name}</strong>.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-4xl flex flex-col max-h-[90vh] p-0 gap-0 overflow-hidden">
 
-          {plans && (
-            <div className="overflow-x-auto -mx-1">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr>
-                    <th className="text-left py-3 pr-4 font-medium text-muted-foreground w-44">
-                      Feature
-                    </th>
-                    {plans.map((plan) => {
-                      const isCurrent = plan.id === currentPlan?.id;
-                      const isSelected = plan.id === selectedPlanId;
-                      const displayPrice =
-                        billingPeriod === "annual" && plan.annualPrice != null
-                          ? plan.annualPrice
-                          : plan.price;
-                      return (
-                        <th
-                          key={plan.id}
-                          className={`text-center py-3 px-3 rounded-t-lg ${
-                            isSelected
-                              ? "bg-primary/10 text-primary"
-                              : isCurrent
-                                ? "bg-secondary text-foreground"
-                                : "text-muted-foreground"
-                          }`}
-                        >
-                          <div className="font-semibold">{plan.name}</div>
-                          <div className="font-normal text-xs mt-0.5">
-                            {displayPrice !== null ? (
-                              <>
-                                ${displayPrice}/mo
-                                {billingPeriod === "annual" && plan.annualPrice != null && (
-                                  <span className="block text-green-400">Annual</span>
-                                )}
-                              </>
-                            ) : (
-                              "Custom"
-                            )}
-                          </div>
-                          {isCurrent && (
-                            <Badge variant="outline" className="text-[10px] mt-1">
-                              Current
-                            </Badge>
-                          )}
-                          {isSelected && !isCurrent && (
-                            <Badge className="text-[10px] mt-1 bg-primary">Selected</Badge>
-                          )}
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {COMPARISON_FEATURES.map((row, i) => (
-                    <tr key={i} className="border-t border-border/50">
-                      <td className="py-2.5 pr-4 text-muted-foreground">{row.label}</td>
+          {/* ── TOP HEADER with CTA — always visible, never scrolls away ── */}
+          <div
+            className="px-6 pt-5 pb-4 shrink-0 border-b"
+            style={{ background: "linear-gradient(135deg, #0c0c1e 0%, #10102a 100%)" }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              {/* Left: plan name + price */}
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <DialogTitle className="text-lg text-white">
+                    Upgrade to{" "}
+                    <span
+                      className="font-extrabold"
+                      style={{ background: "linear-gradient(90deg,#818cf8,#a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                    >
+                      {selectedPlan?.name}
+                    </span>
+                  </DialogTitle>
+                </div>
+                <DialogDescription className="text-white/50 text-xs">
+                  Review the features below, then complete your payment — takes under a minute.
+                </DialogDescription>
+                {/* Price summary inline */}
+                {selectedPlan && selectedPlan.price !== null && (
+                  <div className="flex items-baseline gap-1.5 mt-2">
+                    <span className="text-2xl font-bold text-white">
+                      ${billingPeriod === "annual" && selectedPlan.annualPrice != null
+                        ? selectedPlan.annualPrice
+                        : selectedPlan.price}
+                    </span>
+                    <span className="text-sm text-white/50">/mo</span>
+                    {billingPeriod === "annual" && selectedPlan.annualPrice != null && (
+                      <span className="ml-1 rounded-full bg-green-500/15 border border-green-500/25 px-2 py-0.5 text-[11px] font-semibold text-green-400">
+                        Save {ANNUAL_DISCOUNT_PERCENT}%
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Right: CTA button + cancel */}
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <Button
+                  onClick={handleConfirmUpgrade}
+                  disabled={isUpgrading}
+                  className="min-w-[190px] h-11 text-sm font-semibold shadow-lg"
+                  style={{
+                    background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                    boxShadow: "0 4px 16px rgba(99,102,241,0.45)",
+                  }}
+                >
+                  {isUpgrading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Zap className="mr-2 h-4 w-4" />
+                  )}
+                  Continue to Checkout
+                </Button>
+                <button
+                  onClick={() => setShowCompareDialog(false)}
+                  className="text-xs text-white/35 hover:text-white/60 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+            {/* Security strip */}
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-white/30">
+              <Shield className="h-3 w-3 shrink-0" />
+              Secure checkout · Stripe · Visa · Mastercard · Amex · Apple Pay · Google Pay
+            </div>
+          </div>
+
+          {/* ── Scrollable comparison table ─────────────────────────────── */}
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-auto px-6 py-4"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(99,102,241,0.4) rgba(255,255,255,0.04)",
+            }}
+          >
+            {/* Webkit scrollbar styles via inline style tag trick */}
+            <style>{`
+              .compare-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+              .compare-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 999px; }
+              .compare-scroll::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 999px; }
+              .compare-scroll::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.65); }
+            `}</style>
+            <div className="compare-scroll overflow-x-auto">
+              {plans && (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th className="text-left py-3 pr-4 font-medium text-muted-foreground w-44 sticky left-0 bg-background">
+                        Feature
+                      </th>
                       {plans.map((plan) => {
-                        const isCurrent = plan.id === currentPlan?.id;
+                        const isCurrent  = plan.id === currentPlan?.id;
                         const isSelected = plan.id === selectedPlanId;
-                        let cell: React.ReactNode;
-
-                        if (row.type === "value") {
-                          const rawPlan = PLANS[plan.id as keyof typeof PLANS];
-                          const val = rawPlan[row.key];
-                          cell = (
-                            <span className="font-medium">{formatLimit(val as number)}</span>
-                          );
-                        } else {
-                          const included = row.plans.includes(plan.id);
-                          cell = included ? (
-                            <Check className="h-4 w-4 text-green-500 mx-auto" />
-                          ) : (
-                            <X className="h-4 w-4 text-muted-foreground/40 mx-auto" />
-                          );
-                        }
-
+                        const displayPrice =
+                          billingPeriod === "annual" && plan.annualPrice != null
+                            ? plan.annualPrice
+                            : plan.price;
                         return (
-                          <td
+                          <th
                             key={plan.id}
-                            className={`py-2.5 px-3 text-center ${
+                            className={`text-center py-3 px-3 rounded-t-lg min-w-[100px] ${
                               isSelected
-                                ? "bg-primary/5"
+                                ? "bg-primary/10 text-primary"
                                 : isCurrent
-                                  ? "bg-secondary/50"
-                                  : ""
+                                  ? "bg-secondary text-foreground"
+                                  : "text-muted-foreground"
                             }`}
                           >
-                            {cell}
-                          </td>
+                            <div className="font-semibold">{plan.name}</div>
+                            <div className="font-normal text-xs mt-0.5">
+                              {displayPrice !== null ? (
+                                <>
+                                  ${displayPrice}/mo
+                                  {billingPeriod === "annual" && plan.annualPrice != null && (
+                                    <span className="block text-green-400">Annual</span>
+                                  )}
+                                </>
+                              ) : (
+                                "Custom"
+                              )}
+                            </div>
+                            {isCurrent && (
+                              <Badge variant="outline" className="text-[10px] mt-1">Current</Badge>
+                            )}
+                            {isSelected && !isCurrent && (
+                              <Badge className="text-[10px] mt-1 bg-primary">Selected</Badge>
+                            )}
+                          </th>
                         );
                       })}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {COMPARISON_FEATURES.map((row, i) => (
+                      <tr key={i} className="border-t border-border/50">
+                        <td className="py-2.5 pr-4 text-muted-foreground sticky left-0 bg-background">{row.label}</td>
+                        {plans.map((plan) => {
+                          const isCurrent  = plan.id === currentPlan?.id;
+                          const isSelected = plan.id === selectedPlanId;
+                          let cell: React.ReactNode;
 
-          {/* Security note */}
-          <div className="rounded-lg bg-secondary p-3 text-sm text-muted-foreground flex items-center gap-2">
-            <Shield className="h-4 w-4 shrink-0" />
-            Secure checkout powered by Stripe · Credit/debit card, Apple Pay, Google Pay
+                          if (row.type === "value") {
+                            const rawPlan = PLANS[plan.id as keyof typeof PLANS];
+                            const val = rawPlan[row.key];
+                            cell = <span className="font-medium">{formatLimit(val as number)}</span>;
+                          } else {
+                            const included = row.plans.includes(plan.id);
+                            cell = included
+                              ? <Check className="h-4 w-4 text-green-500 mx-auto" />
+                              : <X className="h-4 w-4 text-muted-foreground/30 mx-auto" />;
+                          }
+
+                          return (
+                            <td
+                              key={plan.id}
+                              className={`py-2.5 px-3 text-center ${
+                                isSelected ? "bg-primary/5" : isCurrent ? "bg-secondary/50" : ""
+                              }`}
+                            >
+                              {cell}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Bottom CTA repeat — so users scrolling down also see it */}
+            <div className="mt-6 flex justify-center">
+              <Button
+                onClick={handleConfirmUpgrade}
+                disabled={isUpgrading}
+                className="min-w-[220px] h-11 text-sm font-semibold"
+                style={{
+                  background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                  boxShadow: "0 4px 16px rgba(99,102,241,0.4)",
+                }}
+              >
+                {isUpgrading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Zap className="mr-2 h-4 w-4" />
+                )}
+                Continue to Checkout — {selectedPlan?.name}
+              </Button>
+            </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCompareDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmUpgrade} disabled={isUpgrading}>
-              {isUpgrading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Zap className="mr-2 h-4 w-4" />
-              )}
-              Continue to Checkout
-              {billingPeriod === "annual" && selectedPlan?.annualPrice != null && (
-                <Badge className="ml-2 bg-green-500/20 text-green-400 border-0 text-xs">
-                  Annual
-                </Badge>
-              )}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
