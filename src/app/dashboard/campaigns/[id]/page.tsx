@@ -562,7 +562,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
                   {assignSearch ? "No matching contacts found" : "No unassigned contacts available"}
                 </p>
               ) : (
-                unassignedContacts?.contacts.map((contact) => {
+                unassignedContacts?.contacts.map((contact: NonNullable<typeof unassignedContacts>["contacts"][number]) => {
                   const isSelected = selectedContactIds.has(contact.id);
                   return (
                     <label
@@ -682,7 +682,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
           </div>
         ) : (
           <div className="divide-y">
-            {contactsData?.contacts.map((contact) => {
+            {contactsData?.contacts.map((contact: NonNullable<typeof contactsData>["contacts"][number]) => {
               const contactStatus = CONTACT_STATUS[contact.status] ?? DEFAULT_CONTACT_STATUS;
               const StatusIcon = contactStatus.icon;
 
