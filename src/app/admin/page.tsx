@@ -32,6 +32,7 @@ const PLAN_COLORS: Record<string, string> = {
   "free-trial": "#475569",
   starter: "#3b82f6",
   professional: "#8b5cf6",
+  business: "#10b981",
   enterprise: "#f59e0b",
 };
 

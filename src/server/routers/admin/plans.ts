@@ -30,16 +30,24 @@ export const plansRouter = router({
 
   getPlanTrend: superAdminProcedure.query(async ({ ctx }) => {
     const now = new Date();
-    const result: { month: string; free: number; starter: number; professional: number; enterprise: number }[] = [];
+    const result: {
+      month: string;
+      free: number;
+      starter: number;
+      professional: number;
+      business: number;
+      enterprise: number;
+    }[] = [];
 
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
 
-      const [free, starter, professional, enterprise] = await Promise.all([
+      const [free, starter, professional, business, enterprise] = await Promise.all([
         ctx.db.organization.count({ where: { planId: "free-trial", createdAt: { lte: end } } }),
         ctx.db.organization.count({ where: { planId: "starter", createdAt: { lte: end } } }),
         ctx.db.organization.count({ where: { planId: "professional", createdAt: { lte: end } } }),
+        ctx.db.organization.count({ where: { planId: "business", createdAt: { lte: end } } }),
         ctx.db.organization.count({ where: { planId: "enterprise", createdAt: { lte: end } } }),
       ]);
 
@@ -48,6 +56,7 @@ export const plansRouter = router({
         free,
         starter,
         professional,
+        business,
         enterprise,
       });
     }

@@ -15,6 +15,7 @@ const PLAN_COLORS: Record<string, string> = {
   "free-trial": "#94a3b8",
   starter: "#60a5fa",
   professional: "#a78bfa",
+  business: "#10b981",
   enterprise: "#fbbf24",
 };
 
@@ -95,6 +96,7 @@ export default function AdminPlansPage() {
               <Bar dataKey="free" stackId="a" fill={PLAN_COLORS["free-trial"]} name="Free Trial" />
               <Bar dataKey="starter" stackId="a" fill={PLAN_COLORS.starter} name="Starter" />
               <Bar dataKey="professional" stackId="a" fill={PLAN_COLORS.professional} name="Professional" />
+              <Bar dataKey="business" stackId="a" fill={PLAN_COLORS.business} name="Business" />
               <Bar dataKey="enterprise" stackId="a" fill={PLAN_COLORS.enterprise} name="Enterprise" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

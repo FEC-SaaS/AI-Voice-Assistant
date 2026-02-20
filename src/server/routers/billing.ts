@@ -390,7 +390,7 @@ export const billingRouter = router({
 
   // Get available plans with live prices from Stripe
   getPlans: protectedProcedure.query(async () => {
-    const plans = Object.values(PLANS).filter((plan) => plan.id !== "enterprise");
+    const plans = Object.values(PLANS);
 
     const plansWithPrices = await Promise.all(
       plans.map(async (plan) => {

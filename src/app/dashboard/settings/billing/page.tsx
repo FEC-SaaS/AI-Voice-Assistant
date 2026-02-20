@@ -461,7 +461,7 @@ export default function BillingPage() {
           </div>
           <p className="text-xs text-muted-foreground mt-3">
             Usage bars turn yellow at this threshold. Overage charges apply at{" "}
-            <strong>$0.15/minute</strong> after the limit is reached.
+            <strong>$0.20/minute</strong> after the limit is reached.
           </p>
         </CardContent>
       </Card>
@@ -811,7 +811,7 @@ export default function BillingPage() {
               <h3 className="font-semibold text-blue-400">About Overage Charges</h3>
               <p className="text-sm text-blue-400">
                 If you exceed your monthly minute limit, additional minutes are billed at{" "}
-                <strong>$0.15/minute</strong>. Overage is tracked automatically and included in your
+                <strong>$0.20/minute</strong>. Overage is tracked automatically and included in your
                 next invoice as a metered line item via Stripe.
               </p>
               <div className="flex items-center gap-2 text-xs text-blue-400">

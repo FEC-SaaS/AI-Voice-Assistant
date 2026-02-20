@@ -91,10 +91,10 @@ export const PLANS = {
     id: "enterprise",
     name: "Enterprise",
     description: "Custom solutions for large organizations",
-    price: null, // Custom pricing
-    priceId: null,
+    price: null, // Fetched live from Stripe if STRIPE_ENTERPRISE_PRICE_ID is set
+    priceId: process.env.STRIPE_ENTERPRISE_PRICE_ID ?? null,
     annualPrice: null,
-    annualPriceId: null,
+    annualPriceId: process.env.STRIPE_ENTERPRISE_ANNUAL_PRICE_ID ?? null,
     agents: -1, // Unlimited
     minutesPerMonth: -1, // Unlimited
     phoneNumbers: -1, // Unlimited
@@ -115,7 +115,7 @@ export const PLANS = {
 export type PlanId = keyof typeof PLANS;
 export type Plan = (typeof PLANS)[PlanId];
 
-export const OVERAGE_RATE_CENTS = 15; // $0.15 per minute overage
+export const OVERAGE_RATE_CENTS = 20; // $0.20 per minute overage
 export const ADDITIONAL_PHONE_NUMBER_PRICE = 15; // $15/month per additional number
 
 export function getPlan(planId: string): Plan {
