@@ -345,108 +345,183 @@ export default function BillingPage() {
       {/* ── Current Plan + Usage ─────────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Current Plan */}
-        <Card className="transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Current Plan
-            </CardTitle>
-            <CardDescription>Your active subscription</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl font-bold text-foreground">{currentPlan?.name}</h3>
-                <p className="text-sm text-muted-foreground">{currentPlan?.description}</p>
-              </div>
-              <div className="text-right">
-                {currentPlan?.price !== null ? (
-                  <p className="text-3xl font-bold text-foreground">
-                    ${currentPlan?.price}
-                    <span className="text-base font-normal text-muted-foreground">/mo</span>
-                  </p>
-                ) : (
-                  <p className="text-lg text-muted-foreground">Custom pricing</p>
+        {(() => {
+          type PlanAccent = { border: string; glow: string; badge: string; icon: string };
+          const getAccent = (id: string | undefined): PlanAccent => {
+            switch (id) {
+              case "starter":      return { border: "border-t-blue-500",    glow: "hover:shadow-blue-500/15",    badge: "bg-blue-500/15 text-blue-300",     icon: "text-blue-400" };
+              case "professional": return { border: "border-t-primary",     glow: "hover:shadow-primary/15",     badge: "bg-primary/15 text-primary",       icon: "text-primary" };
+              case "business":     return { border: "border-t-purple-500",  glow: "hover:shadow-purple-500/15",  badge: "bg-purple-500/15 text-purple-300",  icon: "text-purple-400" };
+              case "enterprise":   return { border: "border-t-amber-500",   glow: "hover:shadow-amber-500/15",   badge: "bg-amber-500/15 text-amber-300",    icon: "text-amber-400" };
+              default:             return { border: "border-t-slate-500",   glow: "hover:shadow-slate-500/15",   badge: "bg-slate-500/15 text-slate-300",    icon: "text-slate-400" };
+            }
+          };
+          const accent = getAccent(currentPlan?.id);
+          return (
+            <Card className={`relative overflow-hidden border-t-2 ${accent.border} transition-all duration-300 hover:shadow-2xl ${accent.glow} hover:border-primary/40 hover:-translate-y-1`}>
+              {/* Subtle gradient wash */}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent" />
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold text-muted-foreground uppercase tracking-wider">
+                    <CreditCard className={`h-4 w-4 ${accent.icon}`} />
+                    Current Plan
+                  </CardTitle>
+                  <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${accent.badge}`}>
+                    {currentPlan?.id === "free-trial" ? "Trial" : "Active"}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Plan name + price */}
+                <div className="flex items-end justify-between gap-2">
+                  <div>
+                    <h3 className="text-3xl font-extrabold tracking-tight text-foreground leading-none">
+                      {currentPlan?.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1.5 leading-snug max-w-[220px]">
+                      {currentPlan?.description}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {currentPlan?.price !== null ? (
+                      <>
+                        <p className="text-4xl font-bold text-foreground leading-none">
+                          ${currentPlan?.price}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">per month</p>
+                      </>
+                    ) : (
+                      <p className="text-lg font-semibold text-muted-foreground">Custom</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Subscription status badges */}
+                {subscription?.subscription && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant={subscription.subscription.status === "active" ? "default" : "secondary"}>
+                      {subscription.subscription.status}
+                    </Badge>
+                    {subscription.subscription.cancelAtPeriodEnd && (
+                      <Badge variant="destructive">
+                        Cancels {subscription.subscription.currentPeriodEnd.toLocaleDateString()}
+                      </Badge>
+                    )}
+                    {!subscription.subscription.cancelAtPeriodEnd && (
+                      <span className="text-xs text-muted-foreground">
+                        Renews {subscription.subscription.currentPeriodEnd.toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
                 )}
-              </div>
-            </div>
-            {subscription?.subscription && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={subscription.subscription.status === "active" ? "default" : "secondary"}>
-                  {subscription.subscription.status}
-                </Badge>
-                {subscription.subscription.cancelAtPeriodEnd && (
-                  <Badge variant="destructive">
-                    Cancels {subscription.subscription.currentPeriodEnd.toLocaleDateString()}
-                  </Badge>
+
+                {/* Features list */}
+                {currentPlan?.features && currentPlan.features.length > 0 && (
+                  <ul className="space-y-1.5 pt-3 border-t border-border/50 grid grid-cols-1 gap-y-1">
+                    {currentPlan.features.map((feature, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm">
+                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${accent.badge}`}>
+                          <Check className="h-2.5 w-2.5" />
+                        </span>
+                        <span className="text-muted-foreground">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </div>
-            )}
-            {currentPlan?.features && currentPlan.features.length > 0 && (
-              <ul className="space-y-1.5 pt-1 border-t border-border/50">
-                {currentPlan.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {!isPaidPlan && (
-              <p className="text-sm text-orange-400 flex items-center gap-1">
-                <AlertCircle className="h-4 w-4" />
-                Upgrade to unlock all features and higher limits
-              </p>
-            )}
-          </CardContent>
-        </Card>
+
+                {!isPaidPlan && (
+                  <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2.5 text-sm text-orange-400 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    Upgrade to unlock all features and higher limits
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Usage */}
-        <Card className="transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Current Usage
-            </CardTitle>
-            <CardDescription>This billing period</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-5">
-              {usage && (
-                <>
-                  <UsageBar
-                    used={usage.agents.used}
-                    limit={usage.agents.limit}
-                    label="Voice Agents"
-                    alertThreshold={usage.alertThreshold}
-                  />
-                  <UsageBar
-                    used={usage.phoneNumbers.used}
-                    limit={usage.phoneNumbers.limit}
-                    label="Phone Numbers"
-                    alertThreshold={usage.alertThreshold}
-                  />
-                  <UsageBar
-                    used={usage.campaigns.used}
-                    limit={usage.campaigns.limit}
-                    label="Campaigns"
-                    alertThreshold={usage.alertThreshold}
-                  />
-                  <UsageBar
-                    used={usage.minutes.used}
-                    limit={usage.minutes.limit}
-                    label="Minutes Used"
-                    alertThreshold={usage.alertThreshold}
-                    burnRate={{
-                      daysUntilLimit: usage.burnRate.daysUntilLimit,
-                      avgMinutesPerDay: usage.burnRate.avgMinutesPerDay,
-                    }}
-                  />
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {(() => {
+          const minutesPctLocal =
+            usage && usage.minutes.limit !== -1
+              ? Math.min(100, (usage.minutes.used / usage.minutes.limit) * 100)
+              : 0;
+          const usageColor =
+            minutesPctLocal >= 100 ? "text-red-400" :
+            minutesPctLocal >= 80  ? "text-yellow-400" :
+            "text-green-400";
+
+          return (
+            <Card className="transition-all duration-300 hover:shadow-2xl hover:shadow-primary/15 hover:border-primary/40 hover:-translate-y-1">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base font-semibold text-muted-foreground uppercase tracking-wider">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    Current Usage
+                  </CardTitle>
+                  {usage && usage.minutes.limit !== -1 && (
+                    <span className={`text-xs font-bold ${usageColor}`}>
+                      {Math.round(minutesPctLocal)}% of minutes used
+                    </span>
+                  )}
+                </div>
+                <CardDescription className="text-xs">This billing period</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-5">
+                  {usage ? (
+                    <>
+                      <UsageBar
+                        used={usage.agents.used}
+                        limit={usage.agents.limit}
+                        label="Voice Agents"
+                        alertThreshold={usage.alertThreshold}
+                      />
+                      <UsageBar
+                        used={usage.phoneNumbers.used}
+                        limit={usage.phoneNumbers.limit}
+                        label="Phone Numbers"
+                        alertThreshold={usage.alertThreshold}
+                      />
+                      <UsageBar
+                        used={usage.campaigns.used}
+                        limit={usage.campaigns.limit}
+                        label="Campaigns"
+                        alertThreshold={usage.alertThreshold}
+                      />
+                      <UsageBar
+                        used={usage.minutes.used}
+                        limit={usage.minutes.limit}
+                        label="Minutes Used"
+                        alertThreshold={usage.alertThreshold}
+                        burnRate={{
+                          daysUntilLimit: usage.burnRate.daysUntilLimit,
+                          avgMinutesPerDay: usage.burnRate.avgMinutesPerDay,
+                        }}
+                      />
+                      {/* Quick stats strip */}
+                      <div className="grid grid-cols-2 gap-3 pt-1 border-t border-border/50">
+                        <div className="rounded-lg bg-secondary/60 px-3 py-2.5 text-center">
+                          <p className="text-lg font-bold text-foreground">{usage.minutes.used}</p>
+                          <p className="text-xs text-muted-foreground">mins used</p>
+                        </div>
+                        <div className="rounded-lg bg-secondary/60 px-3 py-2.5 text-center">
+                          <p className="text-lg font-bold text-foreground">
+                            {usage.minutes.limit === -1 ? "∞" : Math.max(0, usage.minutes.limit - usage.minutes.used)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">mins remaining</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-6">No usage data yet</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
       </div>
 
       {/* ── Usage Alert Settings ─────────────────────────────────────── */}
