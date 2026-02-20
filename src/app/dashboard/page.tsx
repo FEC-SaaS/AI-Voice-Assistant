@@ -1,210 +1,126 @@
 import Link from "next/link";
-import { Bot, Phone, Megaphone, BarChart3, ArrowRight, Sparkles, Radio, Target, Brain, Zap } from "lucide-react";
+import { Bot, Phone, Megaphone, BarChart3, ArrowRight, Sparkles } from "lucide-react";
 import { SetupGuideBanner } from "@/components/dashboard/setup-guide-banner";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
 
 export default async function DashboardPage() {
+  // -- Previously hardcoded stats (always showed 0) --
+  // const stats = {
+  //   agents: { count: 0 },
+  //   calls: { count: 0 },
+  //   campaigns: { count: 0 },
+  //   minutes: { count: 0 },
+  // };
+
+  const { userId, orgId: clerkOrgId } = await auth();
+
+  const org = clerkOrgId
+    ? await db.organization.findFirst({ where: { clerkOrgId }, select: { id: true } })
+    : null;
+
+  const dbUser = userId
+    ? await db.user.findFirst({ where: { clerkId: userId }, select: { name: true } })
+    : null;
+
+  const orgId = org?.id ?? null;
+
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [agentCount, callCount, campaignCount, minutesAgg] = orgId
+    ? await Promise.all([
+        db.agent.count({ where: { organizationId: orgId, isActive: true } }),
+        db.call.count({ where: { organizationId: orgId } }),
+        db.campaign.count({ where: { organizationId: orgId } }),
+        db.call.aggregate({
+          where: { organizationId: orgId, createdAt: { gte: startOfMonth } },
+          _sum: { durationSeconds: true },
+        }),
+      ])
+    : [0, 0, 0, { _sum: { durationSeconds: 0 } }];
+
+  const minutesUsed = Math.round(
+    ((minutesAgg as { _sum: { durationSeconds: number | null } })._sum.durationSeconds ?? 0) / 60
+  );
+
   const stats = {
-    agents:    { count: 0 },
-    calls:     { count: 0 },
-    campaigns: { count: 0 },
-    minutes:   { count: 0 },
+    agents: { count: agentCount as number },
+    calls: { count: callCount as number },
+    campaigns: { count: campaignCount as number },
+    minutes: { count: minutesUsed },
   };
 
+  const firstName = dbUser?.name?.split(" ")[0] ?? null;
+
   return (
-    <div className="space-y-6 lg:space-y-8 max-w-7xl mx-auto animate-fade-in">
-      {/* Setup Guide Banner */}
+    <div className="space-y-6 lg:space-y-8 max-w-7xl mx-auto">
+      {/* Setup Guide Banner — shown only for new accounts */}
       <SetupGuideBanner />
 
-      {/* ── Hero Welcome Banner ───────────────────────────────────── */}
-      <div
-        className="relative overflow-hidden rounded-2xl p-6 lg:p-8 text-white"
-        style={{
-          background: "linear-gradient(135deg, #1e1060 0%, #2d1b8e 40%, #1a0f6e 70%, #0e0830 100%)",
-          boxShadow: "0 8px 40px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
-          border: "1px solid rgba(129,140,248,0.2)",
-        }}
-      >
-        {/* Decorative orbs */}
-        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-violet-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -left-8 bottom-0 h-32 w-32 rounded-full bg-cyan-500/15 blur-2xl" />
-        {/* Subtle grid */}
-        <div className="pointer-events-none absolute inset-0 opacity-[0.05]"
-          style={{ backgroundImage: "linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)", backgroundSize: "32px 32px" }}
-        />
-
-        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+      {/* Welcome Header */}
+      <div className="rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-6 lg:p-8 text-white shadow-lg shadow-primary/20">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-xs font-medium text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Platform Active
-              </span>
-            </div>
-            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Welcome back! 👋</h1>
-            <p className="mt-1.5 text-white/65 text-sm lg:text-base max-w-md">
-              Your AI voice platform is ready. Create agents, launch campaigns, and watch your business grow.
+            {/* Previously: <h1>Welcome back!</h1> — static, no name, wrong for new users */}
+            <h1 className="text-2xl lg:text-3xl font-bold">
+              {firstName ? `Welcome back, ${firstName}!` : "Welcome back!"}
+            </h1>
+            <p className="mt-1 text-white/80 text-sm lg:text-base">
+              {stats.agents.count === 0
+                ? "Get started by creating your first voice agent."
+                : "Here's an overview of your account activity."}
             </p>
           </div>
-          <div className="flex flex-col sm:items-end gap-2 shrink-0">
-            <Link
-              href="/dashboard/agents/new"
-              className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: "rgba(255,255,255,0.15)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
-              }}
-            >
-              <Sparkles className="h-4 w-4" />
-              Create Agent
-            </Link>
-            <Link href="/dashboard/live" className="inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors">
-              <Radio className="h-3.5 w-3.5" /> View live calls
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* ── KPI Stats ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 lg:gap-5 lg:grid-cols-4">
-        <StatCard
-          title="Active Agents"
-          value={stats.agents.count}
-          icon={Bot}
-          href="/dashboard/agents"
-          gradient="from-violet-600 to-indigo-600"
-          orbColor="bg-violet-500/40"
-          textClass="text-gradient-primary"
-          label="agents online"
-        />
-        <StatCard
-          title="Total Calls"
-          value={stats.calls.count}
-          icon={Phone}
-          href="/dashboard/calls"
-          gradient="from-cyan-500 to-blue-600"
-          orbColor="bg-cyan-500/40"
-          textClass="text-gradient-cyan"
-          label="calls made"
-        />
-        <StatCard
-          title="Campaigns"
-          value={stats.campaigns.count}
-          icon={Megaphone}
-          href="/dashboard/campaigns"
-          gradient="from-amber-500 to-orange-600"
-          orbColor="bg-amber-500/40"
-          textClass="text-gradient-amber"
-          label="campaigns running"
-        />
-        <StatCard
-          title="Minutes Used"
-          value={stats.minutes.count}
-          icon={BarChart3}
-          href="/dashboard/analytics"
-          gradient="from-emerald-500 to-teal-600"
-          orbColor="bg-emerald-500/40"
-          textClass="text-gradient-green"
-          label="this month"
-        />
-      </div>
-
-      {/* ── Quick Actions ──────────────────────────────────────────── */}
-      <div>
-        <div className="flex items-center gap-3 mb-4">
-          <p className="section-label">Quick Actions</p>
-        </div>
-        <div className="grid gap-3 lg:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <QuickActionCard
-            title="Create Voice Agent"
-            description="Build an AI agent with custom prompts and voice"
+          <Link
             href="/dashboard/agents/new"
-            icon={Bot}
-            gradient="from-violet-600 to-indigo-600"
-          />
-          <QuickActionCard
-            title="Launch Campaign"
-            description="Start outbound calling at scale"
-            href="/dashboard/campaigns/new"
-            icon={Megaphone}
-            gradient="from-amber-500 to-orange-600"
-          />
-          <QuickActionCard
-            title="View Analytics"
-            description="Track calls, sentiment, and performance"
-            href="/dashboard/analytics"
-            icon={BarChart3}
-            gradient="from-sky-500 to-blue-600"
-          />
-        </div>
-      </div>
-
-      {/* ── Feature Highlights ────────────────────────────────────── */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <FeatureHighlight
-          icon={Target}
-          title="Smart Lead Scoring"
-          description="AI-driven lead prioritization and next-best-action recommendations"
-          href="/dashboard/leads"
-          color="text-yellow-400"
-          bg="bg-yellow-500/10"
-          border="border-yellow-500/20"
-        />
-        <FeatureHighlight
-          icon={Brain}
-          title="Conversation Intelligence"
-          description="Surface objections, competitor mentions, and coaching insights"
-          href="/dashboard/intelligence"
-          color="text-purple-400"
-          bg="bg-purple-500/10"
-          border="border-purple-500/20"
-        />
-        <FeatureHighlight
-          icon={Zap}
-          title="Live Call Monitoring"
-          description="Real-time supervision with barge-in and whisper capabilities"
-          href="/dashboard/live"
-          color="text-emerald-400"
-          bg="bg-emerald-500/10"
-          border="border-emerald-500/20"
-        />
-      </div>
-
-      {/* ── Recent Calls ──────────────────────────────────────────── */}
-      <div>
-        <div className="mb-4 flex items-center justify-between">
-          <p className="section-label">Recent Calls</p>
-          <Link href="/dashboard/calls" className="flex items-center gap-1 text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
-            View all <ArrowRight className="h-3.5 w-3.5" />
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-card px-5 py-2.5 text-sm font-semibold text-primary shadow-md hover:shadow-lg transition-all hover:scale-105"
+          >
+            <Sparkles className="h-4 w-4" />
+            Create Agent
           </Link>
         </div>
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, #0c0c1e, #10102a)",
-            border: "1px solid rgba(99,102,241,0.1)",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
-          }}
-        >
-          <div className="p-10 lg:p-14 text-center">
-            <div
-              className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
-              style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.2)" }}
-            >
-              <Phone className="h-7 w-7 text-indigo-400" />
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-3 lg:gap-6 lg:grid-cols-4">
+        <StatCard title="Active Agents" value={stats.agents.count} icon={Bot} href="/dashboard/agents" color="violet" />
+        <StatCard title="Total Calls" value={stats.calls.count} icon={Phone} href="/dashboard/calls" color="blue" />
+        <StatCard title="Campaigns" value={stats.campaigns.count} icon={Megaphone} href="/dashboard/campaigns" color="amber" />
+        <StatCard title="Minutes" value={stats.minutes.count} icon={BarChart3} href="/dashboard/analytics" color="emerald" />
+      </div>
+
+      {/* Quick Actions */}
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Quick Actions</h2>
+        <div className="grid gap-3 lg:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <QuickActionCard title="Create Agent" description="Build a new voice agent" href="/dashboard/agents/new" icon={Bot} />
+          <QuickActionCard title="Start Campaign" description="Launch outbound calls" href="/dashboard/campaigns/new" icon={Megaphone} />
+          <QuickActionCard title="View Analytics" description="Track performance" href="/dashboard/analytics" icon={BarChart3} />
+        </div>
+      </div>
+
+      {/* Recent Calls */}
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Recent Calls</h2>
+          <Link href="/dashboard/calls" className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+            View all <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="rounded-2xl border border-border/50 bg-card shadow-sm">
+          <div className="p-8 lg:p-12 text-center">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center">
+              <Phone className="h-8 w-8 text-muted-foreground/70" />
             </div>
-            <p className="font-semibold text-foreground text-base">No calls yet</p>
-            <p className="mt-1.5 text-sm text-muted-foreground max-w-xs mx-auto">
-              Create an agent and make a test call to see activity here.
-            </p>
+            <p className="mt-4 font-medium text-foreground">No calls yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">Create an agent and make a test call to see activity here.</p>
             <Link
               href="/dashboard/agents/new"
-              className="mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all hover:scale-105"
-              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)", boxShadow: "0 4px 16px rgba(99,102,241,0.3)" }}
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80"
             >
-              <Sparkles className="h-4 w-4 text-white" />
-              <span className="text-white">Create your first agent</span>
+              Create your first agent <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -213,93 +129,45 @@ export default async function DashboardPage() {
   );
 }
 
-/* ── StatCard ─────────────────────────────────────────────────────── */
-function StatCard({
-  title, value, icon: Icon, href, gradient, orbColor, textClass, label,
-}: {
-  title: string; value: number; icon: React.ElementType; href: string;
-  gradient: string; orbColor: string; textClass: string; label: string;
-}) {
+// Previously: bg/text fields were defined but never consumed by StatCard.
+// Previously: violet/amber/emerald used *-50 (near-white) which clashes with the dark theme.
+// Fixed: only `icon` is kept (the only field actually used), colors updated to dark-mode-safe variants.
+const colorClasses = {
+  violet: { icon: "bg-violet-500" },
+  blue:   { icon: "bg-blue-500"   },
+  amber:  { icon: "bg-amber-500"  },
+  emerald:{ icon: "bg-emerald-500"},
+};
+
+function StatCard({ title, value, icon: Icon, href, color }: { title: string; value: number; icon: React.ElementType; href: string; color: keyof typeof colorClasses }) {
+  const { icon: iconClass } = colorClasses[color];
   return (
-    <Link
-      href={href}
-      className={`group relative overflow-hidden rounded-2xl p-5 transition-all duration-300
-        hover:-translate-y-1 hover:shadow-2xl hover:border-indigo-500/25
-        border border-indigo-500/10`}
-      style={{
-        background: "linear-gradient(135deg, #0c0c1e 0%, #10102a 100%)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
-      }}
-    >
-      {/* Corner glow orb — pure CSS, no JS */}
-      <div
-        className={`pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full blur-xl opacity-50 transition-opacity duration-300 group-hover:opacity-80 ${orbColor}`}
-      />
-
-      <div className="relative">
-        <div className={`inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br ${gradient} shadow-lg mb-4`}>
-          <Icon className="h-5 w-5 text-white" />
+    <Link href={href} className="group rounded-2xl border border-border/50 bg-card p-4 lg:p-6 transition-all hover:shadow-lg hover:shadow-border/50 hover:-translate-y-0.5">
+      <div className="flex items-start justify-between">
+        <div className={`rounded-xl ${iconClass} p-2.5 lg:p-3 shadow-lg`}>
+          <Icon className="h-4 w-4 lg:h-5 lg:w-5 text-white" />
         </div>
-        <p className={`text-3xl font-bold tracking-tight ${textClass}`}>{value}</p>
-        <p className="mt-1 text-sm font-semibold text-foreground/90">{title}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+        <ArrowRight className="h-4 w-4 text-muted-foreground/70 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
-
-      <ArrowRight className="absolute bottom-4 right-4 h-4 w-4 text-muted-foreground/30 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
+      <div className="mt-3 lg:mt-4">
+        <p className="text-2xl lg:text-3xl font-bold text-foreground">{value}</p>
+        <p className="mt-0.5 text-xs lg:text-sm font-medium text-muted-foreground">{title}</p>
+      </div>
     </Link>
   );
 }
 
-/* ── QuickActionCard ──────────────────────────────────────────────── */
-function QuickActionCard({
-  title, description, href, icon: Icon, gradient,
-}: {
-  title: string; description: string; href: string; icon: React.ElementType;
-  gradient: string;
-}) {
+function QuickActionCard({ title, description, href, icon: Icon }: { title: string; description: string; href: string; icon: React.ElementType }) {
   return (
-    <Link
-      href={href}
-      className="group flex items-center gap-4 rounded-2xl p-4 lg:p-5 transition-all duration-300
-        hover:-translate-y-0.5 hover:shadow-xl hover:border-indigo-500/25
-        border border-indigo-500/10"
-      style={{
-        background: "linear-gradient(135deg, #0c0c1e 0%, #10102a 100%)",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)",
-      }}
-    >
-      <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg transition-transform duration-200 group-hover:scale-110`}>
+    <Link href={href} className="group flex items-center gap-4 rounded-2xl border border-border/50 bg-card p-4 lg:p-5 transition-all hover:shadow-lg hover:shadow-border/50 hover:border-primary/20 hover:-translate-y-0.5">
+      <div className="rounded-xl bg-gradient-to-br from-primary to-primary/80 p-3 shadow-lg shadow-primary/20 group-hover:shadow-primary/30 transition-shadow">
         <Icon className="h-5 w-5 text-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-foreground text-sm">{title}</h3>
-        <p className="text-xs text-muted-foreground mt-0.5 truncate">{description}</p>
+        <h3 className="font-semibold text-foreground">{title}</h3>
+        <p className="text-sm text-muted-foreground truncate">{description}</p>
       </div>
-      <ArrowRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-    </Link>
-  );
-}
-
-/* ── FeatureHighlight ─────────────────────────────────────────────── */
-function FeatureHighlight({
-  icon: Icon, title, description, href, color, bg, border,
-}: {
-  icon: React.ElementType; title: string; description: string; href: string;
-  color: string; bg: string; border: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`group flex gap-4 rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${border}`}
-      style={{ background: "linear-gradient(135deg, #0c0c1e, #10102a)" }}
-    >
-      <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${bg} ${border} border transition-transform group-hover:scale-110`}>
-        <Icon className={`h-5 w-5 ${color}`} />
-      </div>
-      <div className="min-w-0">
-        <h3 className={`font-semibold text-sm ${color}`}>{title}</h3>
-        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
-      </div>
+      <ArrowRight className="h-5 w-5 text-muted-foreground/70 group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
     </Link>
   );
 }

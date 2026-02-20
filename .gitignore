@@ -105,3 +105,6 @@ storybook-static/
 .cache/
 tmp/
 temp/
+
+# clerk configuration (can include secrets)
+/.clerk/

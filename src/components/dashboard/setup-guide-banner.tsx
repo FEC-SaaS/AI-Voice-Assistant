@@ -3,11 +3,28 @@
 import Link from "next/link";
 import { Compass, ArrowRight, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+const DISMISS_KEY = "setup_guide_banner_dismissed";
 
 export function SetupGuideBanner() {
+  // Previously: useState(false) — dismiss reset on every page load
+  // Fixed: initialise from localStorage so the dismiss persists across navigations
   const [dismissed, setDismissed] = useState(false);
   const { data: user, isLoading } = trpc.users.me.useQuery();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setDismissed(localStorage.getItem(DISMISS_KEY) === "true");
+    }
+  }, []);
+
+  const handleDismiss = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(DISMISS_KEY, "true");
+    }
+    setDismissed(true);
+  };
 
   // Don't show if loading, dismissed, or onboarding is complete
   if (isLoading || dismissed) return null;
@@ -16,7 +33,7 @@ export function SetupGuideBanner() {
   return (
     <div className="relative rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 p-5 shadow-sm">
       <button
-        onClick={() => setDismissed(true)}
+        onClick={handleDismiss}
         className="absolute top-3 right-3 rounded-lg p-1 text-muted-foreground/70 hover:text-muted-foreground hover:bg-secondary transition-colors"
         aria-label="Dismiss"
       >
