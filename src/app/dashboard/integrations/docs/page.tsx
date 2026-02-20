@@ -151,13 +151,6 @@ const sections: Record<string, { title: string; content: React.ReactNode }> = {
             confirmation
           </li>
         </ol>
-        <div className="bg-muted/50 rounded-lg p-4 mt-4">
-          <h4 className="font-medium text-sm">Environment Variables</h4>
-          <pre className="text-xs mt-2 bg-background p-3 rounded border overflow-x-auto">
-{`GHL_CLIENT_ID=your_ghl_app_client_id
-GHL_CLIENT_SECRET=your_ghl_app_client_secret`}
-          </pre>
-        </div>
       </div>
     ),
   },
