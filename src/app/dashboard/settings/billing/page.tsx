@@ -49,6 +49,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 import { PLANS, ANNUAL_DISCOUNT_PERCENT } from "@/constants/plans";
 
 // ── Feature comparison matrix definition ───────────────────────────────
@@ -60,7 +61,10 @@ const COMPARISON_FEATURES: Array<
   { type: "value", label: "Minutes / Month", key: "minutesPerMonth" },
   { type: "value", label: "Phone Numbers", key: "phoneNumbers" },
   { type: "value", label: "Campaigns", key: "campaigns" },
+  { type: "check", label: "Interview Campaigns", plans: ["starter", "professional", "business", "enterprise"] },
+  { type: "check", label: "Basic Analytics", plans: ["free-trial", "starter"] },
   { type: "check", label: "Advanced Analytics", plans: ["professional", "business", "enterprise"] },
+  { type: "check", label: "Smart Lead Scoring", plans: ["professional", "business", "enterprise"] },
   { type: "check", label: "CRM Integrations", plans: ["professional", "business", "enterprise"] },
   { type: "check", label: "Priority Support", plans: ["professional", "business", "enterprise"] },
   { type: "check", label: "Conversation Intelligence", plans: ["business", "enterprise"] },
@@ -165,6 +169,7 @@ export default function BillingPage() {
   const [showCompareDialog, setShowCompareDialog] = useState(false);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<"monthly" | "annual">("monthly");
+  const [overageCapInput, setOverageCapInput] = useState<string>("");
 
   const { data: subscription, isLoading: loadingSub } = trpc.billing.getSubscription.useQuery();
   const { data: usage, isLoading: loadingUsage, refetch: refetchUsage } = trpc.billing.getUsage.useQuery();
@@ -195,6 +200,15 @@ export default function BillingPage() {
     onSuccess: () => {
       toast.success("Alert threshold saved");
       refetchUsage();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const setOverageCap = trpc.billing.setOverageCap.useMutation({
+    onSuccess: () => {
+      toast.success("Overage cap saved");
+      refetchUsage();
+      setOverageCapInput("");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -471,8 +485,67 @@ export default function BillingPage() {
           </div>
           <p className="text-xs text-muted-foreground mt-3">
             Usage bars turn yellow at this threshold. Overage charges apply at{" "}
-            <strong>$0.20/minute</strong> after the limit is reached.
+            <strong>${((usage?.overage.ratePerMinuteCents ?? 20) / 100).toFixed(2)}/minute</strong> after the limit is reached.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* ── Overage Spending Cap ─────────────────────────────────────── */}
+      <Card className="transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Overage Spending Cap
+          </CardTitle>
+          <CardDescription>
+            Set a maximum monthly overage spend. Calls pause automatically when the cap is hit.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <span className="text-muted-foreground text-sm">$</span>
+            <Input
+              type="number"
+              min={0}
+              step={5}
+              placeholder={usage?.overageCapCents ? String(usage.overageCapCents / 100) : "No cap set"}
+              value={overageCapInput}
+              onChange={(e) => setOverageCapInput(e.target.value)}
+              className="w-36"
+            />
+            <Button
+              size="sm"
+              onClick={() => {
+                const val = overageCapInput.trim();
+                setOverageCap.mutate({ capDollars: val === "" ? null : parseFloat(val) });
+              }}
+              disabled={setOverageCap.isPending}
+            >
+              {setOverageCap.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Save
+            </Button>
+            {usage?.overageCapCents && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground"
+                onClick={() => setOverageCap.mutate({ capDollars: null })}
+                disabled={setOverageCap.isPending}
+              >
+                Remove cap
+              </Button>
+            )}
+          </div>
+          {usage?.overageCapCents ? (
+            <p className="text-xs text-muted-foreground mt-3">
+              Current cap: <strong>${(usage.overageCapCents / 100).toFixed(2)}/month</strong>. Outbound calls will pause when this amount in overage is reached.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-3">
+              No cap set — overage charges apply automatically beyond your plan limit at{" "}
+              <strong>${((usage?.overage.ratePerMinuteCents ?? 20) / 100).toFixed(2)}/minute</strong>.
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -821,7 +894,7 @@ export default function BillingPage() {
               <h3 className="font-semibold text-blue-400">About Overage Charges</h3>
               <p className="text-sm text-blue-400">
                 If you exceed your monthly minute limit, additional minutes are billed at{" "}
-                <strong>$0.20/minute</strong>. Overage is tracked automatically and included in your
+                <strong>${((usage?.overage.ratePerMinuteCents ?? 20) / 100).toFixed(2)}/minute</strong> on your current plan. Overage is tracked automatically and included in your
                 next invoice as a metered line item via Stripe.
               </p>
               <div className="flex items-center gap-2 text-xs text-blue-400">

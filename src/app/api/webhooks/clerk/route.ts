@@ -2,6 +2,7 @@ import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { slugify } from "@/lib/utils";
+import { isDisposableEmail } from "@/constants/plans";
 
 // Dynamic imports to avoid build-time issues
 const getDb = async () => {
@@ -85,7 +86,9 @@ export async function POST(req: Request) {
     }
 
     // Create organization in database with clerkOrgId set
-    // Use upsert to handle race conditions with auto-provisioning
+    // Set trialExpiresAt to now + 14 days for all new orgs
+    const trialExpiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
     await db.organization.upsert({
       where: { clerkOrgId: id },
       create: {
@@ -94,6 +97,7 @@ export async function POST(req: Request) {
         name,
         slug: slug || slugify(name),
         stripeCustomerId,
+        trialExpiresAt,
       },
       update: {
         name,
@@ -175,6 +179,48 @@ export async function POST(req: Request) {
           imageUrl: public_user_data.image_url || undefined,
         },
       });
+
+      // ── Trial abuse prevention (owner only) ──────────────────────────
+      if (userRole === "owner" && public_user_data.identifier) {
+        const ownerEmail = public_user_data.identifier;
+        const emailDomain = ownerEmail.split("@")[1]?.toLowerCase();
+        const flags: Record<string, unknown> = {};
+
+        // Flag disposable email
+        if (isDisposableEmail(ownerEmail)) {
+          flags.trialAbuseFlag = "disposable_email";
+          flags.trialAbuseFlaggedAt = new Date().toISOString();
+          console.warn(`[ClerkWebhook] Disposable email on org ${organization.id}: ${ownerEmail}`);
+        }
+
+        // Flag if same email domain already has a trial org
+        if (emailDomain && !isDisposableEmail(ownerEmail)) {
+          const existingTrialWithDomain = await db.user.findFirst({
+            where: {
+              email: { endsWith: `@${emailDomain}` },
+              role: "owner",
+              organization: { planId: "free-trial", id: { not: organization.id } },
+            },
+          });
+          if (existingTrialWithDomain) {
+            flags.trialAbuseFlag = "duplicate_domain";
+            flags.trialAbuseFlaggedAt = new Date().toISOString();
+            console.warn(`[ClerkWebhook] Duplicate trial domain on org ${organization.id}: ${emailDomain}`);
+          }
+        }
+
+        if (Object.keys(flags).length > 0) {
+          const org = await db.organization.findUnique({
+            where: { id: organization.id },
+            select: { settings: true },
+          });
+          const settings = (org?.settings ?? {}) as Record<string, unknown>;
+          await db.organization.update({
+            where: { id: organization.id },
+            data: { settings: JSON.parse(JSON.stringify({ ...settings, ...flags })) },
+          });
+        }
+      }
     }
   }
 

@@ -15,7 +15,7 @@ import {
   getStripePrice,
   stripe,
 } from "@/lib/stripe";
-import { PLANS, getPlan, OVERAGE_RATE_CENTS } from "@/constants/plans";
+import { PLANS, getPlan, getOverageRateCents } from "@/constants/plans";
 
 export const billingRouter = router({
   // Get current subscription status
@@ -68,6 +68,7 @@ export const billingRouter = router({
       select: {
         planId: true,
         settings: true,
+        overageCapCents: true,
         _count: {
           select: {
             agents: true,
@@ -150,9 +151,10 @@ export const billingRouter = router({
       overage: {
         minutes: overageMinutes,
         costCents: overageCosts._sum.costCents || 0,
-        ratePerMinuteCents: OVERAGE_RATE_CENTS,
+        ratePerMinuteCents: getOverageRateCents(org.planId),
       },
       alertThreshold,
+      overageCapCents: org.overageCapCents ?? null,
       burnRate: {
         avgMinutesPerDay: Math.round(avgMinutesPerDay),
         daysUntilLimit,
@@ -181,6 +183,19 @@ export const billingRouter = router({
       });
 
       log.info(`Org ${ctx.orgId} usage alert threshold set to ${input.threshold}%`);
+      return { success: true };
+    }),
+
+  // Set monthly overage spending cap (null = no cap)
+  setOverageCap: adminProcedure
+    .input(z.object({ capDollars: z.number().min(0).nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      const capCents = input.capDollars === null ? null : Math.round(input.capDollars * 100);
+      await ctx.db.organization.update({
+        where: { id: ctx.orgId },
+        data: { overageCapCents: capCents },
+      });
+      log.info(`Org ${ctx.orgId} overage cap set to ${capCents !== null ? "$" + input.capDollars : "none"}`);
       return { success: true };
     }),
 

@@ -25,6 +25,8 @@ model Organization {
   // Twilio subaccount for isolated phone number management
   twilioSubaccountSid  String?
   twilioAuthToken      String?  // Encrypted in production
+  // Billing — overage spending cap (null = no cap)
+  overageCapCents      Int?
   // Super-admin fields (nullable, no backfill required)
   referralSource       String?
   suspendedAt          DateTime?

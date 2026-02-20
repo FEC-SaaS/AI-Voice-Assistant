@@ -683,6 +683,325 @@ export async function sendHotLeadNotification(options: {
   });
 }
 
+// ==========================================
+// Trial Email Sequence (Day 1, 7, 11, 13, 14)
+// ==========================================
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.calltone.ai";
+const BILLING_URL = `${APP_URL}/dashboard/settings/billing`;
+const DASHBOARD_URL = `${APP_URL}/dashboard`;
+
+function trialEmailWrapper(content: string): string {
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+      <div style="background: linear-gradient(135deg, #0070f3, #0050b3); padding: 28px 32px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h1 style="margin: 0; color: white; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">CallTone AI</h1>
+      </div>
+      <div style="padding: 32px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+        ${content}
+        <hr style="border: none; border-top: 1px solid #f3f4f6; margin: 32px 0;" />
+        <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+          You're receiving this because you signed up for a CallTone AI trial.<br/>
+          <a href="${BILLING_URL}" style="color: #6b7280;">Manage your subscription</a>
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function ctaButton(text: string, url: string, color = "#0070f3"): string {
+  return `
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${url}" style="background: ${color}; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
+        ${text}
+      </a>
+    </div>
+  `;
+}
+
+/** Day 1 — Welcome + Setup Guide */
+export async function sendTrialDay1Email(email: string, name: string) {
+  return sendEmail({
+    to: email,
+    subject: "Welcome to CallTone — let's make your first call today",
+    html: trialEmailWrapper(`
+      <h2 style="margin: 0 0 8px; color: #111827; font-size: 22px;">Welcome, ${name}!</h2>
+      <p style="color: #6b7280; margin: 0 0 24px;">Your 14-day free trial has started. You have <strong>100 minutes</strong> to explore everything CallTone can do for your business.</p>
+
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <p style="margin: 0 0 12px; font-weight: 600; color: #111827;">Get started in 3 steps:</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #374151;">
+              <span style="background: #0070f3; color: white; border-radius: 50%; width: 22px; height: 22px; display: inline-block; text-align: center; line-height: 22px; font-size: 12px; font-weight: bold; margin-right: 10px;">1</span>
+              Create your first AI voice agent
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #374151;">
+              <span style="background: #0070f3; color: white; border-radius: 50%; width: 22px; height: 22px; display: inline-block; text-align: center; line-height: 22px; font-size: 12px; font-weight: bold; margin-right: 10px;">2</span>
+              Connect a phone number
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #374151;">
+              <span style="background: #0070f3; color: white; border-radius: 50%; width: 22px; height: 22px; display: inline-block; text-align: center; line-height: 22px; font-size: 12px; font-weight: bold; margin-right: 10px;">3</span>
+              Launch a campaign and make your first AI call
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      ${ctaButton("Go to Dashboard →", DASHBOARD_URL)}
+
+      <p style="color: #6b7280; font-size: 14px; text-align: center;">Questions? Just reply to this email — we respond fast.</p>
+    `),
+  });
+}
+
+/** Day 7 — Usage Milestone */
+export async function sendTrialDay7Email(
+  email: string,
+  name: string,
+  stats: { minutesUsed: number; callsHandled: number; minutesLimit: number }
+) {
+  const minutesLeft = Math.max(0, stats.minutesLimit - stats.minutesUsed);
+  const pct = Math.round((stats.minutesUsed / stats.minutesLimit) * 100);
+
+  return sendEmail({
+    to: email,
+    subject: "Your CallTone trial — halfway there",
+    html: trialEmailWrapper(`
+      <h2 style="margin: 0 0 8px; color: #111827; font-size: 22px;">You're halfway through your trial, ${name}</h2>
+      <p style="color: #6b7280; margin: 0 0 24px;">Here's what your AI voice agent has done so far:</p>
+
+      <div style="display: flex; gap: 16px; margin-bottom: 24px;">
+        <div style="flex: 1; background: #eff6ff; border-radius: 8px; padding: 20px; text-align: center;">
+          <p style="margin: 0; font-size: 32px; font-weight: 700; color: #0070f3;">${stats.minutesUsed}</p>
+          <p style="margin: 4px 0 0; color: #6b7280; font-size: 13px;">Minutes Used</p>
+        </div>
+        <div style="flex: 1; background: #f0fdf4; border-radius: 8px; padding: 20px; text-align: center;">
+          <p style="margin: 0; font-size: 32px; font-weight: 700; color: #16a34a;">${stats.callsHandled}</p>
+          <p style="margin: 4px 0 0; color: #6b7280; font-size: 13px;">Calls Handled</p>
+        </div>
+        <div style="flex: 1; background: #fefce8; border-radius: 8px; padding: 20px; text-align: center;">
+          <p style="margin: 0; font-size: 32px; font-weight: 700; color: #ca8a04;">${minutesLeft}</p>
+          <p style="margin: 4px 0 0; color: #6b7280; font-size: 13px;">Minutes Left</p>
+        </div>
+      </div>
+
+      <div style="background: #f9fafb; border-radius: 6px; overflow: hidden; margin-bottom: 24px;">
+        <div style="background: #0070f3; height: 6px; width: ${pct}%; border-radius: 6px;"></div>
+      </div>
+
+      <p style="color: #374151; margin: 0 0 24px;">You've used <strong>${pct}% of your trial minutes</strong>. Upgrade now to keep your AI agent running without interruption.</p>
+
+      ${ctaButton("Choose a Plan", BILLING_URL)}
+    `),
+  });
+}
+
+/** Day 11 — Trial Ending Warning */
+export async function sendTrialDay11Email(email: string, name: string) {
+  return sendEmail({
+    to: email,
+    subject: "Your CallTone trial ends in 3 days",
+    html: trialEmailWrapper(`
+      <h2 style="margin: 0 0 8px; color: #111827; font-size: 22px;">Your trial ends in 3 days, ${name}</h2>
+      <p style="color: #6b7280; margin: 0 0 24px;">Here's what you'll lose access to when your trial expires:</p>
+
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <ul style="margin: 0; padding-left: 20px; color: #374151; line-height: 1.8;">
+          <li>Your AI voice agent and all configurations</li>
+          <li>Active campaigns and contact lists</li>
+          <li>Call recordings and transcripts</li>
+          <li>Analytics and lead scoring</li>
+          <li>Your dedicated phone number</li>
+        </ul>
+      </div>
+
+      <p style="color: #374151; margin: 0 0 24px;">Upgrade before your trial ends to keep everything intact — no re-setup required.</p>
+
+      ${ctaButton("Upgrade Now — Keep Everything", BILLING_URL, "#dc2626")}
+
+      <p style="color: #9ca3af; font-size: 13px; text-align: center;">Plans start at $49/month. Cancel anytime.</p>
+    `),
+  });
+}
+
+/** Day 13 — Conversion Offer (20% off first month) */
+export async function sendTrialDay13Email(
+  email: string,
+  name: string,
+  couponCode: string
+) {
+  return sendEmail({
+    to: email,
+    subject: "Last chance: 20% off your first month of CallTone",
+    html: trialEmailWrapper(`
+      <div style="background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 24px;">
+        <p style="margin: 0 0 4px; color: rgba(255,255,255,0.8); font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Limited Offer</p>
+        <h2 style="margin: 0; color: white; font-size: 28px; font-weight: 800;">20% Off Your First Month</h2>
+        <p style="margin: 8px 0 0; color: rgba(255,255,255,0.9);">Use code at checkout — expires tomorrow</p>
+        <div style="background: rgba(255,255,255,0.2); border-radius: 6px; padding: 12px 24px; display: inline-block; margin-top: 16px;">
+          <p style="margin: 0; color: white; font-size: 22px; font-weight: 800; letter-spacing: 3px;">${couponCode}</p>
+        </div>
+      </div>
+
+      <p style="color: #374151; margin: 0 0 16px;">Hi ${name}, your trial ends tomorrow. As a thank-you for trying CallTone, we're offering <strong>20% off your first paid month</strong> — just use the code above at checkout.</p>
+
+      <div style="background: #f9fafb; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <p style="margin: 0; font-weight: 600; color: #111827; margin-bottom: 8px;">Starter plan after discount:</p>
+        <p style="margin: 0; color: #374151;"><span style="text-decoration: line-through; color: #9ca3af;">$49/month</span> → <strong style="color: #16a34a; font-size: 20px;">$39.20/month</strong></p>
+      </div>
+
+      ${ctaButton("Claim 20% Off Now", BILLING_URL, "#f97316")}
+
+      <p style="color: #9ca3af; font-size: 12px; text-align: center;">Offer expires at end of Day 14. One-time use only.</p>
+    `),
+  });
+}
+
+/** Day 14 — Final Day Reminder */
+export async function sendTrialDay14Email(email: string, name: string) {
+  return sendEmail({
+    to: email,
+    subject: "Today is your last day — upgrade CallTone now",
+    html: trialEmailWrapper(`
+      <h2 style="margin: 0 0 8px; color: #111827; font-size: 22px;">Today is the last day of your trial, ${name}</h2>
+      <p style="color: #6b7280; margin: 0 0 24px;">Your free trial expires today. Upgrade now to keep your AI voice agent active without any interruption.</p>
+
+      ${ctaButton("Upgrade Now →", BILLING_URL, "#16a34a")}
+
+      <p style="color: #9ca3af; font-size: 13px; text-align: center; margin-top: 16px;">Plans start at $49/month · No setup fees · Cancel anytime</p>
+    `),
+  });
+}
+
+// ==========================================
+// Usage Alert Emails
+// ==========================================
+
+interface UsageAlertOptions {
+  percent: number;
+  minutesUsed: number;
+  minutesLimit: number;
+  planName: string;
+  overageRateDollars: number;
+}
+
+export async function sendUsageAlertEmail(
+  email: string,
+  name: string,
+  opts: UsageAlertOptions
+) {
+  const is100 = opts.percent >= 100;
+  const color = is100 ? "#dc2626" : "#f59e0b";
+  const subject = is100
+    ? `You've hit your ${opts.planName} minute limit — overage charges now apply`
+    : `Usage alert: ${opts.percent}% of your ${opts.planName} minutes used`;
+
+  return sendEmail({
+    to: email,
+    subject,
+    html: trialEmailWrapper(`
+      <h2 style="margin: 0 0 8px; color: #111827; font-size: 20px;">${is100 ? "Minute limit reached" : `${opts.percent}% of minutes used`}</h2>
+      <p style="color: #6b7280; margin: 0 0 24px;">Hi ${name}, your <strong>${opts.planName}</strong> plan has ${is100 ? "reached its" : "used " + opts.percent + "% of its"} included minute allocation.</p>
+
+      <div style="background: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Minutes Used:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 700; color: ${color};">${opts.minutesUsed.toLocaleString()}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Plan Limit:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 700;">${opts.minutesLimit.toLocaleString()}</td>
+          </tr>
+          ${is100 ? `<tr><td style="padding: 8px 0; color: #6b7280;">Overage Rate:</td><td style="padding: 8px 0; text-align: right; font-weight: 700; color: #dc2626;">$${opts.overageRateDollars.toFixed(2)}/min</td></tr>` : ""}
+        </table>
+      </div>
+
+      ${is100
+        ? `<p style="color: #374151; margin: 0 0 24px;">Additional calls will continue but overage charges of <strong>$${opts.overageRateDollars.toFixed(2)}/minute</strong> now apply. Upgrade to a higher plan to avoid overage.</p>`
+        : `<p style="color: #374151; margin: 0 0 24px;">You have <strong>${(opts.minutesLimit - opts.minutesUsed).toLocaleString()} minutes remaining</strong> this billing cycle. Consider upgrading before you hit your limit.</p>`
+      }
+
+      ${ctaButton("View Usage & Upgrade", BILLING_URL, color)}
+    `),
+  });
+}
+
+interface OverageThresholdOptions {
+  overageMinutes: number;
+  overageCostDollars: number;
+  overageRateDollars: number;
+  planName: string;
+}
+
+export async function sendOverageThresholdEmail(
+  email: string,
+  name: string,
+  opts: OverageThresholdOptions
+) {
+  return sendEmail({
+    to: email,
+    subject: `Overage update: ${opts.overageMinutes} minutes over your ${opts.planName} limit`,
+    html: trialEmailWrapper(`
+      <h2 style="margin: 0 0 8px; color: #111827; font-size: 20px;">Overage Usage Update</h2>
+      <p style="color: #6b7280; margin: 0 0 24px;">Hi ${name}, here's your running overage total for this billing cycle:</p>
+
+      <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Overage Minutes:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 700; color: #ea580c;">${opts.overageMinutes.toLocaleString()} min</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280;">Rate:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 700;">$${opts.overageRateDollars.toFixed(2)}/min</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #6b7280; font-weight: 600;">Running Total:</td>
+            <td style="padding: 8px 0; text-align: right; font-weight: 800; color: #ea580c; font-size: 18px;">$${opts.overageCostDollars.toFixed(2)}</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="color: #374151; margin: 0 0 24px;">This amount will be added as a line item on your next invoice. Upgrade your plan to reduce your per-minute overage rate.</p>
+
+      ${ctaButton("View Billing & Upgrade", BILLING_URL, "#ea580c")}
+    `),
+  });
+}
+
+interface OverageCapHitOptions {
+  capDollars: number;
+  planName: string;
+}
+
+export async function sendOverageCapHitEmail(
+  email: string,
+  name: string,
+  opts: OverageCapHitOptions
+) {
+  return sendEmail({
+    to: email,
+    subject: `Calls paused — your $${opts.capDollars.toFixed(2)} overage cap was reached`,
+    html: trialEmailWrapper(`
+      <h2 style="margin: 0 0 8px; color: #111827; font-size: 20px;">Overage Cap Reached — Calls Paused</h2>
+      <p style="color: #6b7280; margin: 0 0 24px;">Hi ${name}, your monthly overage spending cap of <strong>$${opts.capDollars.toFixed(2)}</strong> on your <strong>${opts.planName}</strong> plan has been reached.</p>
+
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        <p style="margin: 0; color: #374151; font-weight: 600;">Outbound calls are now paused to prevent unexpected charges.</p>
+        <p style="margin: 8px 0 0; color: #6b7280; font-size: 14px;">Inbound calls continue unaffected. Calls will resume automatically at the start of your next billing cycle, or you can remove the cap in your billing settings.</p>
+      </div>
+
+      ${ctaButton("Manage Overage Cap", BILLING_URL, "#dc2626")}
+    `),
+  });
+}
+
 export async function sendAppointmentRescheduled(
   email: string,
   name: string,

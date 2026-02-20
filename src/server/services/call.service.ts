@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { createCall, getCall as getVapiCall } from "@/lib/vapi";
-import { checkMinutesLimit, recordCallUsage } from "./billing.service";
+import { checkMinutesLimit, recordCallUsage, ensureTrialExpiry } from "./billing.service";
 import { TRPCError } from "@trpc/server";
 import { createLogger } from "@/lib/logger";
 import { getOutboundCallPrompt, getOutboundFirstMessage } from "@/lib/vapi-tools";
@@ -32,7 +32,10 @@ export interface CallWebhookData {
  * Initiate an outbound call
  */
 export async function initiateCall(input: InitiateCallInput) {
-  // Check minutes limit
+  // Ensure trial expiry date is set for free-trial orgs
+  await ensureTrialExpiry(input.organizationId);
+
+  // Check minutes limit (includes 14-day trial expiry + 20-call outbound cap)
   const limitCheck = await checkMinutesLimit(input.organizationId);
   if (!limitCheck.allowed) {
     throw new TRPCError({
