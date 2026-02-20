@@ -331,7 +331,7 @@ export default function BillingPage() {
       {/* ── Current Plan + Usage ─────────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Current Plan */}
-        <Card>
+        <Card className="transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
@@ -368,6 +368,16 @@ export default function BillingPage() {
                 )}
               </div>
             )}
+            {currentPlan?.features && currentPlan.features.length > 0 && (
+              <ul className="space-y-1.5 pt-1 border-t border-border/50">
+                {currentPlan.features.map((feature, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm">
+                    <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                    <span className="text-muted-foreground">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
             {!isPaidPlan && (
               <p className="text-sm text-orange-400 flex items-center gap-1">
                 <AlertCircle className="h-4 w-4" />
@@ -378,7 +388,7 @@ export default function BillingPage() {
         </Card>
 
         {/* Usage */}
-        <Card>
+        <Card className="transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
@@ -426,7 +436,7 @@ export default function BillingPage() {
       </div>
 
       {/* ── Usage Alert Settings ─────────────────────────────────────── */}
-      <Card>
+      <Card className="transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
@@ -468,7 +478,7 @@ export default function BillingPage() {
 
       {/* ── Overage Tracker ─────────────────────────────────────────── */}
       {usage && usage.overage.minutes > 0 && (
-        <Card className="border-border bg-orange-500/10">
+        <Card className="border-border bg-orange-500/10 transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/10 hover:border-orange-500/40">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
               <AlertCircle className="h-6 w-6 text-orange-400 shrink-0" />
@@ -489,7 +499,7 @@ export default function BillingPage() {
 
       {/* ── Upcoming Invoice ─────────────────────────────────────────── */}
       {upcomingInvoice && (
-        <Card>
+        <Card className="transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Receipt className="h-5 w-5" />
@@ -555,7 +565,7 @@ export default function BillingPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {plans?.map((plan) => {
+          {plans?.filter((plan) => plan.id !== "free-trial").map((plan) => {
             const isCurrentPlan = plan.id === currentPlan?.id;
             const isPopular = "popular" in plan && plan.popular;
             const displayPrice =
@@ -570,12 +580,12 @@ export default function BillingPage() {
             return (
               <Card
                 key={plan.id}
-                className={`relative cursor-pointer transition-all ${
-                  isPopular ? "border-primary shadow-md" : ""
+                className={`relative cursor-pointer transition-all duration-200 ${
+                  isPopular ? "border-primary shadow-md shadow-primary/20" : ""
                 } ${
                   isCurrentPlan
                     ? "bg-secondary cursor-default"
-                    : "hover:shadow-lg hover:border-primary/50"
+                    : "hover:shadow-xl hover:shadow-primary/10 hover:border-primary/60 hover:-translate-y-1"
                 }`}
                 onClick={() => !isCurrentPlan && plan.priceId && handlePlanClick(plan.id)}
               >
@@ -657,7 +667,7 @@ export default function BillingPage() {
         </TabsList>
 
         <TabsContent value="payment-methods" className="mt-4">
-          <Card>
+          <Card className="transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -723,7 +733,7 @@ export default function BillingPage() {
         </TabsContent>
 
         <TabsContent value="billing-history" className="mt-4">
-          <Card>
+          <Card className="transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
@@ -803,7 +813,7 @@ export default function BillingPage() {
       </Tabs>
 
       {/* ── Overage Info ─────────────────────────────────────────────── */}
-      <Card className="bg-blue-500/10 border-border">
+      <Card className="bg-blue-500/10 border-border transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-500/30">
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
             <FileText className="h-6 w-6 text-blue-400 shrink-0" />
