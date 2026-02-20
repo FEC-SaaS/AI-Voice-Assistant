@@ -74,7 +74,7 @@ export default async function DashboardPage() {
           icon={Bot}
           href="/dashboard/agents"
           gradient="from-violet-600 to-indigo-600"
-          glow="rgba(139,92,246,0.35)"
+          orbColor="bg-violet-500/40"
           textClass="text-gradient-primary"
           label="agents online"
         />
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
           icon={Phone}
           href="/dashboard/calls"
           gradient="from-cyan-500 to-blue-600"
-          glow="rgba(34,211,238,0.35)"
+          orbColor="bg-cyan-500/40"
           textClass="text-gradient-cyan"
           label="calls made"
         />
@@ -94,7 +94,7 @@ export default async function DashboardPage() {
           icon={Megaphone}
           href="/dashboard/campaigns"
           gradient="from-amber-500 to-orange-600"
-          glow="rgba(251,191,36,0.35)"
+          orbColor="bg-amber-500/40"
           textClass="text-gradient-amber"
           label="campaigns running"
         />
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
           icon={BarChart3}
           href="/dashboard/analytics"
           gradient="from-emerald-500 to-teal-600"
-          glow="rgba(52,211,153,0.35)"
+          orbColor="bg-emerald-500/40"
           textClass="text-gradient-green"
           label="this month"
         />
@@ -122,7 +122,6 @@ export default async function DashboardPage() {
             href="/dashboard/agents/new"
             icon={Bot}
             gradient="from-violet-600 to-indigo-600"
-            glow="rgba(139,92,246,0.3)"
           />
           <QuickActionCard
             title="Launch Campaign"
@@ -130,7 +129,6 @@ export default async function DashboardPage() {
             href="/dashboard/campaigns/new"
             icon={Megaphone}
             gradient="from-amber-500 to-orange-600"
-            glow="rgba(251,191,36,0.3)"
           />
           <QuickActionCard
             title="View Analytics"
@@ -138,7 +136,6 @@ export default async function DashboardPage() {
             href="/dashboard/analytics"
             icon={BarChart3}
             gradient="from-sky-500 to-blue-600"
-            glow="rgba(56,189,248,0.3)"
           />
         </div>
       </div>
@@ -218,49 +215,36 @@ export default async function DashboardPage() {
 
 /* ── StatCard ─────────────────────────────────────────────────────── */
 function StatCard({
-  title, value, icon: Icon, href, gradient, glow, textClass, label,
+  title, value, icon: Icon, href, gradient, orbColor, textClass, label,
 }: {
   title: string; value: number; icon: React.ElementType; href: string;
-  gradient: string; glow: string; textClass: string; label: string;
+  gradient: string; orbColor: string; textClass: string; label: string;
 }) {
   return (
     <Link
       href={href}
-      className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
+      className={`group relative overflow-hidden rounded-2xl p-5 transition-all duration-300
+        hover:-translate-y-1 hover:shadow-2xl hover:border-indigo-500/25
+        border border-indigo-500/10`}
       style={{
         background: "linear-gradient(135deg, #0c0c1e 0%, #10102a 100%)",
-        border: "1px solid rgba(99,102,241,0.1)",
         boxShadow: "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
       }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.2), 0 0 32px ${glow}, inset 0 1px 0 rgba(255,255,255,0.06)`;
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)";
-      }}
     >
-      {/* Corner glow orb */}
+      {/* Corner glow orb — pure CSS, no JS */}
       <div
-        className="pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full blur-xl opacity-60 transition-opacity group-hover:opacity-90"
-        style={{ background: `radial-gradient(circle, ${glow} 0%, transparent 70%)` }}
+        className={`pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full blur-xl opacity-50 transition-opacity duration-300 group-hover:opacity-80 ${orbColor}`}
       />
 
       <div className="relative">
-        {/* Icon */}
-        <div className={`inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br ${gradient} shadow-lg mb-4`}
-          style={{ boxShadow: `0 4px 16px ${glow}` }}>
+        <div className={`inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br ${gradient} shadow-lg mb-4`}>
           <Icon className="h-5 w-5 text-white" />
         </div>
-
-        {/* Value */}
         <p className={`text-3xl font-bold tracking-tight ${textClass}`}>{value}</p>
-
-        {/* Title + label */}
         <p className="mt-1 text-sm font-semibold text-foreground/90">{title}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
       </div>
 
-      {/* Arrow indicator */}
       <ArrowRight className="absolute bottom-4 right-4 h-4 w-4 text-muted-foreground/30 group-hover:text-indigo-400 group-hover:translate-x-0.5 transition-all" />
     </Link>
   );
@@ -268,33 +252,23 @@ function StatCard({
 
 /* ── QuickActionCard ──────────────────────────────────────────────── */
 function QuickActionCard({
-  title, description, href, icon: Icon, gradient, glow,
+  title, description, href, icon: Icon, gradient,
 }: {
   title: string; description: string; href: string; icon: React.ElementType;
-  gradient: string; glow: string;
+  gradient: string;
 }) {
   return (
     <Link
       href={href}
-      className="group flex items-center gap-4 rounded-2xl p-4 lg:p-5 transition-all duration-300 hover:-translate-y-0.5"
+      className="group flex items-center gap-4 rounded-2xl p-4 lg:p-5 transition-all duration-300
+        hover:-translate-y-0.5 hover:shadow-xl hover:border-indigo-500/25
+        border border-indigo-500/10"
       style={{
         background: "linear-gradient(135deg, #0c0c1e 0%, #10102a 100%)",
-        border: "1px solid rgba(99,102,241,0.1)",
         boxShadow: "0 4px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)",
       }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 32px rgba(0,0,0,0.5), 0 0 24px ${glow}, inset 0 1px 0 rgba(255,255,255,0.06)`;
-        (e.currentTarget as HTMLElement).style.borderColor = "rgba(99,102,241,0.25)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04)";
-        (e.currentTarget as HTMLElement).style.borderColor = "rgba(99,102,241,0.1)";
-      }}
     >
-      <div
-        className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} transition-transform duration-200 group-hover:scale-110`}
-        style={{ boxShadow: `0 4px 16px ${glow}` }}
-      >
+      <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg transition-transform duration-200 group-hover:scale-110`}>
         <Icon className="h-5 w-5 text-white" />
       </div>
       <div className="flex-1 min-w-0">
