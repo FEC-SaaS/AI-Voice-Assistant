@@ -90,10 +90,62 @@ export function Header({ onMenuClick }: HeaderProps) {
         <div className="hidden sm:block">
           <OrganizationSwitcher
             appearance={{
+              variables: {
+                colorBackground: "#0d0d22",
+                colorText: "#ffffff",
+                colorTextSecondary: "rgba(200,200,216,0.55)",
+                colorPrimary: "#6366f1",
+                colorInputBackground: "rgba(255,255,255,0.05)",
+                colorInputText: "#ffffff",
+                borderRadius: "12px",
+                fontFamily: "inherit",
+                fontSize: "14px",
+              },
               elements: {
                 rootBox: "flex items-center",
-                organizationSwitcherTrigger:
-                  "flex items-center gap-2 rounded-xl border border-white/8 bg-white/4 px-3 py-1.5 text-sm text-foreground/80 hover:bg-white/8 hover:border-white/15 hover:text-foreground transition-all",
+                organizationSwitcherTrigger: {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.04)",
+                  padding: "6px 12px",
+                  fontSize: "13px",
+                  color: "rgba(255,255,255,0.8)",
+                  transition: "all 0.2s",
+                },
+                organizationSwitcherTriggerIcon: { color: "rgba(255,255,255,0.4)" },
+                organizationSwitcherPopoverCard: {
+                  background: "linear-gradient(160deg, #0e0e24 0%, #12102e 100%)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.12), inset 0 1px 0 rgba(255,255,255,0.04)",
+                  borderRadius: "18px",
+                  padding: "8px",
+                },
+                organizationSwitcherPopoverMain: { padding: "4px 0" },
+                organizationSwitcherPopoverActions: { padding: "4px 0", borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "4px" },
+                organizationSwitcherPopoverActionButton: {
+                  borderRadius: "10px",
+                  padding: "8px 12px",
+                  color: "rgba(200,200,216,0.75)",
+                  transition: "all 0.15s",
+                },
+                organizationSwitcherPopoverActionButtonText: { fontSize: "13px", fontWeight: "500" },
+                organizationSwitcherPopoverActionButtonIconBox: {
+                  background: "rgba(99,102,241,0.12)",
+                  borderRadius: "8px",
+                  color: "#818cf8",
+                },
+                organizationSwitcherPopoverFooter: { display: "none" },
+                organizationListPreviewItem: { borderRadius: "10px", padding: "8px" },
+                organizationListPreviewItemBox: { borderRadius: "10px" },
+                organizationListPreviewButton: { borderRadius: "10px" },
+                organizationPreviewMainIdentifier: { color: "#ffffff", fontWeight: "600", fontSize: "13px" },
+                organizationPreviewSecondaryIdentifier: { color: "rgba(200,200,216,0.45)", fontSize: "11px" },
+                organizationPreviewAvatarBox: { borderRadius: "8px", width: "30px", height: "30px" },
+                organizationAvatarUploaderContainer: { borderRadius: "10px" },
+                notificationBadge: { background: "#6366f1" },
               },
             }}
           />
@@ -118,12 +170,65 @@ export function Header({ onMenuClick }: HeaderProps) {
         </Link>
 
         <UserButton
+          afterSignOutUrl="/"
           appearance={{
+            variables: {
+              colorBackground: "#0d0d22",
+              colorText: "#ffffff",
+              colorTextSecondary: "rgba(200,200,216,0.55)",
+              colorPrimary: "#6366f1",
+              colorInputBackground: "rgba(255,255,255,0.05)",
+              colorInputText: "#ffffff",
+              borderRadius: "12px",
+              fontFamily: "inherit",
+              fontSize: "14px",
+            },
             elements: {
-              avatarBox: "h-9 w-9 ring-2 ring-white/10 hover:ring-indigo-500/40 transition-all rounded-full",
+              avatarBox: {
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                outline: "2px solid rgba(255,255,255,0.1)",
+                outlineOffset: "2px",
+                transition: "all 0.2s",
+              },
+              userButtonPopoverCard: {
+                background: "linear-gradient(160deg, #0e0e24 0%, #12102e 100%)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                boxShadow: "0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.12), inset 0 1px 0 rgba(255,255,255,0.04)",
+                borderRadius: "18px",
+                padding: "8px",
+                minWidth: "240px",
+              },
+              userButtonPopoverMain: { padding: "4px 0" },
+              userButtonPopoverActions: { padding: "4px 0", borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "4px" },
+              userButtonPopoverActionButton: {
+                borderRadius: "10px",
+                padding: "9px 12px",
+                color: "rgba(200,200,216,0.75)",
+                transition: "all 0.15s",
+              },
+              userButtonPopoverActionButton__manageAccount: {
+                color: "rgba(200,200,216,0.75)",
+              },
+              userButtonPopoverActionButton__signOut: {
+                color: "#f87171",
+              },
+              userButtonPopoverActionButtonText: { fontSize: "13px", fontWeight: "500" },
+              userButtonPopoverActionButtonIconBox: {
+                background: "rgba(99,102,241,0.12)",
+                borderRadius: "8px",
+                color: "#818cf8",
+                width: "28px",
+                height: "28px",
+              },
+              userButtonPopoverFooter: { display: "none" },
+              userPreviewMainIdentifier: { color: "#ffffff", fontWeight: "600", fontSize: "14px" },
+              userPreviewSecondaryIdentifier: { color: "rgba(200,200,216,0.45)", fontSize: "12px" },
+              userPreviewAvatarBox: { width: "38px", height: "38px", borderRadius: "50%" },
+              userPreviewTextContainer: { gap: "2px" },
             },
           }}
-          afterSignOutUrl="/"
         />
       </div>
     </header>

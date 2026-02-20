@@ -340,10 +340,48 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
           <div className="mb-2 lg:hidden">
             <OrganizationSwitcher
               appearance={{
+                variables: {
+                  colorBackground: "#0d0d22",
+                  colorText: "#ffffff",
+                  colorTextSecondary: "rgba(200,200,216,0.55)",
+                  colorPrimary: "#6366f1",
+                  colorInputBackground: "rgba(255,255,255,0.05)",
+                  colorInputText: "#ffffff",
+                  borderRadius: "12px",
+                  fontFamily: "inherit",
+                  fontSize: "14px",
+                },
                 elements: {
-                  rootBox: "w-full",
-                  organizationSwitcherTrigger:
-                    "flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm hover:bg-white/8 transition-colors",
+                  rootBox: { width: "100%" },
+                  organizationSwitcherTrigger: {
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    borderRadius: "12px",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "rgba(255,255,255,0.04)",
+                    padding: "8px 12px",
+                    fontSize: "13px",
+                    color: "rgba(255,255,255,0.8)",
+                  },
+                  organizationSwitcherTriggerIcon: { color: "rgba(255,255,255,0.4)" },
+                  organizationSwitcherPopoverCard: {
+                    background: "linear-gradient(160deg, #0e0e24 0%, #12102e 100%)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    boxShadow: "0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(99,102,241,0.12), inset 0 1px 0 rgba(255,255,255,0.04)",
+                    borderRadius: "18px",
+                    padding: "8px",
+                  },
+                  organizationSwitcherPopoverActions: { padding: "4px 0", borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "4px" },
+                  organizationSwitcherPopoverActionButton: { borderRadius: "10px", padding: "8px 12px", color: "rgba(200,200,216,0.75)" },
+                  organizationSwitcherPopoverActionButtonText: { fontSize: "13px", fontWeight: "500" },
+                  organizationSwitcherPopoverActionButtonIconBox: { background: "rgba(99,102,241,0.12)", borderRadius: "8px", color: "#818cf8" },
+                  organizationSwitcherPopoverFooter: { display: "none" },
+                  organizationListPreviewItem: { borderRadius: "10px", padding: "8px" },
+                  organizationPreviewMainIdentifier: { color: "#ffffff", fontWeight: "600", fontSize: "13px" },
+                  organizationPreviewSecondaryIdentifier: { color: "rgba(200,200,216,0.45)", fontSize: "11px" },
+                  organizationPreviewAvatarBox: { borderRadius: "8px", width: "30px", height: "30px" },
                 },
               }}
             />
