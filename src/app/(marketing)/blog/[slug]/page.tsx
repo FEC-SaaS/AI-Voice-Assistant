@@ -13,14 +13,6 @@ interface BlogPost {
   content: React.ReactNode;
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Guide: "bg-blue-500/10 text-blue-400",
-  Compliance: "bg-purple-500/10 text-purple-400",
-  "Case Study": "bg-green-500/10 text-green-400",
-  Business: "bg-orange-500/10 text-orange-400",
-  Technology: "bg-indigo-500/10 text-indigo-400",
-  "Best Practices": "bg-teal-500/10 text-teal-400",
-};
 
 const BLOG_POSTS: BlogPost[] = [
   {
@@ -1127,6 +1119,15 @@ export function generateStaticParams() {
   return BLOG_POSTS.map((post) => ({ slug: post.slug }));
 }
 
+const CATEGORY_ACCENT: Record<string, { badge: string; glow: string; bar: string }> = {
+  Guide:           { badge: "rgba(59,130,246,0.15)",  glow: "rgba(59,130,246,0.12)",  bar: "#3b82f6" },
+  Compliance:      { badge: "rgba(139,92,246,0.15)",  glow: "rgba(139,92,246,0.12)",  bar: "#8b5cf6" },
+  "Case Study":    { badge: "rgba(16,185,129,0.15)",  glow: "rgba(16,185,129,0.12)",  bar: "#10b981" },
+  Business:        { badge: "rgba(249,115,22,0.15)",  glow: "rgba(249,115,22,0.12)",  bar: "#f97316" },
+  Technology:      { badge: "rgba(99,102,241,0.15)",  glow: "rgba(99,102,241,0.12)",  bar: "#6366f1" },
+  "Best Practices":{ badge: "rgba(20,184,166,0.15)",  glow: "rgba(20,184,166,0.12)",  bar: "#14b8a6" },
+};
+
 export default async function BlogPostPage({
   params,
 }: {
@@ -1139,123 +1140,289 @@ export default async function BlogPostPage({
     notFound();
   }
 
-  // Find related posts (same category, excluding current)
-  const related = BLOG_POSTS.filter(
-    (p) => p.slug !== post.slug
-  ).slice(0, 2);
+  const accent = CATEGORY_ACCENT[post.category] ?? {
+    badge: "rgba(99,102,241,0.15)",
+    glow: "rgba(99,102,241,0.12)",
+    bar: "#6366f1",
+  };
+
+  const related = BLOG_POSTS.filter((p) => p.slug !== post.slug).slice(0, 2);
 
   return (
-    <>
-      {/* Hero */}
-      <section className="bg-gradient-to-b from-secondary to-background py-12 sm:py-16">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-3xl">
-            <Link
-              href="/blog"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+    <div style={{ background: "#08080f", minHeight: "100vh", color: "#c8c8d8" }}>
+      <style>{`
+        .blog-post-article h2 {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #ffffff;
+          margin-top: 2.5rem;
+          margin-bottom: 0.75rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+        .blog-post-article h3 {
+          font-size: 1.15rem;
+          font-weight: 600;
+          color: #e2e2f0;
+          margin-top: 1.75rem;
+          margin-bottom: 0.5rem;
+        }
+        .blog-post-article p {
+          line-height: 1.8;
+          color: #b8b8cc;
+          margin-bottom: 1rem;
+        }
+        .blog-post-article ul,
+        .blog-post-article ol {
+          padding-left: 1.5rem;
+          margin-bottom: 1rem;
+          color: #b8b8cc;
+          line-height: 1.8;
+        }
+        .blog-post-article li {
+          margin-bottom: 0.35rem;
+        }
+        .blog-post-article strong {
+          color: #e2e2f0;
+          font-weight: 600;
+        }
+        .blog-post-article blockquote {
+          border-left: 3px solid #6366f1;
+          padding: 0.75rem 1.25rem;
+          margin: 1.25rem 0;
+          background: rgba(99,102,241,0.06);
+          border-radius: 0 0.5rem 0.5rem 0;
+          font-style: italic;
+          color: #c8c8e0;
+        }
+        .blog-post-article pre {
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 0.75rem;
+          padding: 1.25rem;
+          overflow-x: auto;
+          font-size: 0.82rem;
+          line-height: 1.7;
+          color: #a8b8d8;
+          margin: 1.25rem 0;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(99,102,241,0.4) rgba(255,255,255,0.04);
+        }
+        .blog-post-article pre::-webkit-scrollbar { height: 5px; }
+        .blog-post-article pre::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 3px; }
+        .blog-post-article pre::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.4); border-radius: 3px; }
+        .blog-post-article table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1.25rem 0;
+          font-size: 0.9rem;
+        }
+        .blog-post-article th {
+          text-align: left;
+          padding: 0.6rem 0.75rem;
+          border-bottom: 1px solid rgba(255,255,255,0.12);
+          color: #e2e2f0;
+          font-weight: 600;
+          font-size: 0.82rem;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .blog-post-article td {
+          padding: 0.6rem 0.75rem;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          color: #b8b8cc;
+        }
+        .blog-post-article tr:last-child td { border-bottom: none; }
+        .blog-post-article a { color: #818cf8; text-decoration: underline; text-decoration-color: rgba(129,140,248,0.35); }
+        .blog-post-article a:hover { color: #a5b4fc; }
+      `}</style>
+
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ paddingTop: "5rem", paddingBottom: "4rem" }}>
+        {/* Ambient orbs */}
+        <div
+          className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 rounded-full blur-3xl"
+          style={{ width: 700, height: 420, background: accent.glow, opacity: 0.55 }}
+        />
+        <div
+          className="pointer-events-none absolute bottom-0 right-0 rounded-full blur-3xl"
+          style={{ width: 320, height: 320, background: "rgba(99,102,241,0.08)" }}
+        />
+
+        <div className="relative mx-auto max-w-3xl px-6">
+          {/* Back link */}
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+            style={{ color: "rgba(200,200,216,0.55)" }}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Blog
+          </Link>
+
+          {/* Meta row */}
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <span
+              className="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+              style={{ background: accent.badge, color: accent.bar, border: `1px solid ${accent.bar}30` }}
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Blog
-            </Link>
+              {post.category}
+            </span>
+            <span
+              className="flex items-center gap-1 text-xs"
+              style={{ color: "rgba(200,200,216,0.45)" }}
+            >
+              <Clock className="h-3 w-3" />
+              {post.readTime}
+            </span>
+            <span className="text-xs" style={{ color: "rgba(200,200,216,0.35)" }}>
+              {post.date}
+            </span>
+          </div>
 
-            <div className="mt-6 flex items-center gap-3">
-              <span
-                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  CATEGORY_COLORS[post.category] ||
-                  "bg-secondary text-foreground/80"
-                }`}
-              >
-                {post.category}
-              </span>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {post.readTime}
-              </span>
-              <span className="text-xs text-muted-foreground">{post.date}</span>
-            </div>
+          {/* Title */}
+          <h1
+            className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl"
+            style={{
+              background: "linear-gradient(135deg, #ffffff 0%, #c0c0e0 60%, #8080c0 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              lineHeight: 1.15,
+            }}
+          >
+            {post.title}
+          </h1>
 
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-              {post.title}
-            </h1>
+          {/* Divider bar */}
+          <div
+            className="mt-8 rounded-full"
+            style={{ height: 3, width: 56, background: `linear-gradient(90deg, ${accent.bar}, transparent)` }}
+          />
+        </div>
+      </div>
+
+      {/* ── Article Content ───────────────────────────────────── */}
+      <div className="relative">
+        <div className="mx-auto max-w-3xl px-6 pb-16">
+          {/* Content card */}
+          <div
+            className="rounded-2xl p-8 md:p-12"
+            style={{
+              background: "linear-gradient(160deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 100%)",
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}
+          >
+            <article className="blog-post-article">
+              {post.content}
+            </article>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Content */}
-      <section className="py-12 sm:py-16">
-        <div className="container mx-auto px-4">
-          <article className="prose prose-gray dark:prose-invert mx-auto max-w-3xl prose-headings:font-bold prose-h2:mt-10 prose-h2:text-2xl prose-h3:mt-6 prose-h3:text-xl prose-p:leading-7 prose-li:leading-7 prose-blockquote:border-l-primary prose-blockquote:italic prose-pre:bg-secondary">
-            {post.content}
-          </article>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-3xl rounded-2xl bg-gray-900 p-8 text-center text-white md:p-12">
-            <h2 className="text-2xl font-bold">Ready to Get Started?</h2>
-            <p className="mt-3 text-gray-400">
-              Set up your first AI voice agent in under 30 minutes. No credit
-              card required.
+      {/* ── CTA ───────────────────────────────────────────────── */}
+      <div className="mx-auto max-w-3xl px-6 pb-16">
+        <div
+          className="relative overflow-hidden rounded-2xl p-8 text-center md:p-12"
+          style={{
+            background: "linear-gradient(135deg, #0d0d22 0%, #12102e 100%)",
+            border: "1px solid rgba(99,102,241,0.2)",
+            boxShadow: "0 0 60px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.05)",
+          }}
+        >
+          {/* Orb */}
+          <div
+            className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+            style={{ width: 360, height: 180, background: "rgba(99,102,241,0.18)" }}
+          />
+          <div className="relative">
+            <div
+              className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl"
+              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)", boxShadow: "0 4px 20px rgba(99,102,241,0.4)" }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.18h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.81-.81a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 21.73 16.92z"/>
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-white">Ready to Get Started?</h2>
+            <p className="mt-3 text-sm leading-relaxed" style={{ color: "rgba(200,200,216,0.55)" }}>
+              Set up your first AI voice agent in under 30 minutes. No credit card required.
             </p>
-            <div className="mt-6 flex justify-center gap-4">
+            <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/sign-up"
-                className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-medium text-gray-900 hover:bg-gray-100 transition-colors"
+                className="inline-flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 hover:scale-[1.02]"
+                style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)", boxShadow: "0 4px 20px rgba(99,102,241,0.35)" }}
               >
                 Start Free Trial
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/docs"
-                className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-6 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+                className="inline-flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-medium transition-all"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(200,200,216,0.8)" }}
               >
                 Read the Docs
               </Link>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Related Posts */}
+      {/* ── Related Articles ──────────────────────────────────── */}
       {related.length > 0 && (
-        <section className="border-t py-12 sm:py-16">
-          <div className="container mx-auto px-4">
-            <div className="mx-auto max-w-3xl">
-              <h2 className="text-2xl font-bold text-foreground">
-                Related Articles
-              </h2>
-              <div className="mt-6 grid gap-6 sm:grid-cols-2">
-                {related.map((r) => (
-                  <Link key={r.slug} href={`/blog/${r.slug}`} className="group">
-                    <article className="rounded-xl border bg-card p-6 transition-shadow hover:shadow-md">
+        <div
+          className="border-t"
+          style={{ borderColor: "rgba(255,255,255,0.06)", paddingTop: "3rem", paddingBottom: "5rem" }}
+        >
+          <div className="mx-auto max-w-3xl px-6">
+            <h2 className="text-xl font-bold text-white">Related Articles</h2>
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              {related.map((r) => {
+                const ra = CATEGORY_ACCENT[r.category] ?? { badge: "rgba(99,102,241,0.15)", glow: "rgba(99,102,241,0.12)", bar: "#6366f1" };
+                return (
+                  <Link key={r.slug} href={`/blog/${r.slug}`} className="group block">
+                    <div
+                      className="h-full rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-1"
+                      style={{
+                        background: "linear-gradient(160deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 100%)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        boxShadow: "0 2px 16px rgba(0,0,0,0.3)",
+                      }}
+                    >
                       <span
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          CATEGORY_COLORS[r.category] ||
-                          "bg-secondary text-foreground/80"
-                        }`}
+                        className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                        style={{ background: ra.badge, color: ra.bar, border: `1px solid ${ra.bar}30` }}
                       >
                         {r.category}
                       </span>
-                      <h3 className="mt-3 font-semibold text-foreground group-hover:text-primary transition-colors">
+                      <h3 className="mt-3 text-sm font-semibold leading-snug text-white/90 transition-colors group-hover:text-white">
                         {r.title}
                       </h3>
-                      <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                      <p className="mt-2 text-xs leading-relaxed line-clamp-2" style={{ color: "rgba(200,200,216,0.5)" }}>
                         {r.excerpt}
                       </p>
-                      <span className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {r.readTime}
-                      </span>
-                    </article>
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="flex items-center gap-1 text-xs" style={{ color: "rgba(200,200,216,0.35)" }}>
+                          <Clock className="h-3 w-3" />
+                          {r.readTime}
+                        </span>
+                        <span
+                          className="flex items-center gap-1 text-xs font-medium transition-all group-hover:gap-2"
+                          style={{ color: ra.bar }}
+                        >
+                          Read
+                          <ArrowRight className="h-3 w-3" />
+                        </span>
+                      </div>
+                    </div>
                   </Link>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
-        </section>
+        </div>
       )}
-    </>
+    </div>
   );
 }

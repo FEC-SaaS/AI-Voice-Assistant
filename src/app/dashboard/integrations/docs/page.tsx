@@ -223,13 +223,6 @@ const sections: Record<string, { title: string; content: React.ReactNode }> = {
             appointments
           </li>
         </ul>
-        <div className="bg-muted/50 rounded-lg p-4 mt-4">
-          <h4 className="font-medium text-sm">Environment Variables</h4>
-          <pre className="text-xs mt-2 bg-background p-3 rounded border overflow-x-auto">
-{`GOOGLE_CLIENT_ID=your_google_oauth_client_id
-GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret`}
-          </pre>
-        </div>
       </div>
     ),
   },
@@ -265,16 +258,6 @@ GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret`}
             Calendar, permissions may already be granted)
           </li>
         </ol>
-        <div className="bg-muted/50 rounded-lg p-4 mt-4">
-          <h4 className="font-medium text-sm">Environment Variables</h4>
-          <p className="text-xs text-muted-foreground mt-1">
-            Same as Google Calendar:
-          </p>
-          <pre className="text-xs mt-2 bg-background p-3 rounded border overflow-x-auto">
-{`GOOGLE_CLIENT_ID=your_google_oauth_client_id
-GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret`}
-          </pre>
-        </div>
       </div>
     ),
   },
@@ -400,13 +383,6 @@ GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret`}
           <li>Select the Slack workspace and channel for notifications</li>
           <li>Authorize CalltTone</li>
         </ol>
-        <div className="bg-muted/50 rounded-lg p-4 mt-4">
-          <h4 className="font-medium text-sm">Environment Variables</h4>
-          <pre className="text-xs mt-2 bg-background p-3 rounded border overflow-x-auto">
-{`SLACK_CLIENT_ID=your_slack_app_client_id
-SLACK_CLIENT_SECRET=your_slack_app_client_secret`}
-          </pre>
-        </div>
       </div>
     ),
   },
@@ -525,13 +501,6 @@ SLACK_CLIENT_SECRET=your_slack_app_client_secret`}
           <li>Authorize CalltTone in HubSpot</li>
           <li>Grant permissions for Contacts and Deals</li>
         </ol>
-        <div className="bg-muted/50 rounded-lg p-4 mt-4">
-          <h4 className="font-medium text-sm">Environment Variables</h4>
-          <pre className="text-xs mt-2 bg-background p-3 rounded border overflow-x-auto">
-{`HUBSPOT_CLIENT_ID=your_hubspot_app_client_id
-HUBSPOT_CLIENT_SECRET=your_hubspot_app_client_secret`}
-          </pre>
-        </div>
       </div>
     ),
   },
@@ -596,14 +565,6 @@ HUBSPOT_CLIENT_SECRET=your_hubspot_app_client_secret`}
           </li>
           <li>Log in to Salesforce and authorize CalltTone</li>
         </ol>
-        <div className="bg-muted/50 rounded-lg p-4 mt-4">
-          <h4 className="font-medium text-sm">Environment Variables</h4>
-          <pre className="text-xs mt-2 bg-background p-3 rounded border overflow-x-auto">
-{`SALESFORCE_CLIENT_ID=your_connected_app_client_id
-SALESFORCE_CLIENT_SECRET=your_connected_app_client_secret
-SALESFORCE_LOGIN_URL=https://login.salesforce.com`}
-          </pre>
-        </div>
       </div>
     ),
   },

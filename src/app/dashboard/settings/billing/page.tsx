@@ -230,19 +230,9 @@ export default function BillingPage() {
   const handleConfirmUpgrade = () => {
     if (!selectedPlanId) return;
     setIsUpgrading(true);
-
-    // Check if the selected plan has an annual priceId when annual is requested
-    const plan = PLANS[selectedPlanId as keyof typeof PLANS];
-    const wantsAnnual = billingPeriod === "annual";
-    const hasAnnualPrice = wantsAnnual && "annualPriceId" in plan && plan.annualPriceId;
-
-    if (wantsAnnual && !hasAnnualPrice) {
-      toast.info("Annual billing coming soon — proceeding with monthly billing.");
-    }
-
     createCheckout.mutate({
       planId: selectedPlanId,
-      billing: wantsAnnual && hasAnnualPrice ? "annual" : "monthly",
+      billing: billingPeriod as "monthly" | "annual",
     });
   };
 
