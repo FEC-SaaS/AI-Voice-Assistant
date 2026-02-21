@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { extractContactsFromText } from "@/lib/openai";
 
 // Phone number validation and normalization (E.164 international format)
 function normalizePhoneNumber(phone: string): string {
@@ -566,6 +567,19 @@ export const contactsRouter = router({
       ...buckets,
     };
   }),
+
+  // AI-powered: extract contact details from any file content
+  extractFromFile: protectedProcedure
+    .input(
+      z.object({
+        fileContent: z.string().max(200000, "File is too large. Please split it into smaller files."),
+        fileName: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const contacts = await extractContactsFromText(input.fileContent);
+      return { contacts };
+    }),
 
   // Get contact stats for a campaign
   getCampaignStats: protectedProcedure

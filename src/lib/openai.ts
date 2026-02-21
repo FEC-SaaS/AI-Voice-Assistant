@@ -169,6 +169,65 @@ Make questions behavioral and specific to the role, not generic. Include a mix o
   return JSON.parse(content) as { skills: string[]; questions: string[] };
 }
 
+// Extract contact details from any file content (CSV, JSON, vCard, plain text, etc.)
+export async function extractContactsFromText(fileContent: string): Promise<
+  Array<{
+    phoneNumber: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    company?: string;
+  }>
+> {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are a contact data extraction expert. Extract all contact records from the provided text.
+
+The text may be in ANY format: CSV with any column names or order, TSV, JSON, vCard (.vcf), Excel exports, plain text lists, tables, or any other layout.
+
+For each contact found, extract:
+- phoneNumber: the phone number (REQUIRED — skip contacts with no phone number)
+- firstName: first name if present
+- lastName: last name if present
+- email: email address if present
+- company: company or organization name if present
+
+Rules:
+- phoneNumber is REQUIRED — skip any entry that has no phone number
+- Strip formatting from phone numbers (remove spaces, dashes, parentheses, dots)
+- If a full name is in a single field, split it into firstName and lastName
+- Normalize US numbers to +1XXXXXXXXXX format; keep country code for international numbers
+- Extract ALL contacts from the file, not just a sample
+
+Return ONLY a JSON object with this exact shape:
+{
+  "contacts": [
+    { "phoneNumber": "+12125550198", "firstName": "John", "lastName": "Smith", "email": "john@example.com", "company": "Acme Corp" }
+  ]
+}`,
+      },
+      { role: "user", content: fileContent },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.1,
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content) throw new Error("No response from OpenAI");
+
+  const parsed = JSON.parse(content) as { contacts?: unknown[] };
+  return (parsed.contacts as Array<{
+    phoneNumber: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    company?: string;
+  }>) || [];
+}
+
 // Generate call summary
 export async function generateSummary(transcript: string): Promise<string> {
   const response = await openai.chat.completions.create({

@@ -27,6 +27,22 @@ import { toast } from "sonner";
 
 type ProvisionMethod = "search" | "import";
 
+// Number types supported per country — mirrors SUPPORTED_COUNTRIES in twilio.ts
+const COUNTRY_NUMBER_TYPES: Record<string, { value: "local" | "toll-free" | "mobile"; label: string }[]> = {
+  US: [
+    { value: "local",     label: "Local" },
+    { value: "toll-free", label: "Toll-Free" },
+  ],
+  CA: [
+    { value: "local",     label: "Local" },
+    { value: "toll-free", label: "Toll-Free" },
+  ],
+  GB: [
+    { value: "local",  label: "Local" },
+    { value: "mobile", label: "Mobile" },
+  ],
+};
+
 // ── Component ───────────────────────────────────────────────────
 export default function PhoneNumbersPage() {
   const { data: phoneNumbers, isLoading, refetch } = trpc.phoneNumbers.list.useQuery();
@@ -315,7 +331,17 @@ export default function PhoneNumbersPage() {
                   <select
                     id="searchCountry"
                     value={searchCountry}
-                    onChange={(e) => setSearchCountry(e.target.value)}
+                    onChange={(e) => {
+                      const newCountry = e.target.value;
+                      setSearchCountry(newCountry);
+                      // Reset type if the current selection isn't valid for the new country
+                      const validTypes = COUNTRY_NUMBER_TYPES[newCountry] ?? [];
+                      if (!validTypes.some((t) => t.value === searchType)) {
+                        setSearchType("local");
+                      }
+                      setSearchResults([]);
+                      setHasSearched(false);
+                    }}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <option value="US">United States</option>
@@ -331,9 +357,9 @@ export default function PhoneNumbersPage() {
                     onChange={(e) => setSearchType(e.target.value as "local" | "toll-free" | "mobile")}
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <option value="local">Local</option>
-                    <option value="toll-free">Toll-Free</option>
-                    <option value="mobile">Mobile</option>
+                    {(COUNTRY_NUMBER_TYPES[searchCountry] ?? []).map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="space-y-2">

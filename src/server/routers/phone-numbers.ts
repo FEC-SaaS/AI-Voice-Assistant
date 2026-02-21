@@ -105,6 +105,22 @@ export const phoneNumbersRouter = router({
           });
         }
 
+        // Guard: validate that the requested type is actually supported for the country.
+        // e.g. Mobile is not available in US or CA — only in GB.
+        const validTypes = getCountryNumberTypes(input.countryCode);
+        if (validTypes.length > 0 && !validTypes.includes(input.type)) {
+          const typeLabel =
+            input.type === "toll-free" ? "Toll-Free" :
+            input.type === "mobile"    ? "Mobile"    : "Local";
+          const available = validTypes
+            .map((t) => (t === "toll-free" ? "Toll-Free" : t === "mobile" ? "Mobile" : "Local"))
+            .join(" or ");
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `${typeLabel} numbers are not available in ${input.countryCode}. Please choose ${available}.`,
+          });
+        }
+
         const numbers = await searchAvailableNumbers({
           countryCode: input.countryCode,
           type: input.type,
@@ -158,6 +174,14 @@ export const phoneNumbersRouter = router({
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Phone numbers of this type are not available in the selected country. Try a different number type.",
+          });
+        }
+
+        // Twilio 404 — endpoint doesn't exist for this country/type combo (e.g. US/Mobile)
+        if (errorMessage.includes("20404") || errorMessage.includes("was not found")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This number type is not available in the selected country. Please choose Local or Toll-Free.",
           });
         }
 

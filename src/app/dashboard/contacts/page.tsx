@@ -1,6 +1,6 @@
 "use client";
 
-import { ContactList, ContactUpload } from "@/components/contacts";
+import { ContactList, ContactUpload, ContactAdd } from "@/components/contacts";
 
 export default function ContactsPage() {
   return (
@@ -13,7 +13,10 @@ export default function ContactsPage() {
             Manage your contact database for outbound campaigns
           </p>
         </div>
-        <ContactUpload />
+        <div className="flex items-center gap-2">
+          <ContactAdd />
+          <ContactUpload />
+        </div>
       </div>
 
       {/* Contacts List */}
