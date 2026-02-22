@@ -607,22 +607,12 @@ export const contactsRouter = router({
             XLSX.utils.sheet_to_csv(workbook.Sheets[name]!)
           ).join("\n\n");
         } else if (ext === "pdf") {
-          // Use pdfjs-dist directly for text-only extraction.
-          // canvas is only needed for image rendering — text extraction works without it.
-          // (pdfjs-dist is already installed as a dependency of pdf-parse)
-          const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
-          GlobalWorkerOptions.workerSrc = ""; // disable web worker (not available serverless)
-          const pdfDoc = await getDocument({ data: new Uint8Array(buffer) }).promise;
-          const pageTexts: string[] = [];
-          for (let i = 1; i <= pdfDoc.numPages; i++) {
-            const page = await pdfDoc.getPage(i);
-            const content = await page.getTextContent();
-            const pageText = (content.items as Array<{ str?: string }>)
-              .map((item) => item.str ?? "")
-              .join(" ");
-            pageTexts.push(pageText);
-          }
-          text = pageTexts.join("\n");
+          // Use pdf-parse which handles the Node.js/serverless environment correctly
+          // pdf-parse v2 ESM exports the function directly; CJS wraps it in .default
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const pdfMod = (await import("pdf-parse")) as any;
+          const result = await (pdfMod.default ?? pdfMod)(buffer);
+          text = result.text;
         } else {
           // Fallback: decode as UTF-8
           text = buffer.toString("utf-8");
