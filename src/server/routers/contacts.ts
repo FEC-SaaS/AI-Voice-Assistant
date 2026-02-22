@@ -607,12 +607,11 @@ export const contactsRouter = router({
             XLSX.utils.sheet_to_csv(workbook.Sheets[name]!)
           ).join("\n\n");
         } else if (ext === "pdf") {
-          // Use pdf-parse which handles the Node.js/serverless environment correctly
-          // pdf-parse v2 ESM exports the function directly; CJS wraps it in .default
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const pdfMod = (await import("pdf-parse")) as any;
-          const result = await (pdfMod.default ?? pdfMod)(buffer);
-          text = result.text;
+          // unpdf is built for serverless/Edge — no canvas dependency required
+          const { getDocumentProxy, extractText } = await import("unpdf");
+          const pdf = await getDocumentProxy(new Uint8Array(buffer));
+          const { text: pdfText } = await extractText(pdf, { mergePages: true });
+          text = pdfText;
         } else {
           // Fallback: decode as UTF-8
           text = buffer.toString("utf-8");
