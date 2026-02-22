@@ -58,10 +58,10 @@ export function FeedbackButton() {
 
   return (
     <>
-      {/* Floating trigger */}
+      {/* Floating trigger — icon-only; expands to label on hover */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold shadow-2xl transition-all duration-200 hover:scale-105 hover:shadow-primary/30 active:scale-95"
+        className="group fixed bottom-6 right-6 z-50 flex items-center gap-2 overflow-hidden rounded-full py-2.5 pl-2.5 pr-2.5 text-sm font-semibold shadow-2xl transition-all duration-200 hover:pr-4 hover:scale-105 active:scale-95"
         style={{
           background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.8) 100%)",
           color: "white",
@@ -69,8 +69,10 @@ export function FeedbackButton() {
         }}
         aria-label="Send feedback"
       >
-        <MessageSquarePlus className="h-4 w-4" />
-        Feedback
+        <MessageSquarePlus className="h-4 w-4 flex-shrink-0" />
+        <span className="max-w-0 overflow-hidden whitespace-nowrap transition-all duration-200 group-hover:max-w-[80px]">
+          Feedback
+        </span>
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
