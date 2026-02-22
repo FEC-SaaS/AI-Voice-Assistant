@@ -10,6 +10,7 @@ import {
   Navigation2,
   CheckCircle,
   XCircle,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
@@ -19,6 +20,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   navigate?: { path: string; label: string };
+  actionButton?: { label: string; path: string };
 }
 
 interface AssistantResponse {
@@ -85,31 +87,82 @@ export function ChatWidget() {
   const createAgent = trpc.agents.create.useMutation({
     onSuccess: (agent) => {
       setConfirmCard(null);
-      appendAssistant(`Agent "${agent.name}" created. You can find it in Agents.`);
+      appendAssistant(
+        `Agent "${agent.name}" created successfully.`,
+        { label: "Edit Agent", path: `/dashboard/agents/${agent.id}/edit` }
+      );
     },
-    onError: (err) => appendAssistant(`Failed to create agent: ${err.message}`),
+    onError: (err) => {
+      setConfirmCard(null);
+      appendAssistant(
+        formatError(err),
+        err.message.toLowerCase().includes("limit") || err.message.toLowerCase().includes("upgrade")
+          ? { label: "Upgrade Plan →", path: "/dashboard/settings" }
+          : undefined
+      );
+    },
   });
 
   const createCampaign = trpc.campaigns.create.useMutation({
     onSuccess: (campaign) => {
       setConfirmCard(null);
-      appendAssistant(`Campaign "${campaign.name}" created. You can view it in Campaigns.`);
+      appendAssistant(
+        `Campaign "${campaign.name}" created. Open it to assign contacts and configure settings.`,
+        { label: "View & Edit Campaign", path: `/dashboard/campaigns/${campaign.id}` }
+      );
     },
-    onError: (err) => appendAssistant(`Failed to create campaign: ${err.message}`),
+    onError: (err) => {
+      setConfirmCard(null);
+      appendAssistant(
+        formatError(err),
+        err.message.toLowerCase().includes("limit") || err.message.toLowerCase().includes("upgrade")
+          ? { label: "Upgrade Plan →", path: "/dashboard/settings" }
+          : undefined
+      );
+    },
   });
 
   const createContact = trpc.contacts.create.useMutation({
     onSuccess: (contact) => {
       setConfirmCard(null);
-      const name = [contact.firstName, contact.lastName].filter(Boolean).join(" ") || contact.phoneNumber;
-      appendAssistant(`Contact "${name}" created. You can find them in Contacts.`);
+      const name =
+        [contact.firstName, contact.lastName].filter(Boolean).join(" ") || contact.phoneNumber;
+      appendAssistant(
+        `Contact "${name}" added.`,
+        { label: "View Contacts", path: "/dashboard/contacts" }
+      );
     },
-    onError: (err) => appendAssistant(`Failed to create contact: ${err.message}`),
+    onError: (err) => {
+      setConfirmCard(null);
+      appendAssistant(
+        formatError(err),
+        err.message.toLowerCase().includes("limit") || err.message.toLowerCase().includes("upgrade")
+          ? { label: "Upgrade Plan →", path: "/dashboard/settings" }
+          : undefined
+      );
+    },
   });
 
   // ── Helpers ───────────────────────────────────────────────────────────
-  const appendAssistant = (content: string) =>
-    setMessages((prev) => [...prev, { role: "assistant", content }]);
+  const appendAssistant = (content: string, actionButton?: Message["actionButton"]) =>
+    setMessages((prev) => [...prev, { role: "assistant", content, actionButton }]);
+
+  /** Detects plan-limit errors and returns a user-friendly message. */
+  const formatError = (err: { message: string }): string => {
+    const lower = err.message.toLowerCase();
+    const isPlanLimit =
+      lower.includes("limit") ||
+      lower.includes("plan") ||
+      lower.includes("upgrade") ||
+      lower.includes("quota") ||
+      lower.includes("maximum") ||
+      lower.includes("subscription") ||
+      lower.includes("exceeded");
+    if (isPlanLimit) {
+      return `You've reached your plan limit.\n\n${err.message}\n\nGo to Settings → Billing to upgrade your plan.`;
+    }
+    return `Failed: ${err.message}`;
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -300,6 +353,15 @@ export function ChatWidget() {
                       <Navigation2 className="h-3 w-3" />
                       <span>Navigating to {msg.navigate.label}…</span>
                     </div>
+                  )}
+                  {msg.actionButton && (
+                    <button
+                      onClick={() => router.push(msg.actionButton!.path)}
+                      className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-lg border border-current/20 py-1.5 text-xs font-medium opacity-90 hover:opacity-100 transition-opacity"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      {msg.actionButton.label}
+                    </button>
                   )}
                 </div>
               </div>
