@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useDropzone, FileRejection } from "react-dropzone";
+import { useDropzone } from "react-dropzone";
 import {
   Upload,
   FileText,
@@ -119,48 +119,10 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
     [extractFromFile]
   );
 
-  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
-    const rejection = fileRejections[0];
-    if (rejection) {
-      const msg = rejection.errors.map((e) => e.message).join(", ");
-      setParseError(msg);
-      toast.error(msg);
-    }
-  }, []);
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    onDropRejected,
-    accept: {
-      "text/csv": [".csv"],
-      "text/plain": [".txt", ".tsv", ".csv"],
-      "text/tab-separated-values": [".tsv"],
-      "application/json": [".json"],
-      "text/vcard": [".vcf"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/octet-stream": [
-        ".csv",
-        ".txt",
-        ".tsv",
-        ".vcf",
-        ".json",
-        ".xls",
-      ],
-    },
     maxFiles: 1,
     multiple: false,
-    validator: (file) => {
-      const ext = file.name.split(".").pop()?.toLowerCase();
-      const allowed = ["csv", "tsv", "txt", "json", "vcf", "xls"];
-      if (!ext || !allowed.includes(ext)) {
-        return {
-          code: "file-invalid-type",
-          message:
-            "Supported formats: CSV, TSV, TXT, JSON, vCard (.vcf), XLS. For XLSX files, save as CSV first.",
-        };
-      }
-      return null;
-    },
   });
 
   const handleImport = () => {
@@ -227,8 +189,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                     : "Drag and drop a file, or click to browse"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  CSV · TSV · TXT · JSON · vCard (.vcf) · XLS — any column
-                  layout, up to ~10,000 rows
+                  Any file format — CSV, Excel, PDF, JSON, vCard, plain text, and more
                 </p>
               </div>
 
@@ -239,14 +200,6 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                 </div>
               )}
 
-              <div className="rounded-md bg-muted/50 border p-3 text-xs text-muted-foreground space-y-1">
-                <p className="font-medium text-foreground">How it works</p>
-                <p>
-                  Our AI reads your file and identifies contacts regardless of
-                  column names, column order, or file layout. No manual mapping
-                  needed — just upload and import.
-                </p>
-              </div>
             </div>
           )}
 
