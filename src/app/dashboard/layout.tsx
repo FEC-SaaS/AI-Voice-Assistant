@@ -7,6 +7,7 @@ import { TRPCProvider } from "@/components/providers";
 import { BrandingProvider } from "@/components/providers/branding-provider";
 import { OrgGuard } from "@/components/auth/org-guard";
 import { FeedbackButton } from "@/components/feedback/feedback-button";
+import { ChatWidget } from "@/components/assistant/chat-widget";
 import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({
@@ -55,6 +56,7 @@ export default function DashboardLayout({
           </div>
         </div>
         <FeedbackButton />
+        <ChatWidget />
       </BrandingProvider>
     </TRPCProvider>
   );
