@@ -216,7 +216,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
                     : "Drag and drop a file, or click to browse"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Any file format — CSV, Excel, PDF, JSON, vCard, plain text, and more
+                  CSV, Excel, PDF, DOCX, JSON, vCard, plain text
                 </p>
               </div>
 

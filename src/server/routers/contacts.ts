@@ -607,11 +607,22 @@ export const contactsRouter = router({
             XLSX.utils.sheet_to_csv(workbook.Sheets[name]!)
           ).join("\n\n");
         } else if (ext === "pdf") {
-          // pdf-parse is a CJS default export
-          const pdfParseModule = await import("pdf-parse");
-          const pdfParse = (pdfParseModule as unknown as { default: (buf: Buffer) => Promise<{ text: string }> }).default;
-          const result = await pdfParse(buffer);
-          text = result.text;
+          // Use pdfjs-dist directly for text-only extraction.
+          // canvas is only needed for image rendering — text extraction works without it.
+          // (pdfjs-dist is already installed as a dependency of pdf-parse)
+          const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
+          GlobalWorkerOptions.workerSrc = ""; // disable web worker (not available serverless)
+          const pdfDoc = await getDocument({ data: new Uint8Array(buffer) }).promise;
+          const pageTexts: string[] = [];
+          for (let i = 1; i <= pdfDoc.numPages; i++) {
+            const page = await pdfDoc.getPage(i);
+            const content = await page.getTextContent();
+            const pageText = (content.items as Array<{ str?: string }>)
+              .map((item) => item.str ?? "")
+              .join(" ");
+            pageTexts.push(pageText);
+          }
+          text = pageTexts.join("\n");
         } else {
           // Fallback: decode as UTF-8
           text = buffer.toString("utf-8");
