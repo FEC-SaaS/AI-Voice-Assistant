@@ -2,22 +2,50 @@ import { NextRequest, NextResponse } from "next/server";
 import { openai } from "@/lib/openai";
 import type OpenAI from "openai";
 
-export type PendingAction = {
-  type: "create_agent";
-  data: {
-    name: string;
-    systemPrompt: string;
-    firstMessage?: string;
-  };
-};
+export type PendingAction =
+  | {
+      type: "create_agent";
+      data: { name: string; systemPrompt: string; firstMessage?: string };
+    }
+  | {
+      type: "create_campaign";
+      data: {
+        name: string;
+        campaignType: "cold_calling" | "interview";
+        description?: string;
+        jobTitle?: string;
+        jobDescription?: string;
+      };
+    }
+  | {
+      type: "create_contact";
+      data: { firstName?: string; lastName?: string; phoneNumber?: string };
+    };
 
-const SYSTEM_PROMPT = `You are CalTone Assistant, a helpful AI embedded inside the CalTone dashboard — an AI-powered call center platform for outbound and inbound calling.
+const SYSTEM_PROMPT = `You are CalTone Assistant, a helpful AI embedded inside the CalTone dashboard — an AI-powered call center platform.
 
 ## WHAT YOU CAN DO
 1. Answer questions about CalTone features and workflows
 2. Navigate the user to any dashboard page
-3. Create a new AI agent on behalf of the user (with their confirmation)
-4. For campaign creation — navigate to /dashboard/campaigns/new (too many fields that need UI pickers like agent selection)
+3. Create an AI agent (with user confirmation)
+4. Create a campaign — call campaign OR interview campaign (with user confirmation)
+5. Create a contact (with user confirmation)
+6. For appointments, departments, staff → navigate to the relevant page
+
+## CAMPAIGN TYPES — IMPORTANT
+There are TWO distinct campaign types:
+
+**Cold Calling Campaign (type: "cold_calling")**
+- Used for sales outreach, lead follow-up, customer check-ins, any general calling
+- An AI agent calls a list of contacts automatically
+- Example requests: "create a sales campaign", "outbound calling campaign", "follow-up campaign"
+
+**Interview Campaign (type: "interview")**
+- Used to conduct AI-powered phone interviews with job candidates
+- Requires jobTitle and jobDescription to evaluate candidates properly
+- Example requests: "create an interview campaign", "schedule candidate interviews", "hiring campaign"
+
+Always pick the right type based on context. If unclear, ask the user.
 
 ## PAGES & WHAT THEY DO
 
@@ -27,8 +55,8 @@ const SYSTEM_PROMPT = `You are CalTone Assistant, a helpful AI embedded inside t
 | /dashboard/agents | List all AI voice agents |
 | /dashboard/agents/new | Create a new AI agent manually |
 | /dashboard/campaigns | List calling campaigns |
-| /dashboard/campaigns/new | Create a campaign — pick agent, set schedule |
-| /dashboard/contacts | Import and manage contacts (CSV/Excel/PDF/DOCX) |
+| /dashboard/campaigns/new | Create a campaign manually |
+| /dashboard/contacts | Import and manage contacts |
 | /dashboard/calls | Full call history — recordings, transcripts, sentiment |
 | /dashboard/live | Real-time monitoring of active calls |
 | /dashboard/analytics | Charts — call volume, success rates, sentiment |
@@ -39,71 +67,45 @@ const SYSTEM_PROMPT = `You are CalTone Assistant, a helpful AI embedded inside t
 | /dashboard/interviews/new | Create a new interview configuration |
 | /dashboard/appointments | Appointments booked by agents during calls |
 | /dashboard/leads | Lead pipeline — hot/warm/cold scoring |
-| /dashboard/receptionist | Configure inbound AI receptionist |
+| /dashboard/receptionist | Configure inbound AI receptionist, manage departments and staff |
 | /dashboard/compliance | Do-Not-Call list management |
 | /dashboard/integrations | Connect CRMs, webhooks, third-party tools |
 | /dashboard/phone-numbers | Buy and manage phone numbers |
 | /dashboard/settings | Account, billing, API keys |
 | /dashboard/onboarding | Setup wizard for first-time config |
 
-## COMMON WORKFLOWS
-
-**First campaign setup:** Create agent → Get phone number → Import contacts → Create campaign → Launch
-
-**Import contacts:** Contacts page → "Import Contacts" → upload CSV/Excel/PDF → AI extracts automatically
-
-**Monitor calls:** Live page for real-time; Calls page for full history
-
 ## TOOL USAGE RULES
-
-- Use **navigate_to** when: user says "take me to", "open", "go to", "show me", or wants to create a campaign
-- Use **create_agent** when: user explicitly asks to CREATE an agent. Generate a professional systemPrompt (minimum 80 words) based on their description. Make it specific, not generic.
-- For campaign creation: always use navigate_to /dashboard/campaigns/new — never create_agent for campaigns
-- Never call a tool to navigate to the page the user is already on
-- Always respond with helpful text alongside or instead of a tool call`;
+- **navigate_to**: navigation requests, and for appointments/departments/staff creation
+- **create_agent**: user explicitly asks to CREATE an agent — generate a detailed systemPrompt
+- **create_campaign**: user asks to create a campaign of either type — extract name and type
+- **create_contact**: user asks to add/create a single contact — extract name and phone
+- Never navigate to the page the user is already on`;
 
 const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
       name: "navigate_to",
-      description:
-        "Navigate the user to a specific dashboard page. Use for navigation requests and campaign creation.",
+      description: "Navigate the user to a specific dashboard page.",
       parameters: {
         type: "object",
         properties: {
           path: {
             type: "string",
-            description: "The dashboard path",
             enum: [
-              "/dashboard",
-              "/dashboard/agents",
-              "/dashboard/agents/new",
-              "/dashboard/campaigns",
-              "/dashboard/campaigns/new",
-              "/dashboard/contacts",
-              "/dashboard/calls",
-              "/dashboard/live",
-              "/dashboard/analytics",
-              "/dashboard/intelligence",
-              "/dashboard/knowledge",
-              "/dashboard/knowledge/new",
-              "/dashboard/interviews",
-              "/dashboard/interviews/new",
-              "/dashboard/appointments",
-              "/dashboard/leads",
-              "/dashboard/receptionist",
-              "/dashboard/compliance",
-              "/dashboard/integrations",
-              "/dashboard/phone-numbers",
-              "/dashboard/settings",
-              "/dashboard/onboarding",
+              "/dashboard", "/dashboard/agents", "/dashboard/agents/new",
+              "/dashboard/campaigns", "/dashboard/campaigns/new",
+              "/dashboard/contacts", "/dashboard/calls", "/dashboard/live",
+              "/dashboard/analytics", "/dashboard/intelligence",
+              "/dashboard/knowledge", "/dashboard/knowledge/new",
+              "/dashboard/interviews", "/dashboard/interviews/new",
+              "/dashboard/appointments", "/dashboard/leads",
+              "/dashboard/receptionist", "/dashboard/compliance",
+              "/dashboard/integrations", "/dashboard/phone-numbers",
+              "/dashboard/settings", "/dashboard/onboarding",
             ],
           },
-          label: {
-            type: "string",
-            description: "Human-readable page name",
-          },
+          label: { type: "string" },
         },
         required: ["path", "label"],
       },
@@ -114,26 +116,54 @@ const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "create_agent",
       description:
-        "Create a new AI voice agent for the user. Only use when the user explicitly asks to create an agent. Generate a detailed, professional systemPrompt based on their description.",
+        "Create a new AI voice agent. Only when user explicitly asks. Generate a detailed, professional systemPrompt (80+ words) based on their description.",
       parameters: {
         type: "object",
         properties: {
-          name: {
-            type: "string",
-            description: "A clear, descriptive agent name",
-          },
-          systemPrompt: {
-            type: "string",
-            description:
-              "Detailed instructions for the agent — what it should say, its tone, goals, how to handle objections, and when to close. Minimum 80 words.",
-          },
-          firstMessage: {
-            type: "string",
-            description:
-              "The opening line the agent says when a call connects. Should be natural and match the agent's purpose.",
-          },
+          name: { type: "string" },
+          systemPrompt: { type: "string", description: "Detailed agent instructions (80+ words)" },
+          firstMessage: { type: "string", description: "Opening line when call connects" },
         },
         required: ["name", "systemPrompt"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_campaign",
+      description:
+        "Create a calling campaign. Use campaignType='cold_calling' for sales/outreach, 'interview' for hiring/candidate interviews. The user will select the agent from a dropdown.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Campaign name" },
+          campaignType: {
+            type: "string",
+            enum: ["cold_calling", "interview"],
+            description: "Type of campaign",
+          },
+          description: { type: "string", description: "Brief description (optional)" },
+          jobTitle: { type: "string", description: "Job title — only for interview campaigns" },
+          jobDescription: { type: "string", description: "Job description — only for interview campaigns" },
+        },
+        required: ["name", "campaignType"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_contact",
+      description: "Create a single contact. Extract name and phone number from the user's message.",
+      parameters: {
+        type: "object",
+        properties: {
+          firstName: { type: "string" },
+          lastName: { type: "string" },
+          phoneNumber: { type: "string", description: "Phone number in any format" },
+        },
+        required: [],
       },
     },
   },
@@ -174,10 +204,10 @@ export async function POST(req: NextRequest) {
 
     if (message?.tool_calls?.length) {
       const toolCall = message.tool_calls[0]!;
-      // narrow to standard function tool call (not custom tool call)
       if (toolCall.type !== "function") {
         return NextResponse.json({ reply: "I'm not sure how to help with that. Could you rephrase?" });
       }
+
       let args: Record<string, unknown>;
       try {
         args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
@@ -185,24 +215,54 @@ export async function POST(req: NextRequest) {
         args = {};
       }
 
-      if (toolCall.function.name === "navigate_to") {
-        navigate = {
-          path: args.path as string,
-          label: args.label as string,
-        };
-        if (!reply) reply = `Taking you to ${navigate.label}…`;
-      } else if (toolCall.function.name === "create_agent") {
-        pendingAction = {
-          type: "create_agent",
-          data: {
-            name: args.name as string,
-            systemPrompt: args.systemPrompt as string,
-            firstMessage: args.firstMessage as string | undefined,
-          },
-        };
-        if (!reply)
-          reply =
-            "Here's the agent I've drafted based on your description. Review the details and edit anything before confirming:";
+      switch (toolCall.function.name) {
+        case "navigate_to":
+          navigate = { path: args.path as string, label: args.label as string };
+          if (!reply) reply = `Taking you to ${navigate.label}…`;
+          break;
+
+        case "create_agent":
+          pendingAction = {
+            type: "create_agent",
+            data: {
+              name: args.name as string,
+              systemPrompt: args.systemPrompt as string,
+              firstMessage: args.firstMessage as string | undefined,
+            },
+          };
+          if (!reply)
+            reply = "Here's the agent I've drafted. Review and edit anything before confirming:";
+          break;
+
+        case "create_campaign":
+          pendingAction = {
+            type: "create_campaign",
+            data: {
+              name: args.name as string,
+              campaignType: args.campaignType as "cold_calling" | "interview",
+              description: args.description as string | undefined,
+              jobTitle: args.jobTitle as string | undefined,
+              jobDescription: args.jobDescription as string | undefined,
+            },
+          };
+          if (!reply)
+            reply =
+              args.campaignType === "interview"
+                ? "Here's your interview campaign. Select an agent and confirm:"
+                : "Here's your call campaign. Select an agent and confirm:";
+          break;
+
+        case "create_contact":
+          pendingAction = {
+            type: "create_contact",
+            data: {
+              firstName: args.firstName as string | undefined,
+              lastName: args.lastName as string | undefined,
+              phoneNumber: args.phoneNumber as string | undefined,
+            },
+          };
+          if (!reply) reply = "Fill in the contact details and confirm:";
+          break;
       }
     }
 

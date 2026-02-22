@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   LayoutDashboard,
   Bot,
+  Sparkles,
   Megaphone,
   Phone,
   BarChart3,
@@ -286,7 +287,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
             ) : (
               <>
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30 group-hover:shadow-indigo-500/50 transition-shadow">
-                  <Bot className="h-5 w-5" />
+                  <Sparkles className="h-5 w-5" />
                 </div>
                 <span className="text-lg font-bold gradient-text tracking-tight">
                   {brandName}
@@ -300,7 +301,7 @@ export function Sidebar({ isOpen = false, onClose, collapsed = false, onCollapse
             <img src={brandLogoUrl} alt={brandName} className="h-9 w-9 object-contain mx-auto" />
           ) : (
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30 mx-auto">
-              <Bot className="h-5 w-5" />
+              <Sparkles className="h-5 w-5" />
             </div>
           )
         )}
