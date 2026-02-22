@@ -36,6 +36,9 @@ interface ParsedContact {
   company?: string;
 }
 
+// File extensions that are binary formats and need server-side parsing
+const BINARY_EXTENSIONS = ["pdf", "docx", "xlsx", "xls"];
+
 export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [fileName, setFileName] = useState("");
@@ -68,22 +71,29 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
     },
   });
 
-  const extractFromFile = trpc.contacts.extractFromFile.useMutation({
-    onSuccess: (data) => {
-      if (data.contacts.length === 0) {
-        toast.error(
-          "No contacts with phone numbers found. Please check the file content."
-        );
-        setStep("upload");
-        return;
-      }
-      setExtractedContacts(data.contacts);
-      setStep("preview");
-    },
-    onError: (error) => {
-      toast.error(`AI extraction failed: ${error.message}`);
+  const onExtractSuccess = (data: { contacts: ParsedContact[] }) => {
+    if (data.contacts.length === 0) {
+      toast.error("No contacts with phone numbers found. Please check the file content.");
       setStep("upload");
-    },
+      return;
+    }
+    setExtractedContacts(data.contacts);
+    setStep("preview");
+  };
+
+  const onExtractError = (error: { message: string }) => {
+    toast.error(`AI extraction failed: ${error.message}`);
+    setStep("upload");
+  };
+
+  const extractFromFile = trpc.contacts.extractFromFile.useMutation({
+    onSuccess: onExtractSuccess,
+    onError: onExtractError,
+  });
+
+  const extractFromBinaryFile = trpc.contacts.extractFromBinaryFile.useMutation({
+    onSuccess: onExtractSuccess,
+    onError: onExtractError,
   });
 
   const onDrop = useCallback(
@@ -92,6 +102,7 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
       const uploadedFile = acceptedFiles[0];
       if (!uploadedFile) return;
 
+      const ext = uploadedFile.name.split(".").pop()?.toLowerCase() ?? "";
       setFileName(uploadedFile.name);
       const reader = new FileReader();
 
@@ -100,23 +111,39 @@ export function ContactUpload({ campaignId, onSuccess }: ContactUploadProps) {
         toast.error("Failed to read file. Please try again.");
       };
 
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        if (!text?.trim()) {
-          toast.error("File appears to be empty");
-          return;
-        }
-        setStep("processing");
-        // Cap at 200k chars to stay within OpenAI token limits (~50k tokens)
-        extractFromFile.mutate({
-          fileContent: text.slice(0, 200000),
-          fileName: uploadedFile.name,
-        });
-      };
-
-      reader.readAsText(uploadedFile);
+      if (BINARY_EXTENSIONS.includes(ext)) {
+        // Binary file (PDF/DOCX/XLSX): read as base64 DataURL, parse server-side
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          // DataURL format: "data:<mime>;base64,<actual-base64>"
+          const base64 = dataUrl?.split(",")[1];
+          if (!base64) {
+            toast.error("Failed to read file");
+            return;
+          }
+          setStep("processing");
+          extractFromBinaryFile.mutate({ fileBase64: base64, fileName: uploadedFile.name });
+        };
+        reader.readAsDataURL(uploadedFile);
+      } else {
+        // Text file (CSV/TSV/TXT/JSON/VCF): read as plain text
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          if (!text?.trim()) {
+            toast.error("File appears to be empty");
+            return;
+          }
+          setStep("processing");
+          extractFromFile.mutate({
+            fileContent: text.slice(0, 200000),
+            fileName: uploadedFile.name,
+          });
+        };
+        reader.readAsText(uploadedFile);
+      }
     },
-    [extractFromFile]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [extractFromFile, extractFromBinaryFile]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

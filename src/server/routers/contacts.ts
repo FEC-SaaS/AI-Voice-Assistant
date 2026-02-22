@@ -568,7 +568,7 @@ export const contactsRouter = router({
     };
   }),
 
-  // AI-powered: extract contact details from any file content
+  // AI-powered: extract contacts from plain-text file content (CSV, JSON, VCF, TXT)
   extractFromFile: protectedProcedure
     .input(
       z.object({
@@ -578,6 +578,56 @@ export const contactsRouter = router({
     )
     .mutation(async ({ input }) => {
       const contacts = await extractContactsFromText(input.fileContent);
+      return { contacts };
+    }),
+
+  // AI-powered: extract contacts from binary files (PDF, DOCX, XLSX, XLS)
+  // Client sends file as base64; server parses with the appropriate library then calls OpenAI.
+  extractFromBinaryFile: protectedProcedure
+    .input(
+      z.object({
+        fileBase64: z.string().max(5_000_000, "File is too large (max ~3.5 MB). Please split it."),
+        fileName: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const ext = input.fileName.split(".").pop()?.toLowerCase() ?? "";
+      const buffer = Buffer.from(input.fileBase64, "base64");
+      let text = "";
+
+      try {
+        if (ext === "docx") {
+          const { extractRawText } = await import("mammoth");
+          const result = await extractRawText({ buffer });
+          text = result.value;
+        } else if (ext === "xlsx" || ext === "xls") {
+          const XLSX = await import("xlsx");
+          const workbook = XLSX.read(buffer, { type: "buffer" });
+          text = workbook.SheetNames.map((name) =>
+            XLSX.utils.sheet_to_csv(workbook.Sheets[name]!)
+          ).join("\n\n");
+        } else if (ext === "pdf") {
+          // pdf-parse is a CJS default export
+          const pdfParseModule = await import("pdf-parse");
+          const pdfParse = (pdfParseModule as unknown as { default: (buf: Buffer) => Promise<{ text: string }> }).default;
+          const result = await pdfParse(buffer);
+          text = result.text;
+        } else {
+          // Fallback: decode as UTF-8
+          text = buffer.toString("utf-8");
+        }
+      } catch (err) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Could not read ${ext.toUpperCase()} file. Please try saving it as CSV and importing again.`,
+        });
+      }
+
+      if (!text.trim()) {
+        return { contacts: [] };
+      }
+
+      const contacts = await extractContactsFromText(text.slice(0, 200000));
       return { contacts };
     }),
 
