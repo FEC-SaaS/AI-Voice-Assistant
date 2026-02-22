@@ -1,85 +1,147 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openai } from "@/lib/openai";
+import type OpenAI from "openai";
+
+export type PendingAction = {
+  type: "create_agent";
+  data: {
+    name: string;
+    systemPrompt: string;
+    firstMessage?: string;
+  };
+};
 
 const SYSTEM_PROMPT = `You are CalTone Assistant, a helpful AI embedded inside the CalTone dashboard — an AI-powered call center platform for outbound and inbound calling.
 
-Your job is to:
-- Answer questions about CalTone features and how to use them
-- Guide users through workflows step by step
-- Navigate users to the right page when they ask
+## WHAT YOU CAN DO
+1. Answer questions about CalTone features and workflows
+2. Navigate the user to any dashboard page
+3. Create a new AI agent on behalf of the user (with their confirmation)
+4. For campaign creation — navigate to /dashboard/campaigns/new (too many fields that need UI pickers like agent selection)
 
 ## PAGES & WHAT THEY DO
 
-| Path | What it's for |
-|------|---------------|
-| /dashboard | Home overview — stats, recent activity, quick links |
-| /dashboard/agents | List all AI voice agents. Agents handle calls using a custom voice and system prompt |
-| /dashboard/agents/new | Create a new AI agent — set name, choose voice, write a system prompt |
-| /dashboard/campaigns | List calling campaigns. A campaign links an agent to a contact list and runs calls |
-| /dashboard/campaigns/new | Create a campaign — pick an agent, set schedule, configure retry rules |
-| /dashboard/contacts | Import and manage contacts. Supports CSV, Excel, PDF, DOCX with AI extraction |
-| /dashboard/calls | Full call history — filter by campaign, status, sentiment; play recordings; view transcripts |
-| /dashboard/live | Real-time monitoring of active calls with live transcripts and status |
-| /dashboard/analytics | Charts and KPIs — call volume, success rates, sentiment trends, lead scores |
-| /dashboard/intelligence | AI pattern analysis across all calls — common topics, objections, buying signals |
-| /dashboard/knowledge | Knowledge base articles agents reference during calls |
+| Path | Purpose |
+|------|---------|
+| /dashboard | Home overview — stats, recent activity |
+| /dashboard/agents | List all AI voice agents |
+| /dashboard/agents/new | Create a new AI agent manually |
+| /dashboard/campaigns | List calling campaigns |
+| /dashboard/campaigns/new | Create a campaign — pick agent, set schedule |
+| /dashboard/contacts | Import and manage contacts (CSV/Excel/PDF/DOCX) |
+| /dashboard/calls | Full call history — recordings, transcripts, sentiment |
+| /dashboard/live | Real-time monitoring of active calls |
+| /dashboard/analytics | Charts — call volume, success rates, sentiment |
+| /dashboard/intelligence | AI pattern analysis — objections, topics, signals |
+| /dashboard/knowledge | Knowledge base articles agents reference on calls |
 | /dashboard/knowledge/new | Create a knowledge base article |
-| /dashboard/interviews | AI interview management — create job roles, schedule AI-powered interviews, get evaluations |
+| /dashboard/interviews | AI interview management |
 | /dashboard/interviews/new | Create a new interview configuration |
-| /dashboard/appointments | Appointments scheduled by agents during calls |
-| /dashboard/leads | Lead pipeline — contacts scored as hot/warm/cold based on call sentiment |
-| /dashboard/receptionist | Configure an inbound AI receptionist for handling incoming calls |
-| /dashboard/compliance | Do-Not-Call (DNC) list management and compliance tracking |
-| /dashboard/integrations | Connect CRMs, webhooks, and third-party tools |
-| /dashboard/phone-numbers | Buy, manage, and configure phone numbers; set Caller ID (CNAM) |
-| /dashboard/settings | Account, organization, billing, and API key settings |
-| /dashboard/onboarding | Setup wizard for first-time configuration |
+| /dashboard/appointments | Appointments booked by agents during calls |
+| /dashboard/leads | Lead pipeline — hot/warm/cold scoring |
+| /dashboard/receptionist | Configure inbound AI receptionist |
+| /dashboard/compliance | Do-Not-Call list management |
+| /dashboard/integrations | Connect CRMs, webhooks, third-party tools |
+| /dashboard/phone-numbers | Buy and manage phone numbers |
+| /dashboard/settings | Account, billing, API keys |
+| /dashboard/onboarding | Setup wizard for first-time config |
 
 ## COMMON WORKFLOWS
 
-**Set up your first outbound campaign (start here if new):**
-1. Create an AI Agent (/dashboard/agents/new) — give it a name, pick a voice, write what it should say
-2. Get a phone number (/dashboard/phone-numbers) — buy or configure a number for outbound calls
-3. Import contacts (/dashboard/contacts) — upload a CSV or PDF; AI extracts phone numbers automatically
-4. Create a campaign (/dashboard/campaigns/new) — link the agent + contact list, set schedule
-5. Launch the campaign — calls start automatically
+**First campaign setup:** Create agent → Get phone number → Import contacts → Create campaign → Launch
 
-**Import contacts:**
-Go to Contacts → click "Import Contacts" → drag and drop a CSV, Excel, PDF, or DOCX file → AI extracts all phone numbers and names automatically.
+**Import contacts:** Contacts page → "Import Contacts" → upload CSV/Excel/PDF → AI extracts automatically
 
-**Monitor calls in real time:**
-Go to Live (/dashboard/live) to see active calls with live transcripts.
+**Monitor calls:** Live page for real-time; Calls page for full history
 
-**Review performance:**
-Analytics (/dashboard/analytics) for metrics and charts. Intelligence (/dashboard/intelligence) for AI-detected patterns, objections, and topics.
+## TOOL USAGE RULES
 
-**Inbound receptionist:**
-Go to Receptionist (/dashboard/receptionist) to configure an AI that answers incoming calls.
+- Use **navigate_to** when: user says "take me to", "open", "go to", "show me", or wants to create a campaign
+- Use **create_agent** when: user explicitly asks to CREATE an agent. Generate a professional systemPrompt (minimum 80 words) based on their description. Make it specific, not generic.
+- For campaign creation: always use navigate_to /dashboard/campaigns/new — never create_agent for campaigns
+- Never call a tool to navigate to the page the user is already on
+- Always respond with helpful text alongside or instead of a tool call`;
 
-## RESPONSE FORMAT
-
-You MUST always respond with valid JSON in this exact structure:
-{
-  "reply": "Your helpful message here. Keep replies concise (2–4 sentences). For multi-step workflows, use numbered steps.",
-  "navigate": { "path": "/dashboard/agents", "label": "Agents" }
-}
-
-The "navigate" field is OPTIONAL — only include it when:
-- The user explicitly says "take me to", "go to", "open", "show me", "navigate to" a page
-- The user asks to create something (navigate to the creation page)
-- Navigating would directly help them accomplish what they just asked
-
-## RULES
-- Be friendly, direct, and specific
-- Never navigate to the page the user is already on
-- Never make up features that don't exist
-- If you don't know something, say so honestly
-- Keep replies short — users prefer quick answers over long paragraphs
-- When listing steps, use numbered format (1. 2. 3.)`;
+const TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "navigate_to",
+      description:
+        "Navigate the user to a specific dashboard page. Use for navigation requests and campaign creation.",
+      parameters: {
+        type: "object",
+        properties: {
+          path: {
+            type: "string",
+            description: "The dashboard path",
+            enum: [
+              "/dashboard",
+              "/dashboard/agents",
+              "/dashboard/agents/new",
+              "/dashboard/campaigns",
+              "/dashboard/campaigns/new",
+              "/dashboard/contacts",
+              "/dashboard/calls",
+              "/dashboard/live",
+              "/dashboard/analytics",
+              "/dashboard/intelligence",
+              "/dashboard/knowledge",
+              "/dashboard/knowledge/new",
+              "/dashboard/interviews",
+              "/dashboard/interviews/new",
+              "/dashboard/appointments",
+              "/dashboard/leads",
+              "/dashboard/receptionist",
+              "/dashboard/compliance",
+              "/dashboard/integrations",
+              "/dashboard/phone-numbers",
+              "/dashboard/settings",
+              "/dashboard/onboarding",
+            ],
+          },
+          label: {
+            type: "string",
+            description: "Human-readable page name",
+          },
+        },
+        required: ["path", "label"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_agent",
+      description:
+        "Create a new AI voice agent for the user. Only use when the user explicitly asks to create an agent. Generate a detailed, professional systemPrompt based on their description.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: {
+            type: "string",
+            description: "A clear, descriptive agent name",
+          },
+          systemPrompt: {
+            type: "string",
+            description:
+              "Detailed instructions for the agent — what it should say, its tone, goals, how to handle objections, and when to close. Minimum 80 words.",
+          },
+          firstMessage: {
+            type: "string",
+            description:
+              "The opening line the agent says when a call connects. Should be natural and match the agent's purpose.",
+          },
+        },
+        required: ["name", "systemPrompt"],
+      },
+    },
+  },
+];
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as {
+    const body = (await req.json()) as {
       messages: Array<{ role: "user" | "assistant"; content: string }>;
       currentPath: string;
     };
@@ -97,26 +159,56 @@ export async function POST(req: NextRequest) {
           role: "system",
           content: `${SYSTEM_PROMPT}\n\nUser's current page: ${currentPath}`,
         },
-        ...messages.slice(-12), // keep last 12 messages for context, avoid token bloat
+        ...messages.slice(-12),
       ],
-      response_format: { type: "json_object" },
-      max_tokens: 500,
+      tools: TOOLS,
+      tool_choice: "auto",
+      max_tokens: 800,
       temperature: 0.4,
     });
 
-    const raw = completion.choices[0]?.message?.content ?? "{}";
+    const message = completion.choices[0]?.message;
+    let reply = message?.content ?? "";
+    let navigate: { path: string; label: string } | undefined;
+    let pendingAction: PendingAction | undefined;
 
-    let parsed: { reply?: string; navigate?: { path: string; label: string } };
-    try {
-      parsed = JSON.parse(raw) as typeof parsed;
-    } catch {
-      parsed = { reply: raw };
+    if (message?.tool_calls?.length) {
+      const toolCall = message.tool_calls[0]!;
+      // narrow to standard function tool call (not custom tool call)
+      if (toolCall.type !== "function") {
+        return NextResponse.json({ reply: "I'm not sure how to help with that. Could you rephrase?" });
+      }
+      let args: Record<string, unknown>;
+      try {
+        args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+      } catch {
+        args = {};
+      }
+
+      if (toolCall.function.name === "navigate_to") {
+        navigate = {
+          path: args.path as string,
+          label: args.label as string,
+        };
+        if (!reply) reply = `Taking you to ${navigate.label}…`;
+      } else if (toolCall.function.name === "create_agent") {
+        pendingAction = {
+          type: "create_agent",
+          data: {
+            name: args.name as string,
+            systemPrompt: args.systemPrompt as string,
+            firstMessage: args.firstMessage as string | undefined,
+          },
+        };
+        if (!reply)
+          reply =
+            "Here's the agent I've drafted based on your description. Review the details and edit anything before confirming:";
+      }
     }
 
-    return NextResponse.json({
-      reply: parsed.reply ?? "I couldn't generate a response. Please try again.",
-      navigate: parsed.navigate,
-    });
+    if (!reply) reply = "I'm not sure how to help with that. Could you rephrase?";
+
+    return NextResponse.json({ reply, navigate, pendingAction });
   } catch (err) {
     console.error("[assistant]", err);
     return NextResponse.json({
